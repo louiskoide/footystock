@@ -23,7 +23,6 @@ jobs:
       - name: Fetch real World Cup data and write prices.json
         env:
           FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
-          DEBUG_MATCH: 'true'
         run: node scripts/update-prices.mjs
 
       - name: Commit prices.json if it changed

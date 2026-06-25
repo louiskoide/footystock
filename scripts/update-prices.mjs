@@ -1,16 +1,16 @@
 #!/usr/bin/env node
 // Daily data pipeline (see /data-sources.md, step 1 of the build order):
-// pulls real 2026 World Cup results + goal events from football-data.org,
-// computes WC-driven price inputs, and writes prices.json. The frontend only
-// ever reads that file — this script is the one place allowed to call the
+// pulls real 2026 World Cup results from football-data.org, computes
+// WC-driven price inputs, and writes prices.json. The frontend only ever
+// reads that file — this script is the one place allowed to call the
 // external API (see CLAUDE.md: never fetch data APIs from the browser).
 //
-// football-data.org's free tier doesn't reliably expose assists, minutes, or
-// a per-player match rating — only goals (and sometimes the assisting player
-// on a goal). That's fine: CLAUDE.md already requires computing our own
-// rating from raw events rather than using a third-party one. Players who
-// didn't score still get a team-result-based event via the existing
-// `inSquad` fallback in buildDB().
+// football-data.org's free tier does NOT expose per-player goals/assists on
+// /matches/{id} for this account (confirmed: the response has no `goals`
+// field at all, just area/competition/score/odds/referees). So this script
+// only writes team-level results (teams[nation].fixtures) — every squad
+// player still gets a team-result-based price event via the existing
+// `inSquad` fallback in buildDB(), just without individual goal attribution.
 //
 // Run: FOOTBALL_DATA_KEY=xxx node scripts/update-prices.mjs
 import { readFileSync, writeFileSync } from 'fs';
@@ -137,15 +137,7 @@ async function main() {
   const finished = matches.filter(m => m.status === 'FINISHED');
   console.log(`${finished.length} finished matches.`);
 
-  const byNormName = {};
-  for (const p of players) {
-    const key = normName(p.name) + '|' + p.nation;
-    byNormName[key] = p;
-  }
-  if (process.env.DEBUG_MATCH) console.log('SAMPLE_KEYS', JSON.stringify(Object.keys(byNormName).slice(0, 10)));
-
   const teams = {};
-  const playerEvents = {};
 
   for (const match of finished) {
     const home = canonNation(match.homeTeam.name);
@@ -166,61 +158,6 @@ async function main() {
       if (isKnockout) teams[me]._knockout = true;
       teams[me]._lastRound = round;
     }
-
-    // per-player goal events — only call /matches/{id} for matches involving
-    // a tracked nation, to stay within the free tier's rate limit
-    if (!trackedNations.has(home) && !trackedNations.has(away)) continue;
-
-    let detail;
-    try {
-      detail = await apiGet(`/matches/${match.id}`);
-    } catch (e) {
-      console.error(`Skipping match ${match.id}: ${e.message}`);
-      continue;
-    }
-    const goals = detail.match?.goals || detail.goals || [];
-    if (process.env.DEBUG_MATCH && !global.__debugDumped) {
-      global.__debugDumped = 0;
-    }
-    if (process.env.DEBUG_MATCH && global.__debugDumped < 3) {
-      global.__debugDumped++;
-      console.log('DETAIL_KEYS', JSON.stringify(Object.keys(detail)));
-      console.log('DETAIL_GOALS_LEN', goals.length, 'hasMatchKey', !!detail.match, 'hasGoalsKey', !!detail.goals);
-      console.log('DETAIL_SAMPLE', JSON.stringify(detail).slice(0, 1500));
-    }
-    const tally = {}; // id -> {g,a}
-    for (const goal of goals) {
-      const teamName = canonNation(goal.team?.name || '');
-      if (process.env.DEBUG_MATCH) console.log('GOAL_RAW', JSON.stringify({ rawTeam: goal.team?.name, teamName, scorer: goal.scorer?.name, assist: goal.assist?.name, tracked: trackedNations.has(teamName) }));
-      if (!trackedNations.has(teamName)) continue;
-      const scorerKey = goal.scorer?.name ? normName(goal.scorer.name) + '|' + teamName : null;
-      const scorer = scorerKey ? byNormName[scorerKey] : null;
-      if (process.env.DEBUG_MATCH) console.log('SCORER_LOOKUP', JSON.stringify({ scorerKey, found: !!scorer }));
-      if (scorer) (tally[scorer.id] = tally[scorer.id] || { g: 0, a: 0 }).g++;
-
-      const assistKey = goal.assist?.name ? normName(goal.assist.name) + '|' + teamName : null;
-      const assister = assistKey ? byNormName[assistKey] : null;
-      if (assister) (tally[assister.id] = tally[assister.id] || { g: 0, a: 0 }).a++;
-    }
-
-    for (const [me, opp, myGoals, oppGoals] of [
-      [home, away, gf, ga],
-      [away, home, ga, gf],
-    ]) {
-      if (!trackedNations.has(me)) continue;
-      for (const p of players.filter(pl => pl.nation === me)) {
-        const t = tally[p.id];
-        if (!t) continue;
-        const diff = Math.max(-1, Math.min(1, (myGoals - oppGoals) * 0.3));
-        const rating = parseFloat((6.9 + diff + t.g * 0.5 + t.a * 0.3).toFixed(2));
-        const st = [];
-        if (t.g) st.push(`${t.g}G`); if (t.a) st.push(`${t.a}A`);
-        const note = `vs ${opp} (${myGoals}-${oppGoals}) — ${st.join(' ')}`;
-        (playerEvents[p.id] = playerEvents[p.id] || []).push({
-          d: date, opp, g: t.g, a: t.a, rating, note,
-        });
-      }
-    }
   }
 
   for (const nation of Object.keys(teams)) {
@@ -233,10 +170,10 @@ async function main() {
     generatedAt: new Date().toISOString(),
     season: SEASON,
     teams,
-    players: Object.fromEntries(Object.entries(playerEvents).map(([id, events]) => [id, { events }])),
+    players: {},
   };
   writeFileSync(OUT_PATH, JSON.stringify(out, null, 2) + '\n');
-  console.log(`Wrote ${OUT_PATH}: ${Object.keys(teams).length} nations, ${Object.keys(playerEvents).length} players with events.`);
+  console.log(`Wrote ${OUT_PATH}: ${Object.keys(teams).length} nations with results (team-level fallback drives player prices via buildDB()'s inSquad branch).`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
