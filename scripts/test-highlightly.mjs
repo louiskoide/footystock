@@ -3,8 +3,8 @@
 // real API shape (param names, WC 2026 coverage, per-player stat depth) so we
 // can decide whether to build update-prices.mjs against it. Delete after use.
 const KEY = process.env.HIGHLIGHTLY_API_KEY;
-const HOST = 'football-highlights-api.p.rapidapi.com';
-const BASE = `https://${HOST}`;
+const HOST = 'sport-highlights-api.p.rapidapi.com';
+const BASE = `https://${HOST}/football`;
 
 if (!KEY) { console.error('HIGHLIGHTLY_API_KEY not set'); process.exit(1); }
 
