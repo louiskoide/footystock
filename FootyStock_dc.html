@@ -706,7 +706,7 @@ Samu Aghehowa|Porto|ST|21|5
     const F=(d,opp,gf,ga)=>({d,opp,gf,ga});
     const WC={
       France:{status:'Through to the R32 · top of Group I',fixtures:[F('06-16','Senegal',3,1),F('06-22','Iraq',3,0)]},
-      England:{status:'Group L',fixtures:[F('06-14','Croatia',4,2),F('06-22','Ghana',0,0)]},
+      England:{status:'Group L',fixtures:[F('06-17','Croatia',4,2),F('06-23','Ghana',0,0)]},
       Brazil:{status:'Group C',fixtures:[F('06-13','Morocco',1,1),F('06-19','Haiti',3,0)]},
       Spain:{status:'Group H',fixtures:[F('06-15','Cape Verde',0,0),F('06-21','Saudi Arabia',4,0)]},
       Germany:{status:'Through to the R32 · Group E',fixtures:[F('06-15','Curaçao',7,1),F('06-18','Ivory Coast',2,1)]},
@@ -716,7 +716,7 @@ Samu Aghehowa|Porto|ST|21|5
       Netherlands:{status:'Group F',fixtures:[F('06-16','Japan',2,2)]},
       Colombia:{status:'Group K',fixtures:[F('06-17','Uzbekistan',2,1)]},
       USA:{status:'Through to the R32 · Group D',fixtures:[F('06-12','Paraguay',4,1)]},
-      Croatia:{status:'Group L',fixtures:[F('06-14','England',2,4),F('06-23','Panama',1,0)]},
+      Croatia:{status:'Group L',fixtures:[F('06-17','England',2,4),F('06-23','Panama',1,0)]},
       Scotland:{status:'Group C',fixtures:[F('06-13','Haiti',1,0),F('06-19','Morocco',0,1)]},
       Morocco:{status:'Group C',fixtures:[F('06-13','Brazil',1,1),F('06-19','Scotland',1,0)]},
       Mexico:{status:'Through to the R32 · won Group A',fixtures:[F('06-11','South Africa',2,0),F('06-18','South Korea',1,0)]},
@@ -730,8 +730,9 @@ Samu Aghehowa|Porto|ST|21|5
       'michael-olise-bayern':[S('06-16','Senegal',0,1,7.6,'Assist vs Senegal'),S('06-22','Iraq',0,2,8.4,'Two assists vs Iraq — Real Madrid circling')],
       'vinicius-junior-real-madrid':[S('06-13','Morocco',1,0,7.6,'Opened his WC account in the 1-1 draw'),S('06-19','Haiti',1,0,7.8,'On the scoresheet in a 3-0 win')],
       'lamine-yamal-barcelona':[S('06-15','Cape Verde',0,0,6.8,'Subdued in a goalless draw'),S('06-21','Saudi Arabia',1,1,8.3,'Goal and assist as Spain clicked')],
-      'jude-bellingham-real-madrid':[S('06-14','Croatia',0,1,7.6,'Assist in the 4-2 opener'),S('06-22','Ghana',0,0,6.5,'Frustrating night in a 0-0')],
-      'harry-kane-bayern':[S('06-14','Croatia',1,0,7.7,'Scored in the 4-2 win'),S('06-22','Ghana',0,0,6.6,'Blanked vs a stubborn Ghana')],
+      'jude-bellingham-real-madrid':[S('06-17','Croatia',1,0,7.8,'Scored the second in a 4-2 opener'),S('06-23','Ghana',0,0,6.5,'Frustrating night in a 0-0')],
+      'harry-kane-bayern':[S('06-17','Croatia',2,0,8.6,'Brace, including a penalty, in the 4-2 win'),S('06-23','Ghana',0,0,6.6,'Blanked vs a stubborn Ghana')],
+      'marcus-rashford-barcelona':[S('06-17','Croatia',1,0,7.6,'Late goal sealed the 4-2 win'),S('06-23','Ghana',0,0,6.3,'Quiet in the goalless draw')],
       'jamal-musiala-bayern':[S('06-15','Curaçao',1,1,8.0,'Goal and assist in the 7-1 rout'),S('06-18','Ivory Coast',0,0,7.6,'Bright again as Germany qualified')],
       'florian-wirtz-liverpool':[S('06-15','Curaçao',1,1,7.9,'Two goal involvements vs Curaçao'),S('06-18','Ivory Coast',0,1,7.5,'Assist in the 2-1 win')],
       'kai-havertz-arsenal':[S('06-15','Curaçao',1,0,7.5,'On the scoresheet in the 7-1 win'),S('06-18','Ivory Coast',0,0,6.9,'Quieter outing')],
@@ -740,7 +741,7 @@ Samu Aghehowa|Porto|ST|21|5
       'folarin-balogun-monaco':[S('06-12','Paraguay',1,0,7.5,'Scored on his big World Cup chance')],
       'mikel-oyarzabal-real-sociedad':[S('06-21','Saudi Arabia',1,0,7.6,'Scored in the 4-0 win')],
       'matheus-cunha-man-utd':[S('06-19','Haiti',1,0,7.5,'Scored in a 3-0 win')],
-      'bruno-fernandes-man-utd':[S('06-17','DR Congo',1,1,8.2,'Goal and assist as captain — extending the club form that has United firing again'),S('06-23','Uzbekistan',0,1,8.0,'Second straight goal involvement; carrying the same numbers driving his PFA POTY case')],
+      'bruno-fernandes-man-utd':[S('06-17','DR Congo',0,0,7.0,'Went close late on but couldn’t find a breakthrough in a shock 1-1 draw'),S('06-23','Uzbekistan',0,1,8.0,'Assist for Ronaldo in the 5-0 win — carrying the form driving his PFA POTY case')],
       'lautaro-martinez-inter':[S('06-13','Algeria',0,0,7.0,'Selfless work as Messi struck a hat-trick'),S('06-22','Austria',0,0,7.1,'Worked the channels as Messi scored twice')],
       'john-mcginn-aston-villa':[S('06-13','Haiti',1,0,7.5,'Scored Scotland\u2019s winner')],
       'pedri-barcelona':[S('06-15','Cape Verde',0,0,6.9,'Tidy but contained'),S('06-21','Saudi Arabia',0,1,7.8,'Pulled the strings in the 4-0')],
@@ -788,7 +789,11 @@ Samu Aghehowa|Porto|ST|21|5
     add('Mexico','Santiago Giménez');
     add('Scotland','John McGinn,Scott McTominay');
     add('Japan','Takefusa Kubo');
-    this._data={WC,STARS,NEWS,MOOD,NATION:nat};
+    // Confirmed absentees from a nation's final squad even though they share
+    // the nationality (kept in NATION for display) — e.g. Frimpong was left
+    // out of the Netherlands' final 26.
+    const EXCLUDED=new Set(['Jeremie Frimpong','Cole Palmer','Phil Foden','Trent Alexander-Arnold']);
+    this._data={WC,STARS,NEWS,MOOD,NATION:nat,EXCLUDED};
     return this._data;
   }
 
@@ -825,17 +830,22 @@ Samu Aghehowa|Porto|ST|21|5
       const offOf=(d)=>Math.round((today-new Date('2026-'+d+'T18:00:00Z'))/86400000);
       const sum=(arr)=>arr.reduce((a,b)=>a+b,0);
       let events=[]; let atWC=false; let wcStatus='';
-      // Only players with curated, confirmed individual match data (STARS)
-      // count as "at the World Cup". Sharing a nationality with a country
-      // that's competing is not evidence of being in that squad — fabricating
-      // fixture-based ratings from nationality alone (the old `else if(wc)`
-      // fallback) invented performances for players who may not have been
-      // called up at all (e.g. Cole Palmer credited with England's Croatia/
-      // Ghana results). No confirmed data must stay neutral, never guessed.
+      // Players with curated, confirmed individual match data (STARS) count
+      // as "at the World Cup" with their real per-match stats. Sharing a
+      // nationality with a country that's competing is NOT evidence of squad
+      // membership on its own (that fabricated Cole Palmer into England's
+      // Croatia/Ghana results) — so the fallback below only fires for names
+      // on the curated squad list (NATION minus confirmed EXCLUDED), and it
+      // never invents personal goals/assists, only team-result-based form.
+      const inSquad = !!(nation && wc && !D.EXCLUDED.has(name));
       if(stars){ atWC=true; wcStatus=(wc?wc.status:'At the 2026 World Cup');
         for(const s of stars){ const g=s.g||0,a=s.a||0; let delta=parseFloat(((s.rating-6.9)*1.3+g*1.0+a*0.6).toFixed(2));
           const st=[]; if(g)st.push(g+'G'); if(a)st.push(a+'A'); if(!g&&!a)st.push('—');
           events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,fantasy:Math.round(s.rating*1.3+g*4+a*3),goals:g,assists:a,delta,statLine:st.join(' '),note:s.note}); } }
+      else if(inSquad){ atWC=true; wcStatus=wc.status;
+        for(const f of wc.fixtures){ const diff=Math.max(-1,Math.min(1,(f.gf-f.ga)*0.3));
+          const rating=parseFloat((6.9+diff).toFixed(2)); const delta=parseFloat((diff*1.3).toFixed(2));
+          events.push({offset:offOf(f.d),oppTeam:f.opp,rating,fantasy:Math.round(rating*1.3),goals:0,assists:0,delta,statLine:'—',note:null}); } }
       const newsDelta = news?news.bias:0;
       let change7d, change30d;
       if(atWC||news){ change7d=sum(events.filter(e=>e.offset<=8).map(e=>e.delta))+((news&&offOf(news.d)<=8)?newsDelta:0);
@@ -874,11 +884,32 @@ Samu Aghehowa|Porto|ST|21|5
       const fairValue = fairValueBase * Math.exp(wHype*hypeScore);
       const price = fairValue;
 
-      // history 90d ending at current price
-      const N=90; const hist=[]; const trend=change30d/100; const start=price/(1+trend*1.05);
-      for(let i=0;i<N;i++){ const t=i/(N-1); const baseV=start+(price-start)*Math.pow(t,1.18);
-        const noise=Math.sin(i*0.7+this.hash(id)%10)*price*0.01 + (r()-0.5)*price*0.01; hist.push(Math.max(2,baseV+noise)); }
-      for(const e of events){ const idx=N-1-e.offset; if(idx>0&&idx<N){ const bump=e.delta/100*price; for(let j=idx;j<N;j++) hist[j]+=bump*0.6; } }
+      // history 90d ending at current price. A player with a real signal
+      // (WC performance or curated news) actually drifted to get here, so
+      // the 90d baseline trends; a quiet player's fundamentals barely move
+      // day to day, so its baseline stays close to flat (per the once-a-day
+      // fundamentals / intraday-hype model in docs/pricing-model.md).
+      const hasSignal = atWC || !!news;
+      const N=90; const hist=[];
+      const trend = hasSignal ? clamp(change30d/100,-0.4,0.4) : (r()-0.5)*0.04;
+      const start=price/(1+trend*1.05);
+      // organic noise via a Brownian bridge (pinned to 0 at both ends) instead
+      // of a periodic sine wave, so the line wiggles like a real ticker
+      // rather than a regular sawtooth.
+      const steps=[]; let acc=0;
+      for(let i=0;i<N;i++){ acc+=(r()-0.5); steps.push(acc); }
+      const s0=steps[0], s1=steps[N-1];
+      const bridge=steps.map((v,i)=>v-(s0+(s1-s0)*i/(N-1)));
+      const bridgeMax=Math.max(...bridge.map(Math.abs))||1;
+      const noiseAmp=price*(hasSignal?0.012:0.006);
+      for(let i=0;i<N;i++){ const t=i/(N-1); const baseV=start+(price-start)*Math.pow(t,1.15);
+        const noise=(bridge[i]/bridgeMax)*noiseAmp; hist.push(Math.max(2,baseV+noise)); }
+      // ease each match reaction in over a few days instead of an instant
+      // vertical cliff, so the chart reads as the price catching up to news
+      // rather than a glitch.
+      for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N) continue;
+        const bump=(e.delta/100)*price*0.6, ramp=3;
+        for(let j=idx;j<N;j++){ const k=Math.min(1,(j-idx)/ramp); const eased=k*k*(3-2*k); hist[j]+=bump*eased; } }
       hist[N-1]=price;
 
       db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price,
@@ -902,7 +933,12 @@ Samu Aghehowa|Porto|ST|21|5
   dateShort(dt){ return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
   sparkPts(hist,w,h){
     const N=Math.min(hist.length,30); const slice=hist.slice(hist.length-N);
-    const min=Math.min(...slice),max=Math.max(...slice),span=(max-min)||1; const pad=2;
+    let min=Math.min(...slice),max=Math.max(...slice); const pad=2;
+    // don't auto-zoom into noise: a quiet player with near-zero movement
+    // should read as a flat line, not a wild zigzag stretched to fill the chart
+    const minSpan=(Math.abs(slice[slice.length-1])||1)*0.12;
+    if(max-min<minSpan){ const mid=(max+min)/2; min=mid-minSpan/2; max=mid+minSpan/2; }
+    const span=(max-min)||1;
     return slice.map((v,k)=>{ const x=pad+(w-2*pad)*k/(N-1); const y=pad+(h-2*pad)*(1-(v-min)/span); return x.toFixed(1)+','+y.toFixed(1); }).join(' ');
   }
 
@@ -1042,7 +1078,12 @@ Samu Aghehowa|Porto|ST|21|5
         const price=this.curPrice(p); const up7=p.change7d>=0; const cc=up7?GREEN:RED;
         const N=p.hist.length; const range=S.range; const slice=p.hist.slice(N-range);
         const W=760,H=240,top=6;
-        const min=Math.min(...slice),max=Math.max(...slice),span=(max-min)||1;
+        let min=Math.min(...slice),max=Math.max(...slice);
+        // same floor as sparkPts: a quiet, flat-priced player shouldn't get
+        // zoomed into noise and rendered as a rollercoaster
+        const minSpan=price*0.12;
+        if(max-min<minSpan){ const mid=(max+min)/2; min=mid-minSpan/2; max=mid+minSpan/2; }
+        const span=(max-min)||1;
         const X=k=>(W*k/(slice.length-1)); const Y=v=>top+(H-top)*(1-(v-min)/span);
         const linePath=slice.map((v,k)=>`${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
         const areaPath=`M0,${Y(slice[0]).toFixed(1)} `+slice.map((v,k)=>`L${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')+` L${W},${H} L0,${H} Z`;
