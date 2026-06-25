@@ -151,6 +151,7 @@
     const wasInput = active && active.tagName === 'INPUT' && rootEl.contains(active);
     const selStart = wasInput ? active.selectionStart : null;
     const selEnd = wasInput ? active.selectionEnd : null;
+    const scrollX = window.scrollX, scrollY = window.scrollY;
 
     const vals = componentInstance.renderVals();
     const tmp = document.createElement('div');
@@ -167,6 +168,9 @@
         try { newInput.setSelectionRange(selStart, selEnd); } catch (e) {}
       }
     }
+    // rebuilding the DOM via innerHTML drops scroll position — restore it so
+    // the periodic live-price re-render doesn't jolt the page back to the top
+    window.scrollTo(scrollX, scrollY);
   }
 
   window.addEventListener('DOMContentLoaded', () => {
