@@ -1,0 +1,1188 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Hanken+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:#eef0ec;font-family:'Hanken Grotesk',sans-serif;color:#16201a;-webkit-font-smoothing:antialiased}
+  ::-webkit-scrollbar{width:10px;height:10px}
+  ::-webkit-scrollbar-thumb{background:#cdd3cc;border-radius:6px;border:2px solid #eef0ec}
+  @keyframes fs-ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
+  @keyframes fs-pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
+  @keyframes fs-fade{from{opacity:0}to{opacity:1}}
+  @keyframes fs-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
+  .fs-tape:hover{animation-play-state:paused}
+</style>
+</helmet>
+
+<div style="max-width:1180px;margin:0 auto;padding:0 0 80px;min-height:100vh">
+
+  <!-- ============ HEADER ============ -->
+  <div style="position:sticky;top:0;z-index:40;background:rgba(247,248,245,.86);backdrop-filter:blur(14px);border-bottom:1px solid #e3e6e0">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 26px;gap:18px">
+      <div style="display:flex;align-items:center;gap:11px;cursor:pointer;flex-shrink:0" onClick="{{ goHome }}">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;background:#0c1f15;color:#3ddc8a;font-weight:800;border-radius:9px;font-size:16px">▲</span>
+        <span style="font:700 21px 'Space Grotesk';letter-spacing:-.02em">Footy<span style="color:#16a85f">Stock</span></span>
+      </div>
+
+      <div style="flex:1;max-width:380px;position:relative">
+        <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#9aa39b;font-size:14px">⌕</span>
+        <input value="{{ search }}" onInput="{{ onSearch }}" placeholder="Search players, clubs…" style="width:100%;border:1px solid #e1e4dd;background:#fff;border-radius:999px;padding:10px 16px 10px 36px;font:500 14px 'Hanken Grotesk';color:#16201a;outline:none" />
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;flex-shrink:0">
+        <button onClick="{{ openReward }}" style="display:inline-flex;align-items:center;gap:7px;font:700 13px 'Hanken Grotesk';color: {{ rewardBtnColor }};background: {{ rewardBtnBg }};border:none;padding:9px 14px;border-radius:999px;cursor:pointer">
+          <span style="font-size:14px">◆</span><span>{{ rewardBtnLabel }}</span>
+        </button>
+        <div style="text-align:right;padding:0 6px">
+          <div style="font:500 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Cash</div>
+          <div style="font:700 15px 'Space Grotesk';letter-spacing:-.01em">{{ cashFmt }}</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- nav -->
+    <div style="display:flex;align-items:center;gap:4px;padding:0 22px 0">
+      <sc-for list="{{ navTabs }}" as="t" hint-placeholder-count="5">
+        <button onClick="{{ t.onClick }}" style="position:relative;background:none;border:none;cursor:pointer;font:600 14px 'Hanken Grotesk';color: {{ t.color }};padding:11px 14px 13px">
+          {{ t.label }}
+          <span style="position:absolute;left:14px;right:14px;bottom:0;height:2.5px;border-radius:3px;background: {{ t.underline }}"></span>
+        </button>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- ============ TICKER STRIP (from direction A) ============ -->
+  <div style="overflow:hidden;background:#0a0d0b;border-bottom:1px solid #1d2622">
+    <div class="fs-tape" style="display:flex;gap:30px;white-space:nowrap;padding:9px 0;width:max-content;animation:fs-ticker 48s linear infinite;font:500 12.5px 'Space Grotesk'">
+      <sc-for list="{{ ticker }}" as="p" hint-placeholder-count="20"><span onClick="{{ p.onClick }}" style="display:inline-flex;gap:7px;align-items:center;cursor:pointer"><b style="color:#6c7a71;font-weight:600">{{ p.abbr }}</b><span style="color:#dfe5e1">{{ p.last }}</span><span style="color:#fff">{{ p.price }}</span><span style="color: {{ p.cd }};font-weight:600">{{ p.arrow }}{{ p.chg }}</span></span></sc-for>
+      <sc-for list="{{ ticker }}" as="p" hint-placeholder-count="20"><span onClick="{{ p.onClick }}" style="display:inline-flex;gap:7px;align-items:center;cursor:pointer"><b style="color:#6c7a71;font-weight:600">{{ p.abbr }}</b><span style="color:#dfe5e1">{{ p.last }}</span><span style="color:#fff">{{ p.price }}</span><span style="color: {{ p.cd }};font-weight:600">{{ p.arrow }}{{ p.chg }}</span></span></sc-for>
+    </div>
+  </div>
+
+  <!-- real-data status strip -->
+  <div style="display:flex;align-items:center;justify-content:center;gap:9px;background:#0c1f15;padding:7px 14px;font:600 10.5px 'Hanken Grotesk';letter-spacing:.05em;color:#7fb89a;text-align:center"><span style="width:6px;height:6px;border-radius:999px;background:#3ddc8a;display:inline-block;flex-shrink:0"></span>LIVE DRIVERS · 2026 WORLD CUP PERFORMANCES + TRANSFER MARKET · DATA SNAPSHOT JUN 24, 2026</div>
+
+  <!-- ============ MARKET VIEW ============ -->
+  <sc-if value="{{ isMarket }}" hint-placeholder-val="{{ true }}">
+  <div style="padding:24px 26px 0">
+
+    <!-- portfolio banner -->
+    <div style="display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:14px;margin-bottom:26px">
+      <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:18px;padding:22px 24px;color:#eaf3ed;position:relative;overflow:hidden">
+        <div style="font:600 11px 'Hanken Grotesk';color:#7fb89a;letter-spacing:.1em;text-transform:uppercase">Net worth</div>
+        <div style="font:700 36px 'Space Grotesk';letter-spacing:-.02em;margin-top:6px">{{ netWorthFmt }}</div>
+        <div style="display:inline-flex;align-items:center;gap:6px;margin-top:10px;background: {{ plChipBg }};color: {{ plChipColor }};font:700 13px 'Hanken Grotesk';padding:5px 11px;border-radius:999px">{{ plArrow }} {{ plAbsFmt }} · {{ plPctFmt }} all-time</div>
+        <svg viewBox="0 0 300 70" width="150" height="44" preserveAspectRatio="none" style="position:absolute;right:18px;bottom:16px;opacity:.5"><polyline points="{{ nwSpark }}" fill="none" stroke="#3ddc8a" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"></polyline></svg>
+      </div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px 22px;display:flex;flex-direction:column;justify-content:center">
+        <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Invested</div>
+        <div style="font:700 28px 'Space Grotesk';letter-spacing:-.02em;margin-top:5px">{{ investedFmt }}</div>
+        <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-top:4px">{{ holdingCount }} positions</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px 22px;display:flex;flex-direction:column;justify-content:center;cursor:pointer" onClick="{{ goLeaders }}">
+        <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Global rank</div>
+        <div style="font:700 28px 'Space Grotesk';letter-spacing:-.02em;margin-top:5px">{{ rankFmt }}</div>
+        <div style="font:500 13px 'Hanken Grotesk';color:#16a85f;margin-top:4px">View leaderboard →</div>
+      </div>
+    </div>
+
+    <!-- top movers -->
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 13px">
+      <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Today's movers</span>
+      <span style="font:500 12.5px 'Hanken Grotesk';color:#8a938c">7-day change</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px">
+      <sc-for list="{{ movers }}" as="p" hint-placeholder-count="4">
+        <div onClick="{{ p.onClick }}" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:16px 17px;cursor:pointer;transition:transform .12s,box-shadow .12s" style-hover="background:#fff;border:1px solid #d6dccf;border-radius:16px;padding:16px 17px;cursor:pointer;transform:translateY(-2px);box-shadow:0 10px 26px rgba(20,40,28,.09)">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="display:inline-flex;align-items:center;justify-content:center;font:700 10px 'Space Grotesk';color:#586159;background:#eef1ec;border-radius:6px;padding:4px 7px;letter-spacing:.04em">{{ p.lg }}</span>
+            <span style="font:700 12px 'Hanken Grotesk';color: {{ p.wkColor }};background: {{ p.wkBg }};padding:3px 9px;border-radius:999px">{{ p.wkArrow }}{{ p.wkAbs }}</span>
+          </div>
+          <div style="font:700 16.5px 'Space Grotesk';margin-top:13px;letter-spacing:-.01em">{{ p.name }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ p.pos }} · {{ p.team }}</div>
+          <svg viewBox="0 0 120 30" width="100%" height="30" preserveAspectRatio="none" style="margin-top:13px;display:block"><polyline points="{{ p.spark }}" fill="none" stroke="{{ p.wkColor }}" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"></polyline></svg>
+          <div style="font:700 20px 'Space Grotesk';margin-top:11px">{{ p.price }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <!-- league filter -->
+    <div style="display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap">
+      <sc-for list="{{ leagueChips }}" as="c" hint-placeholder-count="7">
+        <button onClick="{{ c.onClick }}" style="font:600 13px 'Hanken Grotesk';background: {{ c.bg }};border:1px solid {{ c.border }};color: {{ c.color }};padding:8px 15px;border-radius:999px;cursor:pointer">{{ c.name }}</button>
+      </sc-for>
+    </div>
+
+    <!-- market table -->
+    <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:42px 1fr 110px 120px 96px 96px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase">
+        <span>#</span><span>Player</span><span style="text-align:center">7-day</span><span style="text-align:right">Price</span><span style="text-align:right">1d</span><span style="text-align:right">7d</span>
+      </div>
+      <div style="max-height:560px;overflow-y:auto">
+        <sc-for list="{{ marketList }}" as="p" hint-placeholder-count="14">
+          <div onClick="{{ p.onClick }}" style="display:grid;grid-template-columns:42px 1fr 110px 120px 96px 96px;gap:14px;align-items:center;padding:12px 22px;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:grid;grid-template-columns:42px 1fr 110px 120px 96px 96px;gap:14px;align-items:center;padding:12px 22px;border-bottom:1px solid #f3f4f0;cursor:pointer;background:#fafbf8">
+            <span style="font:600 13px 'Space Grotesk';color:#aab2ab">{{ p.rank }}</span>
+            <span style="display:flex;flex-direction:column;min-width:0">
+              <b style="font:600 15px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</b>
+              <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ p.lg }} · {{ p.pos }} · {{ p.team }}</span>
+            </span>
+            <span style="display:flex;justify-content:center"><svg viewBox="0 0 120 26" width="100" height="24" preserveAspectRatio="none"><polyline points="{{ p.spark }}" fill="none" stroke="{{ p.wkColor }}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></polyline></svg></span>
+            <span style="text-align:right;font:700 16px 'Space Grotesk'">{{ p.price }}</span>
+            <span style="text-align:right;font:600 13px 'Hanken Grotesk';color: {{ p.dayColor }}">{{ p.dayArrow }}{{ p.dayAbs }}</span>
+            <span style="text-align:right;font:700 13px 'Hanken Grotesk';color: {{ p.wkColor }}">{{ p.wkArrow }}{{ p.wkAbs }}</span>
+          </div>
+        </sc-for>
+      </div>
+    </div>
+    <div style="text-align:center;font:500 12px 'Hanken Grotesk';color:#a7afa7;margin:18px 0 0">{{ universeNote }}</div>
+  </div>
+  </sc-if>
+
+  <!-- ============ PLAYER DETAIL VIEW ============ -->
+  <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:20px 26px 0">
+    <button onClick="{{ goBack }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#16a85f;padding:6px 0;margin-bottom:8px">← Back to market</button>
+
+    <div style="display:grid;grid-template-columns:1fr 320px;gap:20px;align-items:start">
+      <!-- left: chart + drivers -->
+      <div style="display:flex;flex-direction:column;gap:18px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:24px 26px">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
+            <div>
+              <div style="display:flex;align-items:center;gap:9px">
+                <span style="display:inline-flex;align-items:center;justify-content:center;font:700 11px 'Space Grotesk';color:#586159;background:#eef1ec;border-radius:6px;padding:4px 8px">{{ d.lg }}</span>
+                <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">{{ d.team }} · {{ d.pos }} · Age {{ d.age }}</span>
+              </div>
+              <div style="font:700 34px 'Space Grotesk';letter-spacing:-.02em;margin-top:9px">{{ d.name }}</div>
+            </div>
+            <div style="text-align:right">
+              <div style="font:700 36px 'Space Grotesk';letter-spacing:-.02em">{{ d.price }}</div>
+              <div style="display:inline-flex;align-items:center;gap:6px;margin-top:5px;background: {{ d.wkBg }};color: {{ d.wkColor }};font:700 13px 'Hanken Grotesk';padding:4px 10px;border-radius:999px">{{ d.wkArrow }} {{ d.wkAbs }} · 7d</div>
+            </div>
+          </div>
+
+          <!-- range tabs -->
+          <div style="display:flex;gap:6px;margin:20px 0 6px">
+            <sc-for list="{{ rangeTabs }}" as="r" hint-placeholder-count="4">
+              <button onClick="{{ r.onClick }}" style="font:600 12px 'Hanken Grotesk';background: {{ r.bg }};color: {{ r.color }};border:none;padding:6px 13px;border-radius:8px;cursor:pointer">{{ r.label }}</button>
+            </sc-for>
+          </div>
+
+          <!-- chart -->
+          <div style="position:relative;margin-top:8px">
+            <svg viewBox="0 0 760 260" width="100%" height="260" preserveAspectRatio="none" style="display:block;overflow:visible">
+              <defs><linearGradient id="fsArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="{{ d.chartColor }}" stop-opacity="0.18"></stop><stop offset="100%" stop-color="{{ d.chartColor }}" stop-opacity="0"></stop></linearGradient></defs>
+              <sc-for list="{{ d.gridY }}" as="g" hint-placeholder-count="4"><line x1="0" y1="{{ g.y }}" x2="760" y2="{{ g.y }}" stroke="#eef1ec" stroke-width="1"></line></sc-for>
+              <path d="{{ d.areaPath }}" fill="url(#fsArea)"></path>
+              <polyline points="{{ d.linePath }}" fill="none" stroke="{{ d.chartColor }}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>
+              <sc-for list="{{ d.markers }}" as="m" hint-placeholder-count="5"><circle cx="{{ m.x }}" cy="{{ m.y }}" r="4.5" fill="#fff" stroke="{{ m.color }}" stroke-width="2.5"></circle></sc-for>
+            </svg>
+            <div style="display:flex;justify-content:space-between;margin-top:8px;font:500 11px 'Hanken Grotesk';color:#a7afa7">
+              <sc-for list="{{ d.axisLabels }}" as="a" hint-placeholder-count="5"><span>{{ a.label }}</span></sc-for>
+            </div>
+          </div>
+        </div>
+
+        <!-- why it moved: signal drivers -->
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px 26px">
+          <div style="font:700 16px 'Space Grotesk';letter-spacing:-.01em">What's driving the price</div>
+          <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-top:3px">{{ d.driverSummary }}</div>
+          <div style="display:flex;flex-direction:column;gap:15px;margin-top:18px">
+            <sc-for list="{{ d.signals }}" as="s" hint-placeholder-count="5">
+              <div>
+                <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+                  <span style="font:600 13px 'Hanken Grotesk';color:#46504a">{{ s.label }}</span>
+                  <span style="font:600 13px 'Space Grotesk';color: {{ s.valColor }}">{{ s.display }}</span>
+                </div>
+                <div style="height:7px;background:#eef1ec;border-radius:999px;overflow:hidden"><div style="height:100%;width: {{ s.pct }};background: {{ s.barColor }};border-radius:999px"></div></div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- transfer news + X mood -->
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px 26px;display:flex;flex-direction:column;gap:13px">
+          <div style="font:700 16px 'Space Grotesk';letter-spacing:-.01em">Transfer market &amp; X mood</div>
+          <sc-if value="{{ d.hasNews }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;gap:12px;align-items:flex-start;background: {{ d.newsBg }};border-radius:12px;padding:13px 15px">
+              <span style="font:700 10px 'Hanken Grotesk';letter-spacing:.05em;color: {{ d.newsColor }};white-space:nowrap;padding-top:2px">{{ d.newsTag }}</span>
+              <span style="font:600 13.5px 'Hanken Grotesk';color:#1f2a23;line-height:1.42">{{ d.newsText }}</span>
+            </div>
+          </sc-if>
+          <div style="display:flex;gap:11px;align-items:center">
+            <span style="font:700 11px 'Space Grotesk';color:#586159;background:#eef1ec;border-radius:6px;padding:5px 9px;white-space:nowrap">X mood</span>
+            <span style="font:500 13.5px 'Hanken Grotesk';color:#46504a">{{ d.moodText }}</span>
+          </div>
+        </div>
+
+        <!-- recent performances -->
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px 26px">
+          <div style="font:700 16px 'Space Grotesk';letter-spacing:-.01em;margin-bottom:4px">{{ d.eventsTitle }}</div>
+          <div style="font:500 12.5px 'Hanken Grotesk';color:#8a938c;margin-bottom:14px">{{ d.eventsSub }}</div>
+          <sc-if value="{{ d.noEvents }}" hint-placeholder-val="{{ false }}"><div style="padding:13px 0;font:500 13.5px 'Hanken Grotesk';color:#8a938c;border-top:1px solid #f1f3ef">{{ d.emptyText }}</div></sc-if>
+          <sc-for list="{{ d.events }}" as="e" hint-placeholder-count="6">
+            <div style="display:grid;grid-template-columns:84px 1fr 64px 64px 86px;gap:12px;align-items:center;padding:11px 0;border-top:1px solid #f1f3ef">
+              <span style="font:600 12px 'Hanken Grotesk';color:#8a938c">{{ e.date }}</span>
+              <span style="display:flex;flex-direction:column"><b style="font:600 14px 'Hanken Grotesk'">{{ e.fixture }}</b><span style="font:500 12px 'Hanken Grotesk';color:#9aa39b">{{ e.line }}</span></span>
+              <span style="text-align:center"><span style="font:700 12px 'Space Grotesk';color:#fff;background: {{ e.ratingColor }};padding:3px 7px;border-radius:6px">{{ e.rating }}</span></span>
+              <span style="text-align:center;font:600 12px 'Hanken Grotesk';color:#46504a">{{ e.fantasy }} fpts</span>
+              <span style="text-align:right;font:700 13px 'Space Grotesk';color: {{ e.deltaColor }}">{{ e.deltaArrow }}{{ e.delta }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+
+      <!-- right: trade panel -->
+      <div style="position:sticky;top:130px;display:flex;flex-direction:column;gap:14px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font:600 12px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Your position</span>
+            <button onClick="{{ d.onToggleWatch }}" style="background:none;border:none;cursor:pointer;font:600 12.5px 'Hanken Grotesk';color: {{ d.watchColor }}">{{ d.watchLabel }}</button>
+          </div>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:10px">
+            <span style="font:700 24px 'Space Grotesk'">{{ d.heldQty }}</span>
+            <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">shares</span>
+          </div>
+          <sc-if value="{{ d.hasPosition }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex;justify-content:space-between;margin-top:12px;font:500 13px 'Hanken Grotesk'"><span style="color:#8a938c">Avg cost</span><span style="font-family:'Space Grotesk';font-weight:600">{{ d.avgCost }}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-top:7px;font:500 13px 'Hanken Grotesk'"><span style="color:#8a938c">Market value</span><span style="font-family:'Space Grotesk';font-weight:600">{{ d.posValue }}</span></div>
+            <div style="display:flex;justify-content:space-between;margin-top:7px;font:500 13px 'Hanken Grotesk'"><span style="color:#8a938c">Unrealised P/L</span><span style="font-family:'Space Grotesk';font-weight:700;color: {{ d.posPlColor }}">{{ d.posPl }}</span></div>
+          </sc-if>
+          <div style="display:flex;gap:10px;margin-top:18px">
+            <button onClick="{{ d.onBuy }}" style="flex:1;font:700 14px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:13px;border-radius:11px;cursor:pointer">Buy</button>
+            <button onClick="{{ d.onSell }}" style="flex:1;font:700 14px 'Hanken Grotesk';background: {{ d.sellBg }};color: {{ d.sellColor }};border:1px solid {{ d.sellBorder }};padding:13px;border-radius:11px;cursor: {{ d.sellCursor }}">Sell</button>
+          </div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;text-align:center;margin-top:12px">Buying power · {{ cashFmt }}</div>
+        </div>
+      </div>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ PORTFOLIO VIEW ============ -->
+  <sc-if value="{{ isPortfolio }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:24px 26px 0">
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:26px">
+      <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:16px;padding:20px 22px;color:#eaf3ed">
+        <div style="font:600 11px 'Hanken Grotesk';color:#7fb89a;letter-spacing:.08em;text-transform:uppercase">Net worth</div>
+        <div style="font:700 27px 'Space Grotesk';margin-top:6px;letter-spacing:-.02em">{{ netWorthFmt }}</div>
+      </div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:20px 22px"><div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Cash</div><div style="font:700 27px 'Space Grotesk';margin-top:6px;letter-spacing:-.02em">{{ cashFmt }}</div></div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:20px 22px"><div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Invested</div><div style="font:700 27px 'Space Grotesk';margin-top:6px;letter-spacing:-.02em">{{ investedFmt }}</div></div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:20px 22px"><div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">All-time P/L</div><div style="font:700 27px 'Space Grotesk';margin-top:6px;letter-spacing:-.02em;color: {{ plChipColor }}">{{ plArrow }}{{ plAbsFmt }}</div></div>
+    </div>
+
+    <div style="font:700 18px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 13px">Holdings</div>
+    <sc-if value="{{ hasHoldings }}" hint-placeholder-val="{{ true }}">
+    <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:30px">
+      <div style="display:grid;grid-template-columns:1fr 90px 110px 110px 110px;gap:12px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Player</span><span style="text-align:right">Shares</span><span style="text-align:right">Avg cost</span><span style="text-align:right">Value</span><span style="text-align:right">P/L</span></div>
+      <sc-for list="{{ holdingsList }}" as="h" hint-placeholder-count="3">
+        <div onClick="{{ h.onClick }}" style="display:grid;grid-template-columns:1fr 90px 110px 110px 110px;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:grid;grid-template-columns:1fr 90px 110px 110px 110px;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #f3f4f0;cursor:pointer;background:#fafbf8">
+          <span style="display:flex;flex-direction:column"><b style="font:600 15px 'Hanken Grotesk'">{{ h.name }}</b><span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ h.lg }} · {{ h.pos }} · {{ h.price }}</span></span>
+          <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ h.qty }}</span>
+          <span style="text-align:right;font:500 13px 'Space Grotesk';color:#46504a">{{ h.avg }}</span>
+          <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ h.value }}</span>
+          <span style="text-align:right;display:flex;flex-direction:column"><b style="font:700 14px 'Space Grotesk';color: {{ h.plColor }}">{{ h.pl }}</b><span style="font:600 11px 'Hanken Grotesk';color: {{ h.plColor }}">{{ h.plPct }}</span></span>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{ noHoldings }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#fff;border:1px dashed #d6dccf;border-radius:16px;padding:46px;text-align:center;margin-bottom:30px">
+        <div style="font:700 17px 'Space Grotesk'">No positions yet</div>
+        <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-top:6px">Head to the market and invest in your first player.</div>
+        <button onClick="{{ goHome }}" style="margin-top:16px;font:700 13px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:11px 20px;border-radius:10px;cursor:pointer">Browse market</button>
+      </div>
+    </sc-if>
+
+    <div style="font:700 18px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 13px">Transaction history</div>
+    <sc-if value="{{ hasTxns }}" hint-placeholder-val="{{ false }}">
+    <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
+      <sc-for list="{{ txnList }}" as="t" hint-placeholder-count="4">
+        <div style="display:grid;grid-template-columns:64px 1fr auto;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0">
+          <span style="font:700 11px 'Hanken Grotesk';color: {{ t.color }};background: {{ t.bg }};padding:5px 0;border-radius:7px;text-align:center;letter-spacing:.04em">{{ t.side }}</span>
+          <span style="display:flex;flex-direction:column"><b style="font:600 14px 'Hanken Grotesk'">{{ t.name }}</b><span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ t.detail }}</span></span>
+          <span style="text-align:right;font:700 14px 'Space Grotesk';color: {{ t.color }}">{{ t.total }}</span>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{ noTxns }}" hint-placeholder-val="{{ true }}">
+      <div style="background:#fff;border:1px dashed #d6dccf;border-radius:16px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c">No trades yet.</div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ============ WATCHLIST VIEW ============ -->
+  <sc-if value="{{ isWatch }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:24px 26px 0">
+    <div style="font:700 20px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 16px">Watchlist</div>
+    <sc-if value="{{ hasWatch }}" hint-placeholder-val="{{ true }}">
+    <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
+      <sc-for list="{{ watchList }}" as="p" hint-placeholder-count="4">
+        <div style="display:grid;grid-template-columns:1fr 110px 120px 96px 80px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0">
+          <span onClick="{{ p.onClick }}" style="display:flex;flex-direction:column;cursor:pointer"><b style="font:600 15px 'Hanken Grotesk'">{{ p.name }}</b><span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ p.lg }} · {{ p.pos }} · {{ p.team }}</span></span>
+          <span style="display:flex;justify-content:center"><svg viewBox="0 0 120 26" width="100" height="24" preserveAspectRatio="none"><polyline points="{{ p.spark }}" fill="none" stroke="{{ p.wkColor }}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"></polyline></svg></span>
+          <span style="text-align:right;font:700 16px 'Space Grotesk'">{{ p.price }}</span>
+          <span style="text-align:right;font:700 13px 'Hanken Grotesk';color: {{ p.wkColor }}">{{ p.wkArrow }}{{ p.wkAbs }}</span>
+          <span style="text-align:right"><button onClick="{{ p.onRemove }}" style="background:none;border:none;cursor:pointer;font:600 18px 'Hanken Grotesk';color:#c4ccc3;line-height:1">×</button></span>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{ noWatch }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#fff;border:1px dashed #d6dccf;border-radius:16px;padding:46px;text-align:center"><div style="font:700 17px 'Space Grotesk'">Your watchlist is empty</div><div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-top:6px">Tap ☆ on any player to track them here.</div></div>
+    </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ============ LEADERBOARD VIEW ============ -->
+  <sc-if value="{{ isLeaders }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:24px 26px 0">
+    <div style="font:700 20px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 4px">Leaderboard</div>
+    <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 18px">Ranked by all-time profit across all traders.</div>
+    <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
+      <div style="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Rank</span><span>Trader</span><span style="text-align:right">Net worth</span><span style="text-align:right">Profit</span></div>
+      <sc-for list="{{ leaderboard }}" as="l" hint-placeholder-count="12">
+        <div style="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }}">
+          <span style="font:700 15px 'Space Grotesk';color: {{ l.rankColor }}">{{ l.medal }}</span>
+          <span style="display:flex;align-items:center;gap:10px"><span style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk'">{{ l.name }}</b></span>
+          <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ l.netWorth }}</span>
+          <span style="text-align:right;font:700 14px 'Space Grotesk';color: {{ l.profitColor }}">{{ l.profitArrow }}{{ l.profit }}</span>
+        </div>
+      </sc-for>
+    </div>
+  </div>
+  </sc-if>
+
+  <!-- footer -->
+  <div style="text-align:center;font:500 11.5px 'Hanken Grotesk';color:#aab2ab;padding:34px 26px 0;line-height:1.6">Prices are driven by real 2026 World Cup performances, FotMob ratings, fantasy output, X mood &amp; the live transfer market — researched and current as of Jun 24, 2026 (a manual snapshot, not an auto-updating feed). For entertainment; no real money is involved.</div>
+</div>
+
+<!-- ============ TRADE MODAL ============ -->
+<sc-if value="{{ tradeOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:90;background:rgba(12,20,15,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeTrade }}">
+  <div onClick="{{ stop }}" style="background:#fff;border-radius:22px;width:100%;max-width:420px;padding:26px;box-shadow:0 30px 80px rgba(10,20,14,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between">
+      <span style="font:700 13px 'Hanken Grotesk';letter-spacing:.06em;text-transform:uppercase;color: {{ tr.sideColor }}">{{ tr.sideLabel }}</span>
+      <button onClick="{{ closeTrade }}" style="background:none;border:none;cursor:pointer;font:400 22px 'Hanken Grotesk';color:#aab2ab;line-height:1">×</button>
+    </div>
+    <div style="font:700 26px 'Space Grotesk';letter-spacing:-.02em;margin-top:8px">{{ tr.name }}</div>
+    <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ tr.team }} · {{ tr.pos }} · {{ tr.price }} / share</div>
+
+    <div style="display:flex;align-items:center;justify-content:space-between;background:#f5f6f3;border-radius:14px;padding:16px 18px;margin:20px 0">
+      <span style="font:600 14px 'Hanken Grotesk';color:#46504a">Shares</span>
+      <div style="display:flex;align-items:center;gap:14px">
+        <button onClick="{{ tr.dec }}" style="width:34px;height:34px;border-radius:10px;border:1px solid #e1e4dd;background:#fff;font:600 20px 'Hanken Grotesk';color:#16201a;cursor:pointer;line-height:1">−</button>
+        <span style="font:700 22px 'Space Grotesk';min-width:40px;text-align:center">{{ tr.qty }}</span>
+        <button onClick="{{ tr.inc }}" style="width:34px;height:34px;border-radius:10px;border:1px solid #e1e4dd;background:#fff;font:600 20px 'Hanken Grotesk';color:#16201a;cursor:pointer;line-height:1">+</button>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:18px">
+      <sc-for list="{{ tr.quickQtys }}" as="q" hint-placeholder-count="4"><button onClick="{{ q.onClick }}" style="flex:1;font:600 12px 'Hanken Grotesk';background:#eef1ec;border:none;color:#46504a;padding:8px;border-radius:9px;cursor:pointer">{{ q.label }}</button></sc-for>
+    </div>
+
+    <div style="display:flex;justify-content:space-between;font:500 14px 'Hanken Grotesk';padding:4px 0"><span style="color:#8a938c">Order total</span><b style="font-family:'Space Grotesk'">{{ tr.total }}</b></div>
+    <div style="display:flex;justify-content:space-between;font:500 14px 'Hanken Grotesk';padding:4px 0"><span style="color:#8a938c">{{ tr.balanceLabel }}</span><b style="font-family:'Space Grotesk';color: {{ tr.balanceColor }}">{{ tr.balanceAfter }}</b></div>
+
+    <div style="font:600 12.5px 'Hanken Grotesk';color:#d23b2c;margin-top:10px;min-height:16px">{{ tr.error }}</div>
+
+    <button onClick="{{ tr.confirm }}" style="width:100%;margin-top:8px;font:700 15px 'Hanken Grotesk';background: {{ tr.confirmBg }};color:#fff;border:none;padding:15px;border-radius:13px;cursor: {{ tr.confirmCursor }};opacity: {{ tr.confirmOpacity }}">{{ tr.confirmLabel }}</button>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ DAILY REWARD MODAL ============ -->
+<sc-if value="{{ showReward }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:95;background:rgba(12,20,15,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeReward }}">
+  <div onClick="{{ stop }}" style="background:#fff;border-radius:24px;width:100%;max-width:440px;padding:30px;text-align:center;box-shadow:0 30px 80px rgba(10,20,14,.32)">
+    <div style="font:600 12px 'Hanken Grotesk';letter-spacing:.14em;text-transform:uppercase;color:#16a85f">Daily reward</div>
+    <div style="font:700 26px 'Space Grotesk';letter-spacing:-.02em;margin-top:8px">{{ rw.title }}</div>
+    <div style="font:500 13.5px 'Hanken Grotesk';color:#8a938c;margin-top:6px">{{ rw.subtitle }}</div>
+
+    <div style="display:flex;gap:7px;justify-content:center;margin:22px 0 8px">
+      <sc-for list="{{ rw.days }}" as="day" hint-placeholder-count="7">
+        <div style="flex:1;border-radius:12px;padding:12px 4px;background: {{ day.bg }};border:1.5px solid {{ day.border }}">
+          <div style="font:600 10px 'Hanken Grotesk';color: {{ day.labelColor }}">D{{ day.n }}</div>
+          <div style="font:700 13px 'Space Grotesk';margin-top:4px;color: {{ day.amtColor }}">{{ day.amt }}</div>
+          <div style="font-size:12px;margin-top:3px;color: {{ day.tickColor }}">{{ day.tick }}</div>
+        </div>
+      </sc-for>
+    </div>
+
+    <button onClick="{{ rw.claim }}" style="width:100%;margin-top:18px;font:700 15px 'Hanken Grotesk';background: {{ rw.btnBg }};color:#fff;border:none;padding:15px;border-radius:13px;cursor: {{ rw.btnCursor }};opacity: {{ rw.btnOpacity }}">{{ rw.btnLabel }}</button>
+  </div>
+</div>
+</sc-if>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  // ---------- lifecycle ----------
+  constructor(props){
+    super(props);
+    const saved = this.load();
+    this.state = {
+      view:'market', selectedId:null, league:'ALL', search:'', range:90,
+      tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
+      showReward:false, tick:0,
+      cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
+      streak: saved.streak, lastClaim: saved.lastClaim,
+    };
+    this.live = {}; // id -> live multiplier
+  }
+  componentDidMount(){
+    this.timer = setInterval(()=>{
+      const DB = this.getDB();
+      for(const p of DB){
+        const cur = this.live[p.id] || 1;
+        const drift = (this.rand01(p.id + ':' + Date.now()) - 0.5) * 0.0016; // tiny intraday tick around the real-data price
+        let next = cur * (1 + drift) + (1 - cur) * 0.04; // mean-reverts to the modelled price
+        next = Math.max(0.985, Math.min(1.015, next));
+        this.live[p.id] = next;
+      }
+      this.setState(s=>({tick:s.tick+1}));
+    }, 9000);
+    // auto-open reward if claimable on first load
+    if(this.isClaimable()) this.setState({showReward:true});
+  }
+  componentWillUnmount(){ clearInterval(this.timer); }
+
+  // ---------- persistence ----------
+  load(){
+    let s=null; try{ s = JSON.parse(localStorage.getItem('footystock_v3')); }catch(e){}
+    if(!s) return { cash:10000, holdings:{}, txns:[], watch:['lamine-yamal','desire-doue','mika-godts','florian-wirtz'], streak:0, lastClaim:null };
+    return { cash:s.cash??10000, holdings:s.holdings||{}, txns:s.txns||[], watch:s.watch||[], streak:s.streak||0, lastClaim:s.lastClaim||null };
+  }
+  persist(extra){
+    const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim }, extra||{});
+    try{ localStorage.setItem('footystock_v3', JSON.stringify(s)); }catch(e){}
+  }
+
+  // ---------- deterministic rng ----------
+  hash(str){ let h=2166136261; for(let i=0;i<str.length;i++){ h^=str.charCodeAt(i); h=Math.imul(h,16777619); } return h>>>0; }
+  rand01(str){ let a=this.hash(str); a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }
+  mulberry(seed){ let a=seed>>>0; return function(){ a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+  // ---------- static config ----------
+  LEAGUE_NAME(){ return {EPL:'Premier League',LAL:'La Liga',SEA:'Serie A',BUN:'Bundesliga',LI1:'Ligue 1',PROS:'Top Prospects'}; }
+  TEAMS(){ return {
+    'Man City':['MCI','EPL'],'Arsenal':['ARS','EPL'],'Liverpool':['LIV','EPL'],'Chelsea':['CHE','EPL'],'Man Utd':['MUN','EPL'],'Tottenham':['TOT','EPL'],'Newcastle':['NEW','EPL'],'Aston Villa':['AVL','EPL'],
+    'Real Madrid':['RMA','LAL'],'Barcelona':['BAR','LAL'],'Atlético':['ATM','LAL'],'Athletic':['ATH','LAL'],'Villarreal':['VIL','LAL'],'Real Sociedad':['RSO','LAL'],
+    'Inter':['INT','SEA'],'Milan':['MIL','SEA'],'Juventus':['JUV','SEA'],'Napoli':['NAP','SEA'],'Roma':['ROM','SEA'],'Atalanta':['ATA','SEA'],
+    'Bayern':['BAY','BUN'],'Leverkusen':['B04','BUN'],'Dortmund':['BVB','BUN'],'RB Leipzig':['RBL','BUN'],'Stuttgart':['VFB','BUN'],'Eintracht':['SGE','BUN'],
+    'Paris SG':['PSG','LI1'],'Monaco':['ASM','LI1'],'Marseille':['OM','LI1'],'Lille':['LIL','LI1'],'Lyon':['OL','LI1'],
+    'Ajax':['AJA','PROS'],'PSV':['PSV','PROS'],'Benfica':['SLB','PROS'],'Sporting':['SCP','PROS'],'Porto':['POR','PROS']
+  }; }
+  ROSTER(){ return `
+Erling Haaland|Man City|ST|25|1
+Phil Foden|Man City|AM|25|2
+Rodri|Man City|CM|30|2
+Savinho|Man City|RW|22|3
+Bernardo Silva|Man City|CM|31|3
+Jérémy Doku|Man City|LW|24|3
+Joško Gvardiol|Man City|CB|24|4
+Omar Marmoush|Man City|ST|27|3
+Tijjani Reijnders|Man City|CM|27|3
+Rayan Cherki|Man City|AM|22|4
+Bukayo Saka|Arsenal|RW|24|2
+Martin Ødegaard|Arsenal|AM|27|2
+Viktor Gyökeres|Arsenal|ST|27|2
+Declan Rice|Arsenal|CM|27|3
+William Saliba|Arsenal|CB|25|3
+Gabriel Martinelli|Arsenal|LW|24|3
+Kai Havertz|Arsenal|ST|26|4
+Martín Zubimendi|Arsenal|CM|26|3
+Noni Madueke|Arsenal|RW|23|4
+Mohamed Salah|Liverpool|RW|33|2
+Florian Wirtz|Liverpool|AM|22|2
+Alexander Isak|Liverpool|ST|26|2
+Hugo Ekitiké|Liverpool|ST|23|3
+Dominik Szoboszlai|Liverpool|CM|25|3
+Ryan Gravenberch|Liverpool|CM|23|3
+Jeremie Frimpong|Liverpool|RB|25|4
+Virgil van Dijk|Liverpool|CB|35|3
+Cole Palmer|Chelsea|AM|24|2
+Moisés Caicedo|Chelsea|CM|24|3
+João Pedro|Chelsea|ST|24|3
+Estêvão|Chelsea|RW|18|3
+Enzo Fernández|Chelsea|CM|25|3
+Pedro Neto|Chelsea|LW|26|4
+Liam Delap|Chelsea|ST|22|4
+Bruno Fernandes|Man Utd|AM|31|3
+Bryan Mbeumo|Man Utd|RW|26|3
+Matheus Cunha|Man Utd|AM|26|3
+Benjamin Šeško|Man Utd|ST|23|3
+Alejandro Garnacho|Man Utd|LW|21|4
+Kobbie Mainoo|Man Utd|CM|21|4
+James Maddison|Tottenham|AM|29|3
+Dejan Kulusevski|Tottenham|AM|26|3
+Cristian Romero|Tottenham|CB|28|4
+Mohammed Kudus|Tottenham|RW|25|3
+Micky van de Ven|Tottenham|CB|24|4
+Mathys Tel|Tottenham|ST|21|5
+Bruno Guimarães|Newcastle|CM|28|3
+Anthony Gordon|Newcastle|LW|25|3
+Sandro Tonali|Newcastle|CM|26|4
+Nick Woltemade|Newcastle|ST|23|4
+Ollie Watkins|Aston Villa|ST|30|3
+Morgan Rogers|Aston Villa|AM|23|4
+Emiliano Martínez|Aston Villa|GK|33|4
+Kylian Mbappé|Real Madrid|ST|27|1
+Jude Bellingham|Real Madrid|CM|22|1
+Vinícius Júnior|Real Madrid|LW|25|2
+Rodrygo|Real Madrid|RW|25|3
+Federico Valverde|Real Madrid|CM|27|3
+Aurélien Tchouaméni|Real Madrid|CM|26|3
+Eduardo Camavinga|Real Madrid|CM|23|3
+Trent Alexander-Arnold|Real Madrid|RB|27|3
+Arda Güler|Real Madrid|AM|21|4
+Dean Huijsen|Real Madrid|CB|21|4
+Endrick|Real Madrid|ST|19|4
+Franco Mastantuono|Real Madrid|RW|18|4
+Lamine Yamal|Barcelona|RW|18|1
+Raphinha|Barcelona|LW|29|2
+Pedri|Barcelona|CM|23|2
+Robert Lewandowski|Barcelona|ST|37|3
+Frenkie de Jong|Barcelona|CM|29|3
+Dani Olmo|Barcelona|AM|27|3
+Pau Cubarsí|Barcelona|CB|19|3
+Marcus Rashford|Barcelona|LW|28|3
+Gavi|Barcelona|CM|21|4
+Alejandro Balde|Barcelona|LB|22|4
+Julián Álvarez|Atlético|ST|26|2
+Antoine Griezmann|Atlético|ST|35|4
+Alexander Sørloth|Atlético|ST|30|5
+Giuliano Simeone|Atlético|RW|23|5
+Nico Williams|Athletic|LW|24|3
+Iñaki Williams|Athletic|ST|32|5
+Alex Baena|Atlético|AM|24|4
+Thiago Almada|Atlético|AM|24|4
+Mikel Oyarzabal|Real Sociedad|ST|29|4
+Takefusa Kubo|Real Sociedad|RW|25|4
+Lautaro Martínez|Inter|ST|28|2
+Marcus Thuram|Inter|ST|28|3
+Nicolò Barella|Inter|CM|29|3
+Hakan Çalhanoğlu|Inter|CM|32|4
+Alessandro Bastoni|Inter|CB|27|4
+Federico Dimarco|Inter|LB|28|4
+Francesco Pio Esposito|Inter|ST|20|5
+Rafael Leão|Milan|LW|26|3
+Christian Pulišić|Milan|AM|27|3
+Santiago Giménez|Milan|ST|25|4
+Luka Modrić|Milan|CM|40|5
+Adrien Rabiot|Milan|CM|30|4
+Mike Maignan|Milan|GK|30|4
+Dušan Vlahović|Juventus|ST|26|4
+Kenan Yıldız|Juventus|AM|21|3
+Teun Koopmeiners|Juventus|CM|28|4
+Gleison Bremer|Juventus|CB|29|4
+Jonathan David|Juventus|ST|26|4
+Kevin De Bruyne|Napoli|AM|34|3
+Romelu Lukaku|Napoli|ST|33|4
+Scott McTominay|Napoli|CM|29|3
+Khvicha Kvaratskhelia|Paris SG|LW|25|3
+Noa Lang|Napoli|LW|26|5
+Paulo Dybala|Roma|AM|32|4
+Matías Soulé|Roma|AM|23|4
+Manu Koné|Roma|CM|24|4
+Mile Svilar|Roma|GK|26|5
+Ademola Lookman|Atalanta|LW|28|3
+Charles De Ketelaere|Atalanta|AM|25|4
+Gianluca Scamacca|Atalanta|ST|27|5
+Harry Kane|Bayern|ST|32|2
+Jamal Musiala|Bayern|AM|23|2
+Michael Olise|Bayern|RW|24|3
+Joshua Kimmich|Bayern|CM|31|3
+Luis Díaz|Bayern|LW|29|3
+Dayot Upamecano|Bayern|CB|27|4
+Aleksandar Pavlović|Bayern|CM|21|4
+Nicolas Jackson|Bayern|ST|24|4
+Lennart Karl|Bayern|AM|18|5
+Patrik Schick|Leverkusen|ST|30|4
+Alejandro Grimaldo|Leverkusen|LB|30|4
+Ernest Poku|Leverkusen|RW|21|5
+Serhou Guirassy|Dortmund|ST|29|3
+Karim Adeyemi|Dortmund|LW|24|4
+Julian Brandt|Dortmund|AM|29|5
+Nico Schlotterbeck|Dortmund|CB|26|4
+Jobe Bellingham|Dortmund|CM|20|5
+Maximilian Beier|Dortmund|ST|22|5
+Loïs Openda|RB Leipzig|ST|25|4
+Christoph Baumgartner|RB Leipzig|CM|26|5
+Antonio Nusa|RB Leipzig|LW|20|4
+Johan Bakayoko|RB Leipzig|RW|22|5
+Deniz Undav|Stuttgart|ST|28|4
+Ermedin Demirović|Stuttgart|ST|27|5
+Chris Führich|Stuttgart|AM|27|5
+Angelo Stiller|Stuttgart|CM|24|5
+Jonathan Burkardt|Eintracht|ST|25|5
+Can Uzun|Eintracht|AM|19|5
+Ousmane Dembélé|Paris SG|RW|28|2
+Vitinha|Paris SG|CM|25|3
+João Neves|Paris SG|CM|21|3
+Désiré Doué|Paris SG|AM|20|3
+Achraf Hakimi|Paris SG|RB|27|3
+Bradley Barcola|Paris SG|LW|23|4
+Gonçalo Ramos|Paris SG|ST|25|5
+Nuno Mendes|Paris SG|LB|24|4
+Warren Zaïre-Emery|Paris SG|CM|20|4
+Maghnes Akliouche|Monaco|AM|23|4
+Folarin Balogun|Monaco|ST|24|5
+Aleksandr Golovin|Monaco|AM|30|5
+Ansu Fati|Monaco|ST|23|5
+Eliesse Ben Seghir|Monaco|AM|20|4
+Mason Greenwood|Marseille|RW|24|3
+Pierre-Emerick Aubameyang|Marseille|ST|36|5
+Amine Gouiri|Marseille|ST|25|5
+Igor Paixão|Marseille|LW|25|5
+Olivier Giroud|Lille|ST|39|5
+Hákon Haraldsson|Lille|AM|22|5
+Benjamin André|Lille|CM|35|6
+Malick Fofana|Lyon|ST|24|5
+Pavel Šulc|Lyon|AM|24|5
+Mika Godts|Ajax|LW|20|5
+Wim Bounida|Ajax|AM|18|6
+Ricardo Pepi|PSV|ST|23|5
+Sem Steijn|PSV|AM|24|5
+Sergiño Dest|PSV|RB|25|6
+Vangelis Pavlidis|Benfica|ST|27|5
+Kerem Aktürkoğlu|Benfica|LW|27|5
+Gianluca Prestianni|Benfica|AM|19|6
+Geovany Quenda|Sporting|RW|18|5
+Francisco Trincão|Sporting|RW|26|5
+Morten Hjulmand|Sporting|CM|27|5
+Rodrigo Mora|Porto|AM|18|5
+Samu Aghehowa|Porto|ST|21|5
+`; }
+
+  OPPONENTS_BY_LEAGUE(){
+    const teams = this.TEAMS(); const out={};
+    for(const name in teams){ const lg=teams[name][1]; (out[lg]=out[lg]||[]).push(name); }
+    return out;
+  }
+
+  slug(name){ return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
+
+  // ---------- REAL market values (€M, Transfermarkt-style, mid-2026, form-adjusted) ----------
+  VAL(){ if(this._val) return this._val; const v={}; const A=s=>s.split(',').forEach(p=>{p=p.trim();const i=p.lastIndexOf(' ');v[p.slice(0,i).trim()]=+p.slice(i+1);});
+    A('Erling Haaland 180,Phil Foden 52,Rodri 100,Savinho 65,Bernardo Silva 35,Jérémy Doku 60,Joško Gvardiol 75,Omar Marmoush 55,Tijjani Reijnders 70,Rayan Cherki 55');
+    A('Bukayo Saka 130,Martin Ødegaard 100,Viktor Gyökeres 75,Declan Rice 100,William Saliba 80,Gabriel Martinelli 55,Kai Havertz 55,Martín Zubimendi 70,Noni Madueke 45');
+    A('Mohamed Salah 45,Florian Wirtz 140,Alexander Isak 120,Hugo Ekitiké 80,Dominik Szoboszlai 80,Ryan Gravenberch 90,Jeremie Frimpong 50,Virgil van Dijk 25');
+    A('Cole Palmer 130,Moisés Caicedo 90,João Pedro 65,Estêvão 90,Enzo Fernández 75,Pedro Neto 50,Liam Delap 55');
+    A('Bruno Fernandes 68,Bryan Mbeumo 60,Matheus Cunha 60,Benjamin Šeško 70,Alejandro Garnacho 50,Kobbie Mainoo 60');
+    A('James Maddison 55,Dejan Kulusevski 60,Cristian Romero 55,Mohammed Kudus 55,Micky van de Ven 65,Mathys Tel 40');
+    A('Bruno Guimarães 75,Anthony Gordon 65,Sandro Tonali 55,Nick Woltemade 55,Ollie Watkins 50,Morgan Rogers 65,Emiliano Martínez 25');
+    A('Kylian Mbappé 170,Jude Bellingham 180,Vinícius Júnior 170,Rodrygo 90,Federico Valverde 100,Aurélien Tchouaméni 80,Eduardo Camavinga 90,Trent Alexander-Arnold 70,Arda Güler 75,Dean Huijsen 70,Endrick 60,Franco Mastantuono 50');
+    A('Lamine Yamal 200,Raphinha 90,Pedri 140,Robert Lewandowski 15,Frenkie de Jong 50,Dani Olmo 70,Pau Cubarsí 90,Marcus Rashford 45,Gavi 70,Alejandro Balde 60');
+    A('Julián Álvarez 110,Antoine Griezmann 20,Alexander Sørloth 35,Giuliano Simeone 45,Alex Baena 50,Thiago Almada 55,Nico Williams 75,Iñaki Williams 20,Mikel Oyarzabal 35,Takefusa Kubo 60');
+    A('Lautaro Martínez 90,Marcus Thuram 75,Nicolò Barella 80,Hakan Çalhanoğlu 45,Alessandro Bastoni 70,Federico Dimarco 55,Francesco Pio Esposito 35');
+    A('Rafael Leão 75,Christian Pulišić 65,Santiago Giménez 50,Luka Modrić 8,Adrien Rabiot 35,Mike Maignan 35');
+    A('Dušan Vlahović 45,Kenan Yıldız 75,Teun Koopmeiners 45,Gleison Bremer 55,Jonathan David 55');
+    A('Kevin De Bruyne 25,Romelu Lukaku 25,Scott McTominay 60,Khvicha Kvaratskhelia 90,Noa Lang 30');
+    A('Paulo Dybala 20,Matías Soulé 50,Manu Koné 55,Mile Svilar 35,Ademola Lookman 60,Charles De Ketelaere 50,Gianluca Scamacca 35');
+    A('Harry Kane 80,Jamal Musiala 140,Michael Olise 90,Joshua Kimmich 45,Luis Díaz 55,Dayot Upamecano 60,Aleksandar Pavlović 55,Nicolas Jackson 45,Lennart Karl 40');
+    A('Patrik Schick 40,Alejandro Grimaldo 35,Ernest Poku 25,Serhou Guirassy 50,Karim Adeyemi 45,Julian Brandt 30,Nico Schlotterbeck 55,Jobe Bellingham 45,Maximilian Beier 40');
+    A('Loïs Openda 55,Christoph Baumgartner 35,Antonio Nusa 50,Johan Bakayoko 40,Deniz Undav 45,Ermedin Demirović 30,Chris Führich 30,Angelo Stiller 50,Jonathan Burkardt 45,Can Uzun 45');
+    A('Ousmane Dembélé 90,Vitinha 90,João Neves 90,Désiré Doué 90,Achraf Hakimi 75,Bradley Barcola 75,Gonçalo Ramos 45,Nuno Mendes 75,Warren Zaïre-Emery 70');
+    A('Maghnes Akliouche 55,Folarin Balogun 40,Aleksandr Golovin 30,Ansu Fati 35,Eliesse Ben Seghir 50,Mason Greenwood 55,Pierre-Emerick Aubameyang 10,Amine Gouiri 35,Igor Paixão 40');
+    A('Olivier Giroud 4,Hákon Haraldsson 35,Benjamin André 12,Malick Fofana 40,Pavel Šulc 40');
+    A('Mika Godts 35,Wim Bounida 20,Ricardo Pepi 35,Sem Steijn 35,Sergiño Dest 20,Vangelis Pavlidis 40,Kerem Aktürkoğlu 35,Gianluca Prestianni 30,Geovany Quenda 50,Francisco Trincão 40,Morten Hjulmand 45,Rodrigo Mora 45,Samu Aghehowa 45');
+    this._val=v; return v;
+  }
+
+  // ---------- REAL DATA (researched, current as of Jun 24 2026) ----------
+  DATA(){ if(this._data) return this._data;
+    const F=(d,opp,gf,ga)=>({d,opp,gf,ga});
+    const WC={
+      France:{status:'Through to the R32 · top of Group I',fixtures:[F('06-16','Senegal',3,1),F('06-22','Iraq',3,0)]},
+      England:{status:'Group L',fixtures:[F('06-14','Croatia',4,2),F('06-22','Ghana',0,0)]},
+      Brazil:{status:'Group C',fixtures:[F('06-13','Morocco',1,1),F('06-19','Haiti',3,0)]},
+      Spain:{status:'Group H',fixtures:[F('06-15','Cape Verde',0,0),F('06-21','Saudi Arabia',4,0)]},
+      Germany:{status:'Through to the R32 · Group E',fixtures:[F('06-15','Curaçao',7,1),F('06-18','Ivory Coast',2,1)]},
+      Argentina:{status:'Through to the R32 · won Group J',fixtures:[F('06-13','Algeria',3,0),F('06-22','Austria',2,0)]},
+      Portugal:{status:'Group K',fixtures:[F('06-17','DR Congo',1,1),F('06-23','Uzbekistan',5,0)]},
+      Norway:{status:'Through to the R32 · Group I',fixtures:[F('06-16','Senegal',3,2),F('06-22','Iraq',2,1)]},
+      Netherlands:{status:'Group F',fixtures:[F('06-16','Japan',2,2)]},
+      Colombia:{status:'Group K',fixtures:[F('06-17','Uzbekistan',2,1)]},
+      USA:{status:'Through to the R32 · Group D',fixtures:[F('06-12','Paraguay',4,1)]},
+      Croatia:{status:'Group L',fixtures:[F('06-14','England',2,4),F('06-23','Panama',1,0)]},
+      Scotland:{status:'Group C',fixtures:[F('06-13','Haiti',1,0),F('06-19','Morocco',0,1)]},
+      Morocco:{status:'Group C',fixtures:[F('06-13','Brazil',1,1),F('06-19','Scotland',1,0)]},
+      Mexico:{status:'Through to the R32 · won Group A',fixtures:[F('06-11','South Africa',2,0),F('06-18','South Korea',1,0)]},
+      Japan:{status:'Group F',fixtures:[F('06-16','Netherlands',2,2)]}
+    };
+    const S=(d,opp,g,a,rating,note)=>({d,opp,g,a,rating,note});
+    const STARS={
+      'kylian-mbappe-real-madrid':[S('06-16','Senegal',2,0,8.4,'Brace vs Senegal, all four shots on target'),S('06-22','Iraq',2,0,8.6,'Brace on his 100th France cap; into the R32')],
+      'erling-haaland-man-city':[S('06-16','Senegal',2,0,8.5,'Brace in a 3-2 win — finally arrived at a World Cup'),S('06-22','Iraq',1,0,7.9,'Scored as Norway sealed the knockouts')],
+      'ousmane-dembele-paris-sg':[S('06-16','Senegal',0,1,7.4,'Assist on the opener vs Senegal'),S('06-22','Iraq',1,0,7.8,'First goal in 20 major-tournament games')],
+      'michael-olise-bayern':[S('06-16','Senegal',0,1,7.6,'Assist vs Senegal'),S('06-22','Iraq',0,2,8.4,'Two assists vs Iraq — Real Madrid circling')],
+      'vinicius-junior-real-madrid':[S('06-13','Morocco',1,0,7.6,'Opened his WC account in the 1-1 draw'),S('06-19','Haiti',1,0,7.8,'On the scoresheet in a 3-0 win')],
+      'lamine-yamal-barcelona':[S('06-15','Cape Verde',0,0,6.8,'Subdued in a goalless draw'),S('06-21','Saudi Arabia',1,1,8.3,'Goal and assist as Spain clicked')],
+      'jude-bellingham-real-madrid':[S('06-14','Croatia',0,1,7.6,'Assist in the 4-2 opener'),S('06-22','Ghana',0,0,6.5,'Frustrating night in a 0-0')],
+      'harry-kane-bayern':[S('06-14','Croatia',1,0,7.7,'Scored in the 4-2 win'),S('06-22','Ghana',0,0,6.6,'Blanked vs a stubborn Ghana')],
+      'jamal-musiala-bayern':[S('06-15','Curaçao',1,1,8.0,'Goal and assist in the 7-1 rout'),S('06-18','Ivory Coast',0,0,7.6,'Bright again as Germany qualified')],
+      'florian-wirtz-liverpool':[S('06-15','Curaçao',1,1,7.9,'Two goal involvements vs Curaçao'),S('06-18','Ivory Coast',0,1,7.5,'Assist in the 2-1 win')],
+      'kai-havertz-arsenal':[S('06-15','Curaçao',1,0,7.5,'On the scoresheet in the 7-1 win'),S('06-18','Ivory Coast',0,0,6.9,'Quieter outing')],
+      'luis-diaz-bayern':[S('06-17','Uzbekistan',1,1,8.5,'Goal and assist to beat Uzbekistan')],
+      'christian-pulisic-milan':[S('06-12','Paraguay',1,1,7.9,'Goal and assist in a 4-1 win')],
+      'folarin-balogun-monaco':[S('06-12','Paraguay',1,0,7.5,'Scored on his big World Cup chance')],
+      'mikel-oyarzabal-real-sociedad':[S('06-21','Saudi Arabia',1,0,7.6,'Scored in the 4-0 win')],
+      'matheus-cunha-man-utd':[S('06-19','Haiti',1,0,7.5,'Scored in a 3-0 win')],
+      'bruno-fernandes-man-utd':[S('06-17','DR Congo',1,1,8.2,'Goal and assist as captain — extending the club form that has United firing again'),S('06-23','Uzbekistan',0,1,8.0,'Second straight goal involvement; carrying the same numbers driving his PFA POTY case')],
+      'lautaro-martinez-inter':[S('06-13','Algeria',0,0,7.0,'Selfless work as Messi struck a hat-trick'),S('06-22','Austria',0,0,7.1,'Worked the channels as Messi scored twice')],
+      'john-mcginn-aston-villa':[S('06-13','Haiti',1,0,7.5,'Scored Scotland\u2019s winner')],
+      'pedri-barcelona':[S('06-15','Cape Verde',0,0,6.9,'Tidy but contained'),S('06-21','Saudi Arabia',0,1,7.8,'Pulled the strings in the 4-0')],
+      'raphinha-barcelona':[S('06-13','Morocco',0,1,7.3,'Assist in the draw'),S('06-19','Haiti',1,0,7.6,'Scored in the rout')]
+    };
+    const NW=(tag,text,bias,d)=>({tag,text,bias,d});
+    const NEWS={
+      'julian-alvarez-atletico':NW('TRANSFER RUMOR','\u00c1lvarez publicly asks to leave; Barcelona positioning to sign him',6.5,'06-23'),
+      'harry-kane-bayern':NW('TRANSFER RUMOR','Barcelona consider Kane as a Lewandowski successor',3.0,'06-22'),
+      'michael-olise-bayern':NW('TRANSFER RUMOR','Real Madrid issue a statement amid mounting Olise links',5.0,'06-23'),
+      'mason-greenwood-marseille':NW('TRANSFER SAGA','Roma move stalls in a PSG\u2013Arsenal domino',-2.5,'06-22'),
+      'morten-hjulmand-sporting':NW('TRANSFER RUMOR','AC Milan push to reunite him with Amorim',7.0,'06-23'),
+      'marcus-rashford-barcelona':NW('TRANSFER','Barça weigh a permanent deal as add-ons are debated',2.0,'06-21'),
+      'robert-lewandowski-barcelona':NW('TRANSFER','Leaves Barcelona at 37; next move under discussion',-3.5,'06-20'),
+      'bruno-fernandes-man-utd':NW('AWARDS BUZZ','Pundits naming Fernandes the front-runner for PFA Player of the Year on the back of his club form',5.5,'06-23')
+    };
+    const MOOD={
+      'kylian-mbappe-real-madrid':'\u201cMr World Cup\u201d trending after the Iraq brace',
+      'erling-haaland-man-city':'Norway fans euphoric \u2014 \u201che finally turned up\u201d',
+      'michael-olise-bayern':'Madrid fans begging the club to \u201cjust sign him\u201d',
+      'lamine-yamal-barcelona':'Cast as the face of the tournament',
+      'julian-alvarez-atletico':'Bar\u00e7a fans campaigning with #AlvarezToBarca',
+      'harry-kane-bayern':'Split between Bar\u00e7a links and a quiet Ghana game',
+      'vinicius-junior-real-madrid':'Brazil fans relieved the goals are flowing',
+      'ousmane-dembele-paris-sg':'Wholesome reaction to ending his goal drought',
+      'jude-bellingham-real-madrid':'Frustration after a flat 0-0 with Ghana',
+      'luis-diaz-bayern':'Colombia trending after his match-winner',
+      'bruno-fernandes-man-utd':'Premier League Player of the Season talk all over his timeline'
+    };
+    const nat={};
+    const add=(country,names)=>names.split(',').forEach(n=>nat[n.trim()]=country);
+    add('France','Kylian Mbappé,Ousmane Dembélé,Michael Olise,Aurélien Tchouaméni,Eduardo Camavinga,William Saliba,Désiré Doué,Bradley Barcola,Warren Zaïre-Emery,Mike Maignan,Manu Koné,Marcus Thuram,Adrien Rabiot');
+    add('England','Jude Bellingham,Harry Kane,Bukayo Saka,Declan Rice,Phil Foden,James Maddison,Cole Palmer,Marcus Rashford,Morgan Rogers,Kobbie Mainoo,Ollie Watkins,Trent Alexander-Arnold,Noni Madueke');
+    add('Brazil','Vinícius Júnior,Raphinha,Rodrygo,Bruno Guimarães,Matheus Cunha,Gabriel Martinelli,Savinho,Endrick,Gleison Bremer');
+    add('Spain','Lamine Yamal,Pedri,Dani Olmo,Pau Cubarsí,Alejandro Balde,Mikel Oyarzabal,Martín Zubimendi,Nico Williams,Alex Baena,Gavi,Dean Huijsen');
+    add('Germany','Jamal Musiala,Florian Wirtz,Kai Havertz,Joshua Kimmich,Nico Schlotterbeck,Aleksandar Pavlović,Jonathan Burkardt,Karim Adeyemi,Deniz Undav,Angelo Stiller,Maximilian Beier');
+    add('Argentina','Lautaro Martínez,Enzo Fernández,Julián Álvarez,Thiago Almada,Giuliano Simeone');
+    add('Portugal','Nuno Mendes,Vitinha,João Neves,Gonçalo Ramos,Pedro Neto,Rafael Leão,Francisco Trincão,Geovany Quenda,Rodrigo Mora,Bruno Fernandes');
+    add('Norway','Erling Haaland,Antonio Nusa');
+    add('Netherlands','Virgil van Dijk,Frenkie de Jong,Ryan Gravenberch,Micky van de Ven,Jeremie Frimpong,Tijjani Reijnders');
+    add('Colombia','Luis Díaz');
+    add('USA','Christian Pulišić,Folarin Balogun,Sergiño Dest,Ricardo Pepi');
+    add('Croatia','Luka Modrić,Joško Gvardiol');
+    add('Morocco','Achraf Hakimi');
+    add('Mexico','Santiago Giménez');
+    add('Scotland','John McGinn,Scott McTominay');
+    add('Japan','Takefusa Kubo');
+    this._data={WC,STARS,NEWS,MOOD,NATION:nat};
+    return this._data;
+  }
+
+  // ---------- build database once ----------
+  getDB(){ if(this._db) return this._db; this._db = this.buildDB(); return this._db; }
+  buildDB(){
+    const teams=this.TEAMS(), lgName=this.LEAGUE_NAME(), opp=this.OPPONENTS_BY_LEAGUE();
+    const tierBase={1:228,2:158,3:99,4:58,5:35,6:23};
+    const lines=this.ROSTER().trim().split('\n');
+    const today=new Date('2026-06-24T12:00:00Z');
+    const db=[];
+    const seen={};
+    for(const line of lines){
+      const parts=line.split('|'); if(parts.length<5) continue;
+      let [name,team,pos,age,tier]=parts;
+      name=name.replace(/ dummy$/,''); // allow dup-team filler names but de-dupe by slug
+      tier=parseInt(tier); age=parseInt(age);
+      const id=this.slug(name+'-'+team);
+      if(seen[id]) continue; seen[id]=1;
+      const [abbr,lg]=teams[team]||['—','PROS'];
+      const r=this.mulberry(this.hash(id));
+      const mv=this.VAL()[name];
+      const youth = age<=21 ? 1 : 0;
+      // ANCHOR — the fundamental fair-value floor (transfer market value, or a
+      // tier-based estimate for players with no listed value). Real signals
+      // below push price away from this; it is not randomized on its own.
+      const anchor = (mv!=null) ? mv : tierBase[tier]*(0.9+0.5*r())*(youth?1.15:1);
+      const D=this.DATA();
+      const nation=D.NATION[name]||null;
+      const wc=(nation&&D.WC[nation])?D.WC[nation]:null;
+      const stars=D.STARS[id]||null;
+      const news=D.NEWS[id]||null;
+      const mood=D.MOOD[id]||null;
+      const offOf=(d)=>Math.round((today-new Date('2026-'+d+'T18:00:00Z'))/86400000);
+      const sum=(arr)=>arr.reduce((a,b)=>a+b,0);
+      let events=[]; let atWC=false; let wcStatus='';
+      if(stars){ atWC=true; wcStatus=(wc?wc.status:'At the 2026 World Cup');
+        for(const s of stars){ const g=s.g||0,a=s.a||0; let delta=parseFloat(((s.rating-6.9)*1.3+g*1.0+a*0.6).toFixed(2));
+          const st=[]; if(g)st.push(g+'G'); if(a)st.push(a+'A'); if(!g&&!a)st.push('—');
+          events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,fantasy:Math.round(s.rating*1.3+g*4+a*3),goals:g,assists:a,delta,statLine:st.join(' '),note:s.note}); } }
+      else if(wc){ atWC=true; wcStatus=wc.status;
+        for(const f of wc.fixtures){ const win=f.gf>f.ga,draw=f.gf===f.ga; const base=({1:7.4,2:7.2,3:7.0,4:6.8,5:6.7,6:6.6})[tier]+(win?0.4:draw?0:-0.4);
+          let rating=parseFloat(Math.max(6.0,Math.min(8.6,base+(r()-0.5)*0.8)).toFixed(1));
+          let delta=parseFloat(((rating-6.95)*0.9+(win?0.5:draw?0:-0.6)).toFixed(2));
+          events.push({offset:offOf(f.d),oppTeam:f.opp,rating,fantasy:Math.round(rating*1.3),goals:0,assists:0,delta,statLine:(f.gf+'–'+f.ga+' '+(win?'W':draw?'D':'L')),note:nation+' '+(win?'win':draw?'draw':'defeat')+' against '+f.opp}); } }
+      const newsDelta = news?news.bias:0;
+      let change7d, change30d;
+      if(atWC||news){ change7d=sum(events.filter(e=>e.offset<=8).map(e=>e.delta))+((news&&offOf(news.d)<=8)?newsDelta:0);
+        change30d=sum(events.map(e=>e.delta))+newsDelta; }
+      else { change7d=(r()-0.5)*1.4; change30d=(r()-0.5)*3; }
+      change7d=parseFloat(change7d.toFixed(1)); change30d=parseFloat(change30d.toFixed(1));
+      // WC form streak (consecutive most-recent matches rating >= 7.4)
+      const ratingsByRecency=events.slice().sort((a,b)=>a.offset-b.offset).map(e=>e.rating).filter(x=>x>0);
+      let streakLen=0; for(const rt of ratingsByRecency){ if(rt>=7.4) streakLen++; else break; }
+      const ratingVals=events.map(e=>e.rating).filter(x=>x>0);
+      const avgR=ratingVals.length?sum(ratingVals)/ratingVals.length:0;
+      const fantVals=events.map(e=>e.fantasy).filter(x=>x>0);
+      const avgF=fantVals.length?sum(fantVals)/fantVals.length:0;
+      // signals (0-100, ~46 = average player)
+      const fotmob=avgR?Math.max(8,Math.min(99,(avgR-5.6)/3.4*100)):0;
+      const fantasySig=avgF?Math.max(8,Math.min(99,avgF/16*100)):0;
+      const formSig=atWC?Math.max(6,Math.min(99,46+change7d*2.4+streakLen*9)):8;
+      const moodSig=Math.max(6,Math.min(99,46+change7d*3.0+(stars?14:0)));
+      const tmVal=(mv!=null)?mv:Math.round((tierBase[tier]*(0.9+0.5*r())) * (youth?1.18:1) /10)*5;
+      const tmTrendUp = change30d>=0;
+      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,44+change30d*1.6+youth*10));
+
+      // ---- price = anchor + performance + form + hype, in log space (see
+      // docs/pricing-model.md). A player with no real signal trades flat at
+      // the anchor; real output and real news move it, not raw market value.
+      const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
+      const wPerf=0.5, wForm=0.3, wHype=0.2;
+      // perf/form only apply when we actually have real match data (atWC) —
+      // "no data" must stay neutral (0), never read as "bad".
+      const perfScore = atWC ? clamp((fotmob-38)/30, -1, 1) : 0;
+      const formScore = atWC ? clamp((formSig-46)/30, -1, 1) : 0;
+      // hype basket = mood + transfer/news signal, capped so buzz alone can
+      // never dwarf fundamentals.
+      const hypeScore = clamp(((moodSig-46)+(transferSig-46))/2/30, -1, 1);
+      const fairValueBase = anchor * Math.exp(wPerf*perfScore + wForm*formScore);
+      const fairValue = fairValueBase * Math.exp(wHype*hypeScore);
+      const price = fairValue;
+
+      // history 90d ending at current price
+      const N=90; const hist=[]; const trend=change30d/100; const start=price/(1+trend*1.05);
+      for(let i=0;i<N;i++){ const t=i/(N-1); const baseV=start+(price-start)*Math.pow(t,1.18);
+        const noise=Math.sin(i*0.7+this.hash(id)%10)*price*0.01 + (r()-0.5)*price*0.01; hist.push(Math.max(2,baseV+noise)); }
+      for(const e of events){ const idx=N-1-e.offset; if(idx>0&&idx<N){ const bump=e.delta/100*price; for(let j=idx;j<N;j++) hist[j]+=bump*0.6; } }
+      hist[N-1]=price;
+
+      db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price,
+        change7d,change30d,hist,events,streakLen,atWC,wcStatus,nation,news,mood,
+        signals:{fotmob,fantasy:fantasySig,form:formSig,twitter:moodSig,transfermarkt:transferSig}, avgR,avgF,
+        tmVal,tmTrendUp });
+    }
+    // assign ranks by price desc
+    db.sort((a,b)=>b.price-a.price);
+    db.forEach((p,i)=>p.rank=i+1);
+    return db;
+  }
+
+  curPrice(p){ const m=this.live[p.id]||1; return p.price*m; }
+  byId(id){ return this.getDB().find(p=>p.id===id); }
+
+  // ---------- formatting ----------
+  money(n){ return '$'+Number(n).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+  money0(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
+  pct(n){ return (n>=0?'+':'')+n.toFixed(1)+'%'; }
+  dateShort(dt){ return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+  sparkPts(hist,w,h){
+    const N=Math.min(hist.length,30); const slice=hist.slice(hist.length-N);
+    const min=Math.min(...slice),max=Math.max(...slice),span=(max-min)||1; const pad=2;
+    return slice.map((v,k)=>{ const x=pad+(w-2*pad)*k/(N-1); const y=pad+(h-2*pad)*(1-(v-min)/span); return x.toFixed(1)+','+y.toFixed(1); }).join(' ');
+  }
+
+  // ---------- portfolio math ----------
+  holdingsValue(){ let v=0; const h=this.state.holdings; for(const id in h){ const p=this.byId(id); if(p) v+=this.curPrice(p)*h[id].qty; } return v; }
+  costBasis(){ let v=0; const h=this.state.holdings; for(const id in h){ v+=h[id].qty*h[id].avg; } return v; }
+  netWorth(){ return this.state.cash + this.holdingsValue(); }
+  allTimePL(){ return this.netWorth() - 10000; }
+
+  // ---------- daily reward ----------
+  todayStr(){ return new Date('2026-06-24').toISOString().slice(0,10); }
+  yesterdayStr(){ return new Date(new Date('2026-06-24').getTime()-86400000).toISOString().slice(0,10); }
+  isClaimable(){ return this.state.lastClaim !== this.todayStr(); }
+  rewardSchedule(){ return [250,300,350,400,500,600,1000]; }
+  nextStreakDay(){ // what day in cycle this claim will be
+    if(!this.isClaimable()) return ((this.state.streak-1)%7)+1;
+    const continues = this.state.lastClaim===this.yesterdayStr();
+    const newStreak = continues ? this.state.streak+1 : 1;
+    return ((newStreak-1)%7)+1;
+  }
+
+  // ---------- actions ----------
+  nav(v){ this.setState({view:v}); }
+  goHome(){ this.setState({view:'market'}); }
+  openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90}); }
+  goBack(){ this.setState({view:'market'}); }
+  setLeague(lg){ this.setState({league:lg}); }
+  setRange(r){ this.setState({range:r}); }
+  onSearch(e){ this.setState({search:e.target.value}); }
+  toggleWatch(id){ const w=this.state.watch.slice(); const i=w.indexOf(id); if(i>=0)w.splice(i,1); else w.push(id); this.setState({watch:w},()=>this.persist()); }
+
+  openTrade(id,side){ const p=this.byId(id); const held=this.state.holdings[id]; if(side==='sell'&&(!held||held.qty<1))return; this.setState({tradeOpen:true,tradeId:id,tradeSide:side,tradeQty:1}); }
+  closeTrade(){ this.setState({tradeOpen:false}); }
+  setTradeQty(q){ this.setState({tradeQty:Math.max(1,q)}); }
+  confirmTrade(){
+    const id=this.state.tradeId, side=this.state.tradeSide, qty=this.state.tradeQty;
+    const p=this.byId(id); if(!p) return; const price=this.curPrice(p); const total=price*qty;
+    const holdings=Object.assign({},this.state.holdings); const txns=this.state.txns.slice();
+    if(side==='buy'){
+      if(total>this.state.cash+1e-9) return;
+      const cur=holdings[id]||{qty:0,avg:0};
+      const newQty=cur.qty+qty; const newAvg=(cur.qty*cur.avg+qty*price)/newQty;
+      holdings[id]={qty:newQty,avg:newAvg};
+      txns.unshift({side:'BUY',id,name:p.name,qty,price,total,date:this.todayStr()});
+      this.setState({holdings,txns,cash:this.state.cash-total,tradeOpen:false},()=>this.persist());
+    } else {
+      const cur=holdings[id]; if(!cur||cur.qty<qty) return;
+      const newQty=cur.qty-qty; if(newQty<=0) delete holdings[id]; else holdings[id]={qty:newQty,avg:cur.avg};
+      txns.unshift({side:'SELL',id,name:p.name,qty,price,total,date:this.todayStr()});
+      this.setState({holdings,txns,cash:this.state.cash+total,tradeOpen:false},()=>this.persist());
+    }
+  }
+  openReward(){ this.setState({showReward:true}); }
+  closeReward(){ this.setState({showReward:false}); }
+  claimReward(){
+    if(!this.isClaimable()){ this.setState({showReward:false}); return; }
+    const continues=this.state.lastClaim===this.yesterdayStr();
+    const newStreak=continues?this.state.streak+1:1;
+    const amt=this.rewardSchedule()[((newStreak-1)%7)];
+    this.setState({cash:this.state.cash+amt,streak:newStreak,lastClaim:this.todayStr(),showReward:false},()=>this.persist());
+  }
+  stop(e){ e.stopPropagation(); }
+
+  // ---------- leaderboard ----------
+  leaderboardData(){
+    const names=['Jordi Cruyff','Sofia Marchetti','Tunde Bakare','Liu Wei','Hassan Khalil','Mateo Rossi','Elena Petrova','Sven Larsson','Diego Fuentes','Yuki Tanaka','Amara Diallo','Greta Hofmann','Pavel Novák','Chiara Romano','Noah Williams','Fatima Zahra','Kenji Mori','Ana Silva','Tomás Reyes','Igor Volkov','Marek Kowalski','Nadia Haddad','Lukas Brandt','Owen Pryce'];
+    const arr=names.map(n=>{ const r=this.rand01(n); const profit=Math.round((r-0.34)*9000); return {name:n,profit,bot:true}; });
+    const myProfit=Math.round(this.allTimePL());
+    arr.push({name:'You',profit:myProfit,me:true});
+    arr.sort((a,b)=>b.profit-a.profit);
+    return arr;
+  }
+  myRank(){ const lb=this.leaderboardData(); return lb.findIndex(x=>x.me)+1; }
+
+  // ============ RENDER ============
+  renderVals(){
+    const DB=this.getDB(); const S=this.state;
+    const GREEN='#16a85f',RED='#d23b2c',GBG='#e7f6ec',RBG='#fbe9e7';
+    const cd=(n)=>n>=0?'#3ddc8a':'#ff5d5d';
+    const decorate=(p)=>{
+      const price=this.curPrice(p); const up7=p.change7d>=0;
+      const dayChg=((this.live[p.id]||1)-1)*100 + (this.rand01(p.id+this.todayStr())-0.5)*1.4;
+      const upDay=dayChg>=0;
+      return {
+        id:p.id,name:p.name,last:p.name.split(' ').slice(-1)[0],team:p.team,abbr:p.abbr,lg:p.abbr,
+        league:p.lgName,pos:p.pos,rank:p.rank,price:this.money(price),
+        chg:this.pct(p.change7d),arrow:up7?'▲':'▼',cd:cd(p.change7d),
+        wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',
+        wkColor:up7?GREEN:RED,wkBg:up7?GBG:RBG,
+        dayAbs:Math.abs(dayChg).toFixed(1)+'%',dayArrow:upDay?'▲':'▼',dayColor:upDay?GREEN:RED,
+        spark:this.sparkPts(p.hist,120,26),
+        onClick:()=>this.openPlayer(p.id),
+      };
+    };
+
+    // ticker
+    const tickerSrc=[...DB].sort((a,b)=>Math.abs(b.change7d)-Math.abs(a.change7d)).slice(0,26);
+    const ticker=tickerSrc.map(decorate);
+
+    // movers
+    const movers=[...DB].sort((a,b)=>b.change7d-a.change7d).slice(0,4).map(decorate);
+
+    // league chips
+    const LG=[['ALL','All'],['EPL','Premier League'],['LAL','La Liga'],['SEA','Serie A'],['BUN','Bundesliga'],['LI1','Ligue 1'],['PROS','Prospects']];
+    const leagueChips=LG.map(([k,name])=>{ const on=S.league===k; return {name,onClick:()=>this.setLeague(k),
+      bg:on?'#16201a':'#fff',border:on?'#16201a':'#e3e6e0',color:on?'#fff':'#46504a'}; });
+
+    // market list (filtered + searched)
+    const q=S.search.trim().toLowerCase();
+    let list=DB.filter(p=>{
+      if(S.league!=='ALL' && p.lg!==S.league) return false;
+      if(q && !(p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q))) return false;
+      return true;
+    });
+    const marketList=list.map(decorate);
+
+    // nav tabs
+    const tabsDef=[['market','Market'],['portfolio','Portfolio'],['watch','Watchlist'],['leaders','Leaderboard']];
+    const navTabs=tabsDef.map(([k,label])=>{ const on=S.view===k||(k==='market'&&S.view==='detail'); return {label,onClick:()=>this.nav(k),
+      color:on?'#16201a':'#9aa39b',underline:on?'#16a85f':'transparent'}; });
+
+    // portfolio summary
+    const nw=this.netWorth(), pl=this.allTimePL(), plUp=pl>=0;
+    const cost=this.costBasis(), hv=this.holdingsValue();
+    const nwHistPts=(()=>{ // synthetic net-worth sparkline
+      const pts=[]; for(let i=0;i<20;i++){ const t=i/19; const v=10000+(nw-10000)*Math.pow(t,1.1)+Math.sin(i)*40; pts.push(v);} 
+      const min=Math.min(...pts),max=Math.max(...pts),span=(max-min)||1; return pts.map((v,k)=>`${(300*k/19).toFixed(1)},${(70-66*(v-min)/span+2).toFixed(1)}`).join(' '); })();
+
+    const holdCount=Object.keys(S.holdings).length;
+    const rank=this.myRank();
+
+    // ---- detail ----
+    let d=null;
+    if(S.view==='detail' && S.selectedId){
+      const p=this.byId(S.selectedId);
+      if(p){
+        const price=this.curPrice(p); const up7=p.change7d>=0; const cc=up7?GREEN:RED;
+        const N=p.hist.length; const range=S.range; const slice=p.hist.slice(N-range);
+        const W=760,H=240,top=6;
+        const min=Math.min(...slice),max=Math.max(...slice),span=(max-min)||1;
+        const X=k=>(W*k/(slice.length-1)); const Y=v=>top+(H-top)*(1-(v-min)/span);
+        const linePath=slice.map((v,k)=>`${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
+        const areaPath=`M0,${Y(slice[0]).toFixed(1)} `+slice.map((v,k)=>`L${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')+` L${W},${H} L0,${H} Z`;
+        const gridY=[0,0.33,0.66,1].map(f=>({y:(top+(H-top)*f).toFixed(1)}));
+        // markers for events in range
+        const markers=p.events.filter(e=>e.offset<range).map(e=>{ const k=slice.length-1-e.offset; if(k<0)return null; return {x:X(k).toFixed(1),y:Y(slice[k]).toFixed(1),color:e.delta>=0?GREEN:RED}; }).filter(Boolean);
+        // axis labels
+        const today=new Date('2026-06-24T12:00:00Z');
+        const axisLabels=[0,0.25,0.5,0.75,1].map(f=>{ const daysAgo=Math.round(range*(1-f)); const dt=new Date(today.getTime()-daysAgo*86400000); return {label:this.dateShort(dt)}; });
+
+        const sigDefs=[
+          ['FotMob rating · World Cup',p.signals.fotmob, p.avgR?p.avgR.toFixed(2)+' avg':'No WC matches'],
+          ['Fantasy points · World Cup',p.signals.fantasy, p.avgF?p.avgF.toFixed(0)+' fpts/gm':'—'],
+          ['World Cup form',p.signals.form, (p.streakLen>=2?('🔥 '+p.streakLen+'-match streak'):(p.atWC?(p.streakLen+'-match form'):'Not at the World Cup'))],
+          ['X / Twitter mood',p.signals.twitter, (p.signals.twitter>66?'Buzzing':p.signals.twitter>40?'Steady':'Quiet')],
+          ['Transfer market & value',p.signals.transfermarkt, '€'+p.tmVal+'M '+(p.tmTrendUp?'▲':'▼')]];
+        const signals=sigDefs.map(([label,val,display])=>({label,pct:Math.round(val)+'%',display,
+          barColor:val>=66?GREEN:val>=42?'#e2a32b':RED, valColor:'#46504a'}));
+
+        const evDisp=p.events.slice().sort((a,b)=>a.offset-b.offset).map(e=>{ const up=e.delta>=0; const dt=new Date(today.getTime()-e.offset*86400000);
+          return { date:this.dateShort(dt), fixture:'vs '+e.oppTeam, line:e.note,
+            rating:e.rating.toFixed(1), ratingColor:e.rating>=7.5?GREEN:e.rating>=6.7?'#e2a32b':RED,
+            fantasy:e.fantasy, delta:Math.abs(e.delta).toFixed(2)+'%', deltaArrow:up?'▲':'▼', deltaColor:up?GREEN:RED }; });
+
+        const held=S.holdings[p.id]; const hasPos=!!held&&held.qty>0;
+        const posValue=hasPos?this.curPrice(p)*held.qty:0; const posCost=hasPos?held.avg*held.qty:0; const posPl=posValue-posCost; const posUp=posPl>=0;
+        const watched=S.watch.includes(p.id);
+        const recentNote=(p.events.slice().sort((a,b)=>a.offset-b.offset)[0]||{}).note||'';
+        const lastName=p.name.split(' ').slice(-1)[0];
+        let driverSummary;
+        if(p.atWC && p.streakLen>=2) driverSummary='On a genuine World Cup run with '+p.nation+' — '+recentNote+'.';
+        else if(p.atWC) driverSummary='Live at the 2026 World Cup with '+p.nation+(recentNote?(' — '+recentNote):'')+'.';
+        else if(p.news) driverSummary=p.news.text+'.';
+        else driverSummary='The club season is over and '+lastName+' is not at the World Cup — the price stays quiet until transfer news moves it.';
+        const moodText = p.mood || (p.change7d>3?'Timeline buzzing — fans piling in':p.change7d>0?'Mild positive chatter':p.change7d<-3?'Fans frustrated on X':'Quiet on X right now');
+
+        d={ name:p.name,team:p.team,pos:p.pos,age:p.age,lg:p.abbr,price:this.money(price),
+          wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',wkColor:cc,wkBg:up7?GBG:RBG,
+          chartColor:cc,linePath,areaPath,gridY,markers,axisLabels,signals,events:evDisp,driverSummary,
+          hasEvents:p.events.length>0, noEvents:p.events.length===0,
+          eventsTitle:p.atWC?'World Cup 2026 — match by match':'Recent activity',
+          eventsSub:p.atWC?'Real fixtures and ratings moving the price — sustained excellence compounds.':'No competitive matches right now; prices move on the transfer market.',
+          emptyText:p.news?('Latest: '+p.news.text):('No World Cup duty and the club season is over — '+lastName+' moves on transfer news.'),
+          hasNews:!!p.news, newsTag:p.news?p.news.tag:'', newsText:p.news?p.news.text:'',
+          newsColor:p.news?(p.news.bias>=0?GREEN:RED):'#46504a', newsBg:p.news?(p.news.bias>=0?GBG:RBG):'#f1f3ef', moodText,
+          heldQty:hasPos?held.qty:0,hasPosition:hasPos,avgCost:hasPos?this.money(held.avg):'—',
+          posValue:this.money(posValue),posPl:(posUp?'+':'−')+this.money(Math.abs(posPl)).slice(1),posPlColor:posUp?GREEN:RED,
+          watchLabel:watched?'★ Watching':'☆ Watch',watchColor:watched?'#e2a32b':'#8a938c',
+          onToggleWatch:()=>this.toggleWatch(p.id),onBuy:()=>this.openTrade(p.id,'buy'),onSell:()=>this.openTrade(p.id,'sell'),
+          sellBg:hasPos?'#fff':'#f5f6f3',sellColor:hasPos?'#16201a':'#bfc6be',sellBorder:hasPos?'#e1e4dd':'#eef1ec',sellCursor:hasPos?'pointer':'not-allowed' };
+      }
+    }
+    const rangeTabs=[[30,'30D'],[60,'60D'],[90,'90D']].map(([v,label])=>({label,onClick:()=>this.setRange(v),
+      bg:S.range===v?'#16201a':'#eef1ec',color:S.range===v?'#fff':'#46504a'}));
+
+    // ---- holdings list ----
+    const holdingsList=Object.keys(S.holdings).map(id=>{ const p=this.byId(id); const h=S.holdings[id]; const price=this.curPrice(p);
+      const val=price*h.qty; const plv=val-h.avg*h.qty; const up=plv>=0; const plpct=(plv/(h.avg*h.qty))*100;
+      return { name:p.name,lg:p.abbr,pos:p.pos,price:this.money(price),qty:h.qty,avg:this.money(h.avg),value:this.money(val),
+        pl:(up?'+':'−')+this.money(Math.abs(plv)).slice(1),plPct:this.pct(plpct),plColor:up?GREEN:RED,onClick:()=>this.openPlayer(id) }; })
+      .sort((a,b)=>0);
+
+    // ---- txns ----
+    const txnList=S.txns.slice(0,30).map(t=>({ side:t.side,name:t.name,
+      detail:`${t.qty} @ ${this.money(t.price)} · ${t.date}`,total:(t.side==='BUY'?'−':'+')+this.money(t.total).slice(1),
+      color:t.side==='BUY'?RED:GREEN,bg:t.side==='BUY'?RBG:GBG }));
+
+    // ---- watch ----
+    const watchList=S.watch.map(id=>this.byId(id)).filter(Boolean).map(p=>{ const dec=decorate(p); dec.onRemove=()=>this.toggleWatch(p.id); return dec; });
+
+    // ---- leaderboard ----
+    const lb=this.leaderboardData(); const medals={1:'🥇',2:'🥈',3:'🥉'};
+    const avatarColors=['#16a85f','#0c1f15','#2a6fdb','#b8543a','#7a4fbf','#c98a1e','#1f8a5b','#4a5568'];
+    const leaderboard=lb.map((x,i)=>{ const rk=i+1; const up=x.profit>=0; const initials=x.me?'YOU':x.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      const nwv=10000+x.profit;
+      return { medal:medals[rk]||String(rk), rankColor:rk<=3?'#16201a':'#aab2ab', name:x.name,
+        initials, avatarBg:x.me?'#16a85f':avatarColors[this.hash(x.name)%avatarColors.length],
+        netWorth:this.money0(nwv), profit:this.money0(Math.abs(x.profit)), profitArrow:up?'▲':'▼', profitColor:up?GREEN:RED,
+        rowBg:x.me?'#f0faf4':'transparent' }; });
+
+    // ---- trade modal ----
+    let tr=null;
+    if(S.tradeOpen && S.tradeId){ const p=this.byId(S.tradeId); const price=this.curPrice(p); const qty=S.tradeQty; const total=price*qty;
+      const buy=S.tradeSide==='buy'; const held=S.holdings[p.id]; const heldQty=held?held.qty:0;
+      const cashAfter=buy?this.state.cash-total:this.state.cash+total;
+      let error=''; if(buy&&total>this.state.cash) error='Not enough buying power.'; if(!buy&&qty>heldQty) error='You only hold '+heldQty+' shares.';
+      const ok=!error;
+      const maxBuy=Math.floor(this.state.cash/price);
+      const quickQtys=(buy?[1,5,10,'Max']:[1,5,'Half','All']).map(label=>{ let q; if(label==='Max')q=Math.max(1,maxBuy); else if(label==='All')q=heldQty; else if(label==='Half')q=Math.max(1,Math.floor(heldQty/2)); else q=label; return {label:String(label),onClick:()=>this.setTradeQty(q)}; });
+      tr={ name:p.name,team:p.team,pos:p.pos,price:this.money(price),qty,
+        sideLabel:buy?'Buy order':'Sell order',sideColor:buy?GREEN:RED,
+        total:this.money(total),balanceLabel:buy?'Cash after':'Cash after',balanceAfter:this.money(cashAfter),balanceColor:cashAfter<0?RED:'#16201a',
+        inc:()=>this.setTradeQty(qty+1),dec:()=>this.setTradeQty(qty-1),quickQtys,error,
+        confirm:()=>this.confirmTrade(),confirmLabel:buy?('Buy '+qty+' · '+this.money(total)):('Sell '+qty+' · '+this.money(total)),
+        confirmBg:ok?(buy?GREEN:RED):'#c4ccc3',confirmCursor:ok?'pointer':'not-allowed',confirmOpacity:ok?'1':'0.7' }; }
+
+    // ---- reward modal ----
+    const sched=this.rewardSchedule(); const claimable=this.isClaimable();
+    const claimDay=this.nextStreakDay();
+    const rwDays=sched.map((amt,i)=>{ const n=i+1; const isClaim=claimable&&n===claimDay; const past=n<claimDay||(!claimable&&n<=claimDay);
+      const cur=(!claimable&&n===claimDay);
+      return { n, amt:'$'+amt, bg:isClaim?'#e7f6ec':(past||cur?'#f0faf4':'#f5f6f3'), border:isClaim?'#16a85f':(past||cur?'#bfe6cd':'#eef1ec'),
+        labelColor:isClaim?'#16a85f':'#9aa39b', amtColor:isClaim?'#16a85f':(past||cur?'#16201a':'#aab2ab'),
+        tick:(past||cur)?'✓':(isClaim?'◆':''), tickColor:isClaim?'#16a85f':'#7fb89a' }; });
+    const rw={ title:claimable?('Day '+claimDay+' · claim $'+sched[claimDay-1]):'Come back tomorrow',
+      subtitle:claimable?'Keep your streak alive — rewards grow through a 7-day cycle, resetting Day 7.':('Streak: '+this.state.streak+' days. Next reward unlocks tomorrow.'),
+      days:rwDays, claim:()=>this.claimReward(), btnLabel:claimable?('Claim $'+sched[claimDay-1]):'Claimed today ✓',
+      btnBg:claimable?'#16a85f':'#c4ccc3', btnCursor:claimable?'pointer':'default', btnOpacity:claimable?'1':'0.8' };
+
+    // reward header button
+    const rewardBtnLabel=claimable?'Daily reward':'Streak '+this.state.streak+'🔥';
+    const rewardBtnColor=claimable?'#0c1f15':'#16a85f';
+    const rewardBtnBg=claimable?'#a8f0c8':'#e7f6ec';
+
+    return {
+      // shell
+      navTabs, ticker, leagueChips, search:S.search, onSearch:(e)=>this.onSearch(e),
+      goHome:()=>this.goHome(), goLeaders:()=>this.nav('leaders'),
+      cashFmt:this.money(this.state.cash),
+      rewardBtnLabel,rewardBtnColor,rewardBtnBg, openReward:()=>this.openReward(),
+      // views
+      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders',
+      // market
+      netWorthFmt:this.money(nw), investedFmt:this.money(hv), holdingCount:holdCount, rankFmt:'#'+rank,
+      plArrow:plUp?'▲':'▼', plAbsFmt:this.money(Math.abs(pl)), plPctFmt:this.pct((pl/10000)*100),
+      plChipBg:plUp?'rgba(61,220,138,.18)':'rgba(255,93,93,.18)', plChipColor:plUp?'#3ddc8a':'#ff5d5d',
+      nwSpark:nwHistPts, movers, marketList, universeNote:DB.length+' players priced — movers ranked by real World Cup form &amp; transfer activity. Players not at the World Cup sit flat until the market moves.',
+      // detail
+      d, rangeTabs, goBack:()=>this.goBack(),
+      // portfolio
+      hasHoldings:holdCount>0, noHoldings:holdCount===0, holdingsList, hasTxns:S.txns.length>0, noTxns:S.txns.length===0, txnList,
+      // watch
+      hasWatch:S.watch.length>0, noWatch:S.watch.length===0, watchList,
+      // leaderboard
+      leaderboard,
+      // trade modal
+      tradeOpen:S.tradeOpen, tr, closeTrade:()=>this.closeTrade(), stop:(e)=>this.stop(e),
+      // reward modal
+      showReward:S.showReward, rw, closeReward:()=>this.closeReward(),
+    };
+  }
+}
+</script>
+</body>
+</html>
