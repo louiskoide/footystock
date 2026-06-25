@@ -1,11 +1,18 @@
 #!/usr/bin/env node
 // Daily data pipeline (see /data-sources.md, step 1 of the build order):
-// pulls real 2026 World Cup results + per-player events from API-Football,
+// pulls real 2026 World Cup results + goal events from football-data.org,
 // computes WC-driven price inputs, and writes prices.json. The frontend only
 // ever reads that file — this script is the one place allowed to call the
 // external API (see CLAUDE.md: never fetch data APIs from the browser).
 //
-// Run: API_FOOTBALL_KEY=xxx node scripts/update-prices.mjs
+// football-data.org's free tier doesn't reliably expose assists, minutes, or
+// a per-player match rating — only goals (and sometimes the assisting player
+// on a goal). That's fine: CLAUDE.md already requires computing our own
+// rating from raw events rather than using a third-party one. Players who
+// didn't score still get a team-result-based event via the existing
+// `inSquad` fallback in buildDB().
+//
+// Run: FOOTBALL_DATA_KEY=xxx node scripts/update-prices.mjs
 import { readFileSync, writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
@@ -15,13 +22,14 @@ const ROOT = path.resolve(__dirname, '..');
 const HTML_PATH = path.join(ROOT, 'FootyStock_dc.html');
 const OUT_PATH = path.join(ROOT, 'prices.json');
 
-const API_KEY = process.env.API_FOOTBALL_KEY;
+const API_KEY = process.env.FOOTBALL_DATA_KEY;
 const SEASON = process.env.WC_SEASON || '2026';
-const LEAGUE_ID = 1; // API-Football: FIFA World Cup
-const API_BASE = 'https://v3.football.api-sports.io';
+const COMPETITION = 'WC'; // football-data.org code for the FIFA World Cup
+const API_BASE = 'https://api.football-data.org/v4';
+const MIN_REQUEST_GAP_MS = 6500; // free tier: 10 req/min
 
 if (!API_KEY) {
-  console.error('API_FOOTBALL_KEY not set — skipping fetch, leaving prices.json untouched.');
+  console.error('FOOTBALL_DATA_KEY not set — skipping fetch, leaving prices.json untouched.');
   process.exit(0);
 }
 
@@ -35,13 +43,13 @@ function normName(name) {
     .replace(/[^a-z0-9 ]+/g, '').trim();
 }
 
-// API-Football sometimes names a country differently than our DATA(). Map
-// API name -> the nation key we use internally.
+// football-data.org sometimes names a country differently than our DATA().
+// Map API name -> the nation key we use internally.
 const NATION_ALIASES = {
   'usa': 'USA', 'united states': 'USA',
   'ivory coast': 'Ivory Coast', "cote d'ivoire": 'Ivory Coast', 'côte d’ivoire': 'Ivory Coast',
-  'dr congo': 'DR Congo', 'congo dr': 'DR Congo',
-  'south korea': 'South Korea', 'korea republic': 'South Korea',
+  'dr congo': 'DR Congo', 'congo dr': 'DR Congo', 'congo democratic republic': 'DR Congo',
+  'south korea': 'South Korea', 'korea republic': 'South Korea', 'korea south': 'South Korea',
   'cape verde': 'Cape Verde', 'cape verde islands': 'Cape Verde',
 };
 function canonNation(apiName) {
@@ -90,25 +98,31 @@ function loadCrosswalk() {
   return players;
 }
 
+let lastRequestAt = 0;
 async function apiGet(endpoint, params) {
+  const wait = MIN_REQUEST_GAP_MS - (Date.now() - lastRequestAt);
+  if (wait > 0) await new Promise(r => setTimeout(r, wait));
+
   const url = new URL(API_BASE + endpoint);
   for (const [k, v] of Object.entries(params || {})) url.searchParams.set(k, v);
-  const res = await fetch(url, { headers: { 'x-apisports-key': API_KEY } });
-  if (!res.ok) throw new Error(`API-Football ${endpoint} -> HTTP ${res.status}`);
-  const json = await res.json();
-  if (json.errors && Object.keys(json.errors).length) {
-    throw new Error(`API-Football ${endpoint} -> ${JSON.stringify(json.errors)}`);
+
+  let res = await fetch(url, { headers: { 'X-Auth-Token': API_KEY } });
+  if (res.status === 429) {
+    await new Promise(r => setTimeout(r, 60000));
+    res = await fetch(url, { headers: { 'X-Auth-Token': API_KEY } });
   }
-  return json.response || [];
+  lastRequestAt = Date.now();
+  if (!res.ok) throw new Error(`football-data.org ${endpoint} -> HTTP ${res.status}`);
+  return res.json();
 }
 
-function roundLabel(round) {
-  // API-Football round strings look like "Group Stage - 1" or "Round of 16"
-  if (/group/i.test(round)) {
-    const g = round.match(/Group ([A-Z])/i);
-    return g ? `Group ${g[1].toUpperCase()}` : 'Group stage';
+function roundLabel(stage, group) {
+  if (stage === 'GROUP_STAGE') {
+    const g = (group || '').match(/([A-Z])$/);
+    return g ? `Group ${g[1]}` : 'Group stage';
   }
-  return round;
+  return (stage || '').replace(/_/g, ' ').toLowerCase()
+    .replace(/\b\w/g, c => c.toUpperCase());
 }
 
 async function main() {
@@ -116,41 +130,12 @@ async function main() {
   const trackedNations = new Set(players.map(p => p.nation));
   console.log(`Tracking ${players.length} players across ${trackedNations.size} nations.`);
 
-  const fixtures = await apiGet('/fixtures', { league: LEAGUE_ID, season: SEASON });
-  console.log(`Fetched ${fixtures.length} WC ${SEASON} fixtures.`);
+  const matchesResp = await apiGet(`/competitions/${COMPETITION}/matches`, { season: SEASON });
+  const matches = matchesResp.matches || [];
+  console.log(`Fetched ${matches.length} WC ${SEASON} matches.`);
 
-  // group fixtures per tracked nation, finished matches only
-  const teams = {};
-  const fixturesToPull = [];
-  for (const f of fixtures) {
-    const status = f.fixture.status.short;
-    if (!['FT', 'AET', 'PEN'].includes(status)) continue;
-    const home = canonNation(f.teams.home.name);
-    const away = canonNation(f.teams.away.name);
-    const date = f.fixture.date.slice(5, 10); // MM-DD
-    const round = roundLabel(f.league.round || '');
-    const isKnockout = !/group/i.test(round);
-
-    for (const [me, opp, gf, ga] of [
-      [home, away, f.goals.home, f.goals.away],
-      [away, home, f.goals.away, f.goals.home],
-    ]) {
-      if (!trackedNations.has(me)) continue;
-      teams[me] = teams[me] || { fixtures: [], _knockout: false, _lastRound: round };
-      teams[me].fixtures.push({ d: date, opp, gf, ga });
-      if (isKnockout) teams[me]._knockout = true;
-      teams[me]._lastRound = round;
-      fixturesToPull.push(f.fixture.id);
-    }
-  }
-  for (const nation of Object.keys(teams)) {
-    const t = teams[nation];
-    t.status = t._knockout ? `Through to the ${t._lastRound}` : `${t._lastRound}`;
-    delete t._knockout; delete t._lastRound;
-  }
-
-  const uniqueFixtureIds = [...new Set(fixturesToPull)];
-  console.log(`Pulling player stats for ${uniqueFixtureIds.length} fixtures (API-Football free tier: ~100 req/day).`);
+  const finished = matches.filter(m => m.status === 'FINISHED');
+  console.log(`${finished.length} finished matches.`);
 
   const byNormName = {};
   for (const p of players) {
@@ -158,47 +143,78 @@ async function main() {
     byNormName[key] = p;
   }
 
+  const teams = {};
   const playerEvents = {};
-  for (const fixtureId of uniqueFixtureIds) {
-    let resp;
+
+  for (const match of finished) {
+    const home = canonNation(match.homeTeam.name);
+    const away = canonNation(match.awayTeam.name);
+    const gf = match.score.fullTime.home;
+    const ga = match.score.fullTime.away;
+    const date = match.utcDate.slice(5, 10); // MM-DD
+    const round = roundLabel(match.stage, match.group);
+    const isKnockout = match.stage !== 'GROUP_STAGE';
+
+    for (const [me, opp, myGoals, oppGoals] of [
+      [home, away, gf, ga],
+      [away, home, ga, gf],
+    ]) {
+      if (!trackedNations.has(me)) continue;
+      teams[me] = teams[me] || { fixtures: [], _knockout: false, _lastRound: round };
+      teams[me].fixtures.push({ d: date, opp, gf: myGoals, ga: oppGoals });
+      if (isKnockout) teams[me]._knockout = true;
+      teams[me]._lastRound = round;
+    }
+
+    // per-player goal events — only call /matches/{id} for matches involving
+    // a tracked nation, to stay within the free tier's rate limit
+    if (!trackedNations.has(home) && !trackedNations.has(away)) continue;
+
+    let detail;
     try {
-      resp = await apiGet('/fixtures/players', { fixture: fixtureId });
+      detail = await apiGet(`/matches/${match.id}`);
     } catch (e) {
-      console.error(`Skipping fixture ${fixtureId}: ${e.message}`);
+      console.error(`Skipping match ${match.id}: ${e.message}`);
       continue;
     }
-    const fixtureMeta = fixtures.find(f => f.fixture.id === fixtureId);
-    const date = fixtureMeta.fixture.date.slice(5, 10);
-    for (const teamBlock of resp) {
-      const nation = canonNation(teamBlock.team.name);
-      if (!trackedNations.has(nation)) continue;
-      const oppName = canonNation(
-        teamBlock.team.name === fixtureMeta.teams.home.name ? fixtureMeta.teams.away.name : fixtureMeta.teams.home.name
-      );
-      const gf = teamBlock.team.name === fixtureMeta.teams.home.name ? fixtureMeta.goals.home : fixtureMeta.goals.away;
-      const ga = teamBlock.team.name === fixtureMeta.teams.home.name ? fixtureMeta.goals.away : fixtureMeta.goals.home;
-      for (const pl of teamBlock.players) {
-        const key = normName(pl.player.name) + '|' + nation;
-        const tracked = byNormName[key];
-        if (!tracked) continue;
-        const stat = pl.statistics[0] || {};
-        const minutes = stat.games?.minutes || 0;
-        if (!minutes) continue; // didn't play
-        const g = stat.goals?.total || 0;
-        const a = stat.goals?.assists || 0;
-        const apiRating = parseFloat(stat.games?.rating);
-        const diff = Math.max(-1, Math.min(1, (gf - ga) * 0.3));
-        const rating = Number.isFinite(apiRating) ? apiRating
-          : parseFloat((6.9 + diff + g * 0.5 + a * 0.3).toFixed(2));
-        const st = [];
-        if (g) st.push(`${g}G`); if (a) st.push(`${a}A`); if (!g && !a) st.push('—');
-        const note = `${minutes}' vs ${oppName} (${gf}-${ga})${g || a ? ` — ${st.join(' ')}` : ''}`;
+    const goals = detail.match?.goals || detail.goals || [];
+    const tally = {}; // id -> {g,a}
+    for (const goal of goals) {
+      const teamName = canonNation(goal.team?.name || '');
+      if (!trackedNations.has(teamName)) continue;
+      const scorerKey = goal.scorer?.name ? normName(goal.scorer.name) + '|' + teamName : null;
+      const scorer = scorerKey ? byNormName[scorerKey] : null;
+      if (scorer) (tally[scorer.id] = tally[scorer.id] || { g: 0, a: 0 }).g++;
 
-        (playerEvents[tracked.id] = playerEvents[tracked.id] || []).push({
-          d: date, opp: oppName, g, a, rating, note,
+      const assistKey = goal.assist?.name ? normName(goal.assist.name) + '|' + teamName : null;
+      const assister = assistKey ? byNormName[assistKey] : null;
+      if (assister) (tally[assister.id] = tally[assister.id] || { g: 0, a: 0 }).a++;
+    }
+
+    for (const [me, opp, myGoals, oppGoals] of [
+      [home, away, gf, ga],
+      [away, home, ga, gf],
+    ]) {
+      if (!trackedNations.has(me)) continue;
+      for (const p of players.filter(pl => pl.nation === me)) {
+        const t = tally[p.id];
+        if (!t) continue;
+        const diff = Math.max(-1, Math.min(1, (myGoals - oppGoals) * 0.3));
+        const rating = parseFloat((6.9 + diff + t.g * 0.5 + t.a * 0.3).toFixed(2));
+        const st = [];
+        if (t.g) st.push(`${t.g}G`); if (t.a) st.push(`${t.a}A`);
+        const note = `vs ${opp} (${myGoals}-${oppGoals}) — ${st.join(' ')}`;
+        (playerEvents[p.id] = playerEvents[p.id] || []).push({
+          d: date, opp, g: t.g, a: t.a, rating, note,
         });
       }
     }
+  }
+
+  for (const nation of Object.keys(teams)) {
+    const t = teams[nation];
+    t.status = t._knockout ? `Through to the ${t._lastRound}` : `${t._lastRound}`;
+    delete t._knockout; delete t._lastRound;
   }
 
   const out = {

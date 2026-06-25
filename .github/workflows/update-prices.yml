@@ -22,7 +22,7 @@ jobs:
 
       - name: Fetch real World Cup data and write prices.json
         env:
-          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+          FOOTBALL_DATA_KEY: ${{ secrets.FOOTBALL_DATA_KEY }}
         run: node scripts/update-prices.mjs
 
       - name: Commit prices.json if it changed
