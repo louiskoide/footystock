@@ -145,13 +145,58 @@
     return node;
   }
 
+  function childPath(el, root) {
+    const path = [];
+    let n = el;
+    while (n && n !== root) {
+      const parent = n.parentNode;
+      if (!parent) return null;
+      path.unshift(Array.prototype.indexOf.call(parent.childNodes, n));
+      n = parent;
+    }
+    return n === root ? path : null;
+  }
+
+  function nodeAtPath(root, path) {
+    let n = root;
+    for (const i of path) {
+      n = n && n.childNodes[i];
+      if (!n) return null;
+    }
+    return n;
+  }
+
+  // capture scrollTop/scrollLeft for the window and for any scrollable
+  // descendant (e.g. the max-height:560px;overflow-y:auto rankings list),
+  // keyed by childNode path so they can be re-applied to the equivalent
+  // element after the DOM is rebuilt from scratch
+  function captureScroll() {
+    const entries = [{ path: null, top: window.scrollY, left: window.scrollX }];
+    const all = rootEl.querySelectorAll('*');
+    for (const el of all) {
+      if ((el.scrollTop || el.scrollLeft) && el.scrollHeight > el.clientHeight) {
+        const path = childPath(el, rootEl);
+        if (path) entries.push({ path, top: el.scrollTop, left: el.scrollLeft });
+      }
+    }
+    return entries;
+  }
+
+  function restoreScroll(entries) {
+    for (const e of entries) {
+      if (e.path === null) { window.scrollTo(e.left, e.top); continue; }
+      const el = nodeAtPath(rootEl, e.path);
+      if (el) { el.scrollTop = e.top; el.scrollLeft = e.left; }
+    }
+  }
+
   function render() {
     if (!componentInstance) return;
     const active = document.activeElement;
     const wasInput = active && active.tagName === 'INPUT' && rootEl.contains(active);
     const selStart = wasInput ? active.selectionStart : null;
     const selEnd = wasInput ? active.selectionEnd : null;
-    const scrollX = window.scrollX, scrollY = window.scrollY;
+    const scrollEntries = captureScroll();
 
     const vals = componentInstance.renderVals();
     const tmp = document.createElement('div');
@@ -168,9 +213,10 @@
         try { newInput.setSelectionRange(selStart, selEnd); } catch (e) {}
       }
     }
-    // rebuilding the DOM via innerHTML drops scroll position — restore it so
-    // the periodic live-price re-render doesn't jolt the page back to the top
-    window.scrollTo(scrollX, scrollY);
+    // rebuilding the DOM via innerHTML drops all scroll positions (window and
+    // any internal overflow:auto containers) — restore them so the periodic
+    // live-price re-render doesn't jolt the page back to the top
+    restoreScroll(scrollEntries);
   }
 
   window.addEventListener('DOMContentLoaded', () => {
