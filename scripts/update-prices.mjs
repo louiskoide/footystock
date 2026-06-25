@@ -142,6 +142,7 @@ async function main() {
     const key = normName(p.name) + '|' + p.nation;
     byNormName[key] = p;
   }
+  if (process.env.DEBUG_MATCH) console.log('SAMPLE_KEYS', JSON.stringify(Object.keys(byNormName).slice(0, 10)));
 
   const teams = {};
   const playerEvents = {};
@@ -181,9 +182,11 @@ async function main() {
     const tally = {}; // id -> {g,a}
     for (const goal of goals) {
       const teamName = canonNation(goal.team?.name || '');
+      if (process.env.DEBUG_MATCH) console.log('GOAL_RAW', JSON.stringify({ rawTeam: goal.team?.name, teamName, scorer: goal.scorer?.name, assist: goal.assist?.name, tracked: trackedNations.has(teamName) }));
       if (!trackedNations.has(teamName)) continue;
       const scorerKey = goal.scorer?.name ? normName(goal.scorer.name) + '|' + teamName : null;
       const scorer = scorerKey ? byNormName[scorerKey] : null;
+      if (process.env.DEBUG_MATCH) console.log('SCORER_LOOKUP', JSON.stringify({ scorerKey, found: !!scorer }));
       if (scorer) (tally[scorer.id] = tally[scorer.id] || { g: 0, a: 0 }).g++;
 
       const assistKey = goal.assist?.name ? normName(goal.assist.name) + '|' + teamName : null;
