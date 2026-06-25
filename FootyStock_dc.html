@@ -874,11 +874,32 @@ Samu Aghehowa|Porto|ST|21|5
       const fairValue = fairValueBase * Math.exp(wHype*hypeScore);
       const price = fairValue;
 
-      // history 90d ending at current price
-      const N=90; const hist=[]; const trend=change30d/100; const start=price/(1+trend*1.05);
-      for(let i=0;i<N;i++){ const t=i/(N-1); const baseV=start+(price-start)*Math.pow(t,1.18);
-        const noise=Math.sin(i*0.7+this.hash(id)%10)*price*0.01 + (r()-0.5)*price*0.01; hist.push(Math.max(2,baseV+noise)); }
-      for(const e of events){ const idx=N-1-e.offset; if(idx>0&&idx<N){ const bump=e.delta/100*price; for(let j=idx;j<N;j++) hist[j]+=bump*0.6; } }
+      // history 90d ending at current price. A player with a real signal
+      // (WC performance or curated news) actually drifted to get here, so
+      // the 90d baseline trends; a quiet player's fundamentals barely move
+      // day to day, so its baseline stays close to flat (per the once-a-day
+      // fundamentals / intraday-hype model in docs/pricing-model.md).
+      const hasSignal = atWC || !!news;
+      const N=90; const hist=[];
+      const trend = hasSignal ? clamp(change30d/100,-0.4,0.4) : (r()-0.5)*0.04;
+      const start=price/(1+trend*1.05);
+      // organic noise via a Brownian bridge (pinned to 0 at both ends) instead
+      // of a periodic sine wave, so the line wiggles like a real ticker
+      // rather than a regular sawtooth.
+      const steps=[]; let acc=0;
+      for(let i=0;i<N;i++){ acc+=(r()-0.5); steps.push(acc); }
+      const s0=steps[0], s1=steps[N-1];
+      const bridge=steps.map((v,i)=>v-(s0+(s1-s0)*i/(N-1)));
+      const bridgeMax=Math.max(...bridge.map(Math.abs))||1;
+      const noiseAmp=price*(hasSignal?0.012:0.006);
+      for(let i=0;i<N;i++){ const t=i/(N-1); const baseV=start+(price-start)*Math.pow(t,1.15);
+        const noise=(bridge[i]/bridgeMax)*noiseAmp; hist.push(Math.max(2,baseV+noise)); }
+      // ease each match reaction in over a few days instead of an instant
+      // vertical cliff, so the chart reads as the price catching up to news
+      // rather than a glitch.
+      for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N) continue;
+        const bump=(e.delta/100)*price*0.6, ramp=3;
+        for(let j=idx;j<N;j++){ const k=Math.min(1,(j-idx)/ramp); const eased=k*k*(3-2*k); hist[j]+=bump*eased; } }
       hist[N-1]=price;
 
       db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price,
@@ -902,7 +923,12 @@ Samu Aghehowa|Porto|ST|21|5
   dateShort(dt){ return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
   sparkPts(hist,w,h){
     const N=Math.min(hist.length,30); const slice=hist.slice(hist.length-N);
-    const min=Math.min(...slice),max=Math.max(...slice),span=(max-min)||1; const pad=2;
+    let min=Math.min(...slice),max=Math.max(...slice); const pad=2;
+    // don't auto-zoom into noise: a quiet player with near-zero movement
+    // should read as a flat line, not a wild zigzag stretched to fill the chart
+    const minSpan=(Math.abs(slice[slice.length-1])||1)*0.12;
+    if(max-min<minSpan){ const mid=(max+min)/2; min=mid-minSpan/2; max=mid+minSpan/2; }
+    const span=(max-min)||1;
     return slice.map((v,k)=>{ const x=pad+(w-2*pad)*k/(N-1); const y=pad+(h-2*pad)*(1-(v-min)/span); return x.toFixed(1)+','+y.toFixed(1); }).join(' ');
   }
 
@@ -1042,7 +1068,12 @@ Samu Aghehowa|Porto|ST|21|5
         const price=this.curPrice(p); const up7=p.change7d>=0; const cc=up7?GREEN:RED;
         const N=p.hist.length; const range=S.range; const slice=p.hist.slice(N-range);
         const W=760,H=240,top=6;
-        const min=Math.min(...slice),max=Math.max(...slice),span=(max-min)||1;
+        let min=Math.min(...slice),max=Math.max(...slice);
+        // same floor as sparkPts: a quiet, flat-priced player shouldn't get
+        // zoomed into noise and rendered as a rollercoaster
+        const minSpan=price*0.12;
+        if(max-min<minSpan){ const mid=(max+min)/2; min=mid-minSpan/2; max=mid+minSpan/2; }
+        const span=(max-min)||1;
         const X=k=>(W*k/(slice.length-1)); const Y=v=>top+(H-top)*(1-(v-min)/span);
         const linePath=slice.map((v,k)=>`${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
         const areaPath=`M0,${Y(slice[0]).toFixed(1)} `+slice.map((v,k)=>`L${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')+` L${W},${H} L0,${H} Z`;
