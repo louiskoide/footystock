@@ -825,15 +825,17 @@ Samu Aghehowa|Porto|ST|21|5
       const offOf=(d)=>Math.round((today-new Date('2026-'+d+'T18:00:00Z'))/86400000);
       const sum=(arr)=>arr.reduce((a,b)=>a+b,0);
       let events=[]; let atWC=false; let wcStatus='';
+      // Only players with curated, confirmed individual match data (STARS)
+      // count as "at the World Cup". Sharing a nationality with a country
+      // that's competing is not evidence of being in that squad — fabricating
+      // fixture-based ratings from nationality alone (the old `else if(wc)`
+      // fallback) invented performances for players who may not have been
+      // called up at all (e.g. Cole Palmer credited with England's Croatia/
+      // Ghana results). No confirmed data must stay neutral, never guessed.
       if(stars){ atWC=true; wcStatus=(wc?wc.status:'At the 2026 World Cup');
         for(const s of stars){ const g=s.g||0,a=s.a||0; let delta=parseFloat(((s.rating-6.9)*1.3+g*1.0+a*0.6).toFixed(2));
           const st=[]; if(g)st.push(g+'G'); if(a)st.push(a+'A'); if(!g&&!a)st.push('—');
           events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,fantasy:Math.round(s.rating*1.3+g*4+a*3),goals:g,assists:a,delta,statLine:st.join(' '),note:s.note}); } }
-      else if(wc){ atWC=true; wcStatus=wc.status;
-        for(const f of wc.fixtures){ const win=f.gf>f.ga,draw=f.gf===f.ga; const base=({1:7.4,2:7.2,3:7.0,4:6.8,5:6.7,6:6.6})[tier]+(win?0.4:draw?0:-0.4);
-          let rating=parseFloat(Math.max(6.0,Math.min(8.6,base+(r()-0.5)*0.8)).toFixed(1));
-          let delta=parseFloat(((rating-6.95)*0.9+(win?0.5:draw?0:-0.6)).toFixed(2));
-          events.push({offset:offOf(f.d),oppTeam:f.opp,rating,fantasy:Math.round(rating*1.3),goals:0,assists:0,delta,statLine:(f.gf+'–'+f.ga+' '+(win?'W':draw?'D':'L')),note:nation+' '+(win?'win':draw?'draw':'defeat')+' against '+f.opp}); } }
       const newsDelta = news?news.bias:0;
       let change7d, change30d;
       if(atWC||news){ change7d=sum(events.filter(e=>e.offset<=8).map(e=>e.delta))+((news&&offOf(news.d)<=8)?newsDelta:0);
