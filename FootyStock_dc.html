@@ -1094,7 +1094,13 @@ Samu Aghehowa|Porto|ST|21|5
       const p=this.byId(S.selectedId);
       if(p){
         const price=this.curPrice(p); const up7=p.change7d>=0; const cc=up7?GREEN:RED;
-        const N=p.hist.length; const range=S.range; const slice=p.hist.slice(N-range);
+        const N=p.hist.length; const range=S.range; const is24h=range==='24h';
+        // no intraday history is stored (CLAUDE.md: daily snapshot, not real-time) —
+        // render the latest day's move as a seeded hourly curve instead of a second data source
+        const slice=is24h?(()=>{ const prevClose=p.hist[N-2]??p.hist[N-1]; const HOURS=24; const s=[];
+          for(let h=0;h<=HOURS;h++){ const t=h/HOURS; const noise=(this.rand01(p.id+':24h:'+h)-0.5)*(price*0.01);
+            s.push(prevClose+(price-prevClose)*t+noise); }
+          s[HOURS]=price; return s; })() : p.hist.slice(N-range);
         const W=760,H=240,top=6;
         let min=Math.min(...slice),max=Math.max(...slice);
         // same floor as sparkPts: a quiet, flat-priced player shouldn't get
@@ -1107,10 +1113,14 @@ Samu Aghehowa|Porto|ST|21|5
         const areaPath=`M0,${Y(slice[0]).toFixed(1)} `+slice.map((v,k)=>`L${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')+` L${W},${H} L0,${H} Z`;
         const gridY=[0,0.33,0.66,1].map(f=>({y:(top+(H-top)*f).toFixed(1)}));
         // markers for events in range
-        const markers=p.events.filter(e=>e.offset<range).map(e=>{ const k=slice.length-1-e.offset; if(k<0)return null; return {x:X(k).toFixed(1),y:Y(slice[k]).toFixed(1),color:e.delta>=0?GREEN:RED}; }).filter(Boolean);
+        const markers=is24h
+          ? p.events.filter(e=>e.offset===0).map(e=>({x:X(slice.length-1).toFixed(1),y:Y(slice[slice.length-1]).toFixed(1),color:e.delta>=0?GREEN:RED}))
+          : p.events.filter(e=>e.offset<range).map(e=>{ const k=slice.length-1-e.offset; if(k<0)return null; return {x:X(k).toFixed(1),y:Y(slice[k]).toFixed(1),color:e.delta>=0?GREEN:RED}; }).filter(Boolean);
         // axis labels
         const today=new Date('2026-06-24T12:00:00Z');
-        const axisLabels=[0,0.25,0.5,0.75,1].map(f=>{ const daysAgo=Math.round(range*(1-f)); const dt=new Date(today.getTime()-daysAgo*86400000); return {label:this.dateShort(dt)}; });
+        const axisLabels=is24h
+          ? [0,0.25,0.5,0.75,1].map(f=>{ const hoursAgo=Math.round(24*(1-f)); return {label:hoursAgo===0?'now':`-${hoursAgo}h`}; })
+          : [0,0.25,0.5,0.75,1].map(f=>{ const daysAgo=Math.round(range*(1-f)); const dt=new Date(today.getTime()-daysAgo*86400000); return {label:this.dateShort(dt)}; });
 
         const sigDefs=[
           ['FotMob rating · World Cup',p.signals.fotmob, p.avgR?p.avgR.toFixed(2)+' avg':'No WC matches'],
@@ -1154,7 +1164,7 @@ Samu Aghehowa|Porto|ST|21|5
           sellBg:hasPos?'#fff':'#f5f6f3',sellColor:hasPos?'#16201a':'#bfc6be',sellBorder:hasPos?'#e1e4dd':'#eef1ec',sellCursor:hasPos?'pointer':'not-allowed' };
       }
     }
-    const rangeTabs=[[30,'30D'],[60,'60D'],[90,'90D']].map(([v,label])=>({label,onClick:()=>this.setRange(v),
+    const rangeTabs=[['24h','24H'],[7,'7D'],[30,'30D'],[90,'90D']].map(([v,label])=>({label,onClick:()=>this.setRange(v),
       bg:S.range===v?'#16201a':'#eef1ec',color:S.range===v?'#fff':'#46504a'}));
 
     // ---- holdings list ----
