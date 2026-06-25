@@ -179,6 +179,15 @@ async function main() {
       continue;
     }
     const goals = detail.match?.goals || detail.goals || [];
+    if (process.env.DEBUG_MATCH && !global.__debugDumped) {
+      global.__debugDumped = 0;
+    }
+    if (process.env.DEBUG_MATCH && global.__debugDumped < 3) {
+      global.__debugDumped++;
+      console.log('DETAIL_KEYS', JSON.stringify(Object.keys(detail)));
+      console.log('DETAIL_GOALS_LEN', goals.length, 'hasMatchKey', !!detail.match, 'hasGoalsKey', !!detail.goals);
+      console.log('DETAIL_SAMPLE', JSON.stringify(detail).slice(0, 1500));
+    }
     const tally = {}; // id -> {g,a}
     for (const goal of goals) {
       const teamName = canonNation(goal.team?.name || '');
