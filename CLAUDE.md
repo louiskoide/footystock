@@ -6,7 +6,10 @@ Entertainment only — **no real money is involved**.
 
 ## How it works (the mental model)
 
-- Player prices update **once a day** (free-tier cadence), **not live in-play**.
+- - **Two update loops.** Fundamentals (performance, form, market-value anchor)
+  update **once a day**. **Hype** refreshes **intraday** (every ~15–60 min) so
+  prices stagger and jolt like a real ticker. **Not live in-play** — no match
+  data is pulled mid-game.
 - A scheduled job (GitHub Action) pulls football + hype data daily, computes
   each player's price, and writes `prices.json`.
 - The static frontend fetches `prices.json` and renders the market.
