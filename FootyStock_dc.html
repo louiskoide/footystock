@@ -442,6 +442,15 @@ class Component extends DCLogic {
     this.live = {}; // id -> live multiplier
   }
   componentDidMount(){
+    // prices.json is written server-side by .github/workflows/update-prices.yml
+    // (real API-Football data, never fetched from the browser directly — see
+    // CLAUDE.md). Missing file / offline / not-yet-run all degrade silently to
+    // the hand-typed STARS/WC fallback already in DATA().
+    fetch('prices.json').then(r=>r.ok?r.json():null).then(data=>{
+      if(!data) return;
+      this._wcLive = data; this._db = null;
+      this.setState(s=>({tick:s.tick+1}));
+    }).catch(()=>{});
     this.timer = setInterval(()=>{
       const DB = this.getDB();
       for(const p of DB){
@@ -837,13 +846,22 @@ Samu Aghehowa|Porto|ST|21|5
       // Croatia/Ghana results) — so the fallback below only fires for names
       // on the curated squad list (NATION minus confirmed EXCLUDED), and it
       // never invents personal goals/assists, only team-result-based form.
-      const inSquad = !!(nation && wc && !D.EXCLUDED.has(name));
-      if(stars){ atWC=true; wcStatus=(wc?wc.status:'At the 2026 World Cup');
-        for(const s of stars){ const g=s.g||0,a=s.a||0; let delta=parseFloat(((s.rating-6.9)*1.3+g*1.0+a*0.6).toFixed(2));
+      // Live fetched data (prices.json, written by the daily GitHub Action that
+      // pulls real World Cup results from API-Football) takes priority over
+      // the hand-typed STARS/WC literals below — those literals are now only
+      // the offline fallback for before the pipeline's first successful run.
+      const live = this._wcLive;
+      const liveTeam = (live && live.teams && nation) ? live.teams[nation] : null;
+      const livePlayer = (live && live.players) ? live.players[id] : null;
+      const wcEff = liveTeam || wc;
+      const starsEff = (livePlayer && livePlayer.events && livePlayer.events.length) ? livePlayer.events : stars;
+      const inSquad = !!(nation && wcEff && !D.EXCLUDED.has(name));
+      if(starsEff){ atWC=true; wcStatus=(wcEff?wcEff.status:'At the 2026 World Cup');
+        for(const s of starsEff){ const g=s.g||0,a=s.a||0; let delta=parseFloat(((s.rating-6.9)*1.3+g*1.0+a*0.6).toFixed(2));
           const st=[]; if(g)st.push(g+'G'); if(a)st.push(a+'A'); if(!g&&!a)st.push('—');
           events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,fantasy:Math.round(s.rating*1.3+g*4+a*3),goals:g,assists:a,delta,statLine:st.join(' '),note:s.note}); } }
-      else if(inSquad){ atWC=true; wcStatus=wc.status;
-        for(const f of wc.fixtures){ const diff=Math.max(-1,Math.min(1,(f.gf-f.ga)*0.3));
+      else if(inSquad){ atWC=true; wcStatus=wcEff.status;
+        for(const f of wcEff.fixtures){ const diff=Math.max(-1,Math.min(1,(f.gf-f.ga)*0.3));
           const rating=parseFloat((6.9+diff).toFixed(2)); const delta=parseFloat((diff*1.3).toFixed(2));
           events.push({offset:offOf(f.d),oppTeam:f.opp,rating,fantasy:Math.round(rating*1.3),goals:0,assists:0,delta,statLine:'—',note:null}); } }
       const newsDelta = news?news.bias:0;
