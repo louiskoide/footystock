@@ -19,10 +19,17 @@ We combine them **multiplicatively** (i.e. additively in log space) so effects
 compound proportionally and the price can never go negative:
 
 ```
-log(fairValue) = log(marketValue)
-               + wPerf * perfScore     // real-life performance
-               + wForm * formScore     // recent trajectory
-               + wHype * hypeScore     // transfer + social + search buzz
+// SLOW LOOP — once a day, fundamentals only.
+// This is the fair-value FLOOR the intraday ticks orbit around.
+log(fairValueBase) = log(marketValue)
+                   + wPerf * perfScore     // real-life performance
+                   + wForm * formScore     // recent trajectory
+
+// FAST LOOP — every ~15–60 min, refresh hype + re-converge the price.
+log(fairValue) = log(fairValueBase)
+               + wHype * hypeScore(now)    // search / news / odds buzz, refreshed live
+
+price = price + α * (fairValue − price) + noise   // chase the floor + wobble
 ```
 
 ### The mean-centering rule (critical)
