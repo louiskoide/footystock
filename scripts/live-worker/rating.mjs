@@ -1,11 +1,9 @@
 // Computes our own per-match player rating from raw API-Football event data.
 // CLAUDE.md rule 4: never scrape/store a third-party rating — this number is ours.
 //
-// Calibrated against the frontend's existing delta formula in buildDB():
-//   delta = (rating-6.9)*1.3 + g*1.0 + a*0.6
-// Goals/assists are already rewarded heavily there, so this rating leans on
-// the *other* signals (defensive work, duels, dribbles, discipline, result)
-// rather than double-counting g/a on top of what buildDB() already does.
+// Calibrated to pricing-model.md's scale: a quiet-but-competent showing from
+// a solid squad player should land ~6.8-7.1, a strong all-round game ~7.5-7.8,
+// and only multi-goal/high-stakes games should clear the 9.0 "elite" bar.
 //
 // stats is one entry of API-Football's /fixtures/players response
 // (statistics[0] for that fixture): { games, goals, passes, tackles, duels,
@@ -29,9 +27,9 @@ export function computeRating(stats, { knockout = false, result = 'draw' } = {})
   // cameo isn't punished/rewarded as hard as a full match — see pricing-model.md.
   const minuteScale = Math.min(1, minutes / 45);
 
-  let rating = 6.0;
-  rating += 0.5 * goals;
-  rating += 0.3 * assists;
+  let rating = 6.85;
+  rating += 0.6 * goals;
+  rating += 0.35 * assists;
   rating += minuteScale * (0.05 * tackles + 0.05 * interceptions + 0.03 * duelsWon
     + 0.04 * dribblesSuccess + 0.03 * keyPasses + 0.03 * shotsOn);
   rating -= 0.3 * yellow;

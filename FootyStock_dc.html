@@ -210,9 +210,9 @@
           </div>
         </div>
 
-        <!-- transfer news + X mood -->
+        <!-- transfer news + search buzz -->
         <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px 26px;display:flex;flex-direction:column;gap:13px">
-          <div style="font:700 16px 'Space Grotesk';letter-spacing:-.01em">Transfer market &amp; X mood</div>
+          <div style="font:700 16px 'Space Grotesk';letter-spacing:-.01em">Transfer market &amp; search buzz</div>
           <sc-if value="{{ d.hasNews }}" hint-placeholder-val="{{ false }}">
             <div style="display:flex;gap:12px;align-items:flex-start;background: {{ d.newsBg }};border-radius:12px;padding:13px 15px">
               <span style="font:700 10px 'Hanken Grotesk';letter-spacing:.05em;color: {{ d.newsColor }};white-space:nowrap;padding-top:2px">{{ d.newsTag }}</span>
@@ -220,7 +220,7 @@
             </div>
           </sc-if>
           <div style="display:flex;gap:11px;align-items:center">
-            <span style="font:700 11px 'Space Grotesk';color:#586159;background:#eef1ec;border-radius:6px;padding:5px 9px;white-space:nowrap">X mood</span>
+            <span style="font:700 11px 'Space Grotesk';color:#586159;background:#eef1ec;border-radius:6px;padding:5px 9px;white-space:nowrap">Search buzz</span>
             <span style="font:500 13.5px 'Hanken Grotesk';color:#46504a">{{ d.moodText }}</span>
           </div>
         </div>
@@ -369,7 +369,7 @@
   </sc-if>
 
   <!-- footer -->
-  <div style="text-align:center;font:500 11.5px 'Hanken Grotesk';color:#aab2ab;padding:34px 26px 0;line-height:1.6">Prices are driven by real 2026 World Cup performances, FotMob ratings, fantasy output, X mood &amp; the live transfer market — researched and current as of Jun 24, 2026 (a manual snapshot, not an auto-updating feed). For entertainment; no real money is involved.</div>
+  <div style="text-align:center;font:500 11.5px 'Hanken Grotesk';color:#aab2ab;padding:34px 26px 0;line-height:1.6">Prices are driven by real 2026 World Cup performances, our own computed match ratings, Google Trends search interest &amp; transfer market value — researched and current as of Jun 24, 2026 (a manual snapshot, not an auto-updating feed). For entertainment; no real money is involved.</div>
 </div>
 
 <!-- ============ TRADE MODAL ============ -->
@@ -1189,7 +1189,12 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       'morten-hjulmand-sporting':NW('TRANSFER RUMOR','AC Milan push to reunite him with Amorim',7.0,'06-23'),
       'marcus-rashford-barcelona':NW('TRANSFER','Barça weigh a permanent deal as add-ons are debated',2.0,'06-21'),
       'robert-lewandowski-barcelona':NW('TRANSFER','Leaves Barcelona at 37; next move under discussion',-3.5,'06-20'),
-      'bruno-fernandes-man-utd':NW('AWARDS BUZZ','Pundits naming Fernandes the front-runner for PFA Player of the Year on the back of his club form',5.5,'06-23')
+      'bruno-fernandes-man-utd':NW('AWARDS BUZZ','Pundits naming Fernandes the front-runner for PFA Player of the Year on the back of his club form',5.5,'06-23'),
+      'lionel-messi-inter-miami':NW('MATCH RECAP','Messi’s opening hat-trick vs Algeria is being called one of the great group-stage individual showings as Argentina cruise through Group J',6.0,'06-17'),
+      'cristiano-ronaldo-al-nassr':NW('MATCH RECAP','Ronaldo drew heavy criticism after a quiet night in Portugal’s shock 1-1 draw with DR Congo, with pundits questioning his impact at this stage of his career',-4.0,'06-18'),
+      'kylian-mbappe-real-madrid':NW('MATCH RECAP','Mbappé’s brace against Iraq on his 100th France cap has reporters hailing his consistency as France ease into the round of 32',4.5,'06-23'),
+      'erling-haaland-man-city':NW('MATCH RECAP','Haaland’s brace against Senegal finally delivers his first World Cup goals, ending years of tournament frustration with a bang',5.0,'06-17'),
+      'matheus-cunha-man-utd':NW('MATCH RECAP','Cunha’s first-half brace against Haiti has reporters noting his third goal of the tournament and his growing influence for Brazil',4.0,'06-20')
     };
     const MOOD={
       'kylian-mbappe-real-madrid':'\u201cMr World Cup\u201d trending after the Iraq brace',
@@ -1350,7 +1355,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       const fantVals=events.map(e=>e.fantasy).filter(x=>x>0);
       const avgF=fantVals.length?sum(fantVals)/fantVals.length:0;
       // signals (0-100, ~46 = average player)
-      const fotmob=avgR?Math.max(8,Math.min(99,(avgR-5.6)/3.4*100)):0;
+      const fotmob=avgR?Math.max(8,Math.min(99,(avgR-5.7)/2.6*100)):0;
       const fantasySig=avgF?Math.max(8,Math.min(99,avgF/16*100)):0;
       const formSig=atWC?Math.max(6,Math.min(99,46+change7d*2.4+streakLen*9)):8;
       // Real hype (Google Trends search-interest delta, see scripts/live-worker/hype.mjs)
@@ -1615,10 +1620,10 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           : [0,0.25,0.5,0.75,1].map(f=>{ const daysAgo=Math.round(range*(1-f)); const dt=new Date(today.getTime()-daysAgo*86400000); return {label:this.dateShort(dt)}; });
 
         const sigDefs=[
-          ['FotMob rating · World Cup',p.signals.fotmob, p.avgR?p.avgR.toFixed(2)+' avg':'No WC matches'],
-          ['Fantasy points · World Cup',p.signals.fantasy, p.avgF?p.avgF.toFixed(0)+' fpts/gm':'—'],
+          ['Match rating · World Cup',p.signals.fotmob, p.avgR?p.avgR.toFixed(2)+' avg':'No WC matches'],
+          ['Fantasy score · World Cup',p.signals.fantasy, p.avgF?p.avgF.toFixed(0)+' fpts/gm':'—'],
           ['World Cup form',p.signals.form, (p.streakLen>=2?('🔥 '+p.streakLen+'-match streak'):(p.atWC?(p.streakLen+'-match form'):'Not at the World Cup'))],
-          ['X / Twitter mood',p.signals.twitter, (p.signals.twitter>66?'Buzzing':p.signals.twitter>40?'Steady':'Quiet')],
+          ['Search interest (Google Trends)',p.signals.twitter, (p.signals.twitter>66?'Buzzing':p.signals.twitter>40?'Steady':'Quiet')],
           ['Transfer market & value',p.signals.transfermarkt, '€'+p.tmVal+'M '+(p.tmTrendUp?'▲':'▼')]];
         const signals=sigDefs.map(([label,val,display])=>({label,pct:Math.round(val)+'%',display,
           barColor:val>=66?GREEN:val>=42?'#e2a32b':RED, valColor:'#46504a'}));
@@ -1641,7 +1646,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         else if(p.atWC) driverSummary='Live at the 2026 World Cup with '+p.nation+(recentNote?(' — '+recentNote):'')+'.';
         else if(p.news) driverSummary=p.news.text+'.';
         else driverSummary='The club season is over and '+lastName+' is not at the World Cup — the price stays quiet until transfer news moves it.';
-        const moodText = p.mood || (p.change7d>3?'Timeline buzzing — fans piling in':p.change7d>0?'Mild positive chatter':p.change7d<-3?'Fans frustrated on X':'Quiet on X right now');
+        const moodText = p.mood || (p.change7d>3?'Search interest spiking — fans piling in':p.change7d>0?'Mild positive buzz':p.change7d<-3?'Sentiment souring online':'Quiet search interest right now');
 
         d={ name:p.name,team:p.team,pos:p.pos,age:p.age,lg:p.abbr,price:this.money(price),
           wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',wkColor:cc,wkBg:up7?GBG:RBG,
