@@ -1,0 +1,23 @@
+name: Deploy live worker to Fly.io
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'scripts/live-worker/**'
+      - 'scripts/lib/**'
+      - 'fly.toml'
+      - 'Dockerfile'
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    concurrency: deploy-worker-group
+    steps:
+      - uses: actions/checkout@v4
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Deploy
+        run: flyctl deploy --remote-only
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
