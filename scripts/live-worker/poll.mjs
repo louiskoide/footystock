@@ -51,6 +51,28 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
   const round = roundLabel(fixture.league.round);
   const knockout = isKnockout(fixture.league.round);
 
+  // Real kickoff-relative minute timestamps for goals/cards (CLAUDE.md rule 4:
+  // compute our own numbers from raw event data, never fabricate them) — one
+  // call shared across both nations in this fixture, used to give the
+  // frontend's 90-minute chart actual jump points instead of a smooth guess.
+  let marksByPlayer = {};
+  try {
+    const rawEvents = await client.fixtureEvents(fid);
+    for (const re of rawEvents || []) {
+      const minute = re.time?.elapsed;
+      if (minute == null) continue;
+      if (re.type === 'Goal') {
+        const scorerId = matchPlayer(flatIndex, re.player?.name || '');
+        if (scorerId) (marksByPlayer[scorerId] ||= []).push({ minute, kind: /own/i.test(re.detail || '') ? 'owngoal' : 'goal' });
+        const assistId = re.assist?.name ? matchPlayer(flatIndex, re.assist.name) : null;
+        if (assistId) (marksByPlayer[assistId] ||= []).push({ minute, kind: 'assist' });
+      } else if (re.type === 'Card') {
+        const cardId = matchPlayer(flatIndex, re.player?.name || '');
+        if (cardId) (marksByPlayer[cardId] ||= []).push({ minute, kind: /red/i.test(re.detail || '') ? 'red' : 'yellow' });
+      }
+    }
+  } catch (e) { log(`fixtureEvents ${fid} failed: ${e.message}`); }
+
   for (const [nation, tracked, me, opp, myGoals, oppGoals] of [
     [home, homeTracked, home, away, gf, ga],
     [away, awayTracked, away, home, ga, gf],
@@ -96,7 +118,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
         // appearance, distinct from not being in the squad for this match
         // at all (which never reaches this loop, since they're absent from
         // teamBlock.players entirely).
-        const ev = { d: date, opp, rating: null, g: 0, a: 0, yellow: false, red: false, min: 0, note: null, _fid: fid };
+        const ev = { d: date, opp, rating: null, g: 0, a: 0, yellow: false, red: false, min: 0, note: null, marks: [], _fid: fid };
         if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
         continue;
       }
@@ -118,7 +140,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
       else if (assists >= 2) note = `${assists} assists`;
       else if (assists === 1) note = 'Assist';
 
-      const ev = { d: date, opp, rating, g: goals, a: assists, yellow: !!yellow, red: !!red, min: minutes, note, _fid: fid };
+      const ev = { d: date, opp, rating, g: goals, a: assists, yellow: !!yellow, red: !!red, min: minutes, note, marks: marksByPlayer[id] || [], _fid: fid };
       if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
     }
   }
