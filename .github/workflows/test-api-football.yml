@@ -1,0 +1,19 @@
+name: Test API-Football (diagnostic, one-off)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-api-football:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Probe API-Football for WC2026 coverage, player stats, xG
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+        run: node scripts/test-api-football.mjs
