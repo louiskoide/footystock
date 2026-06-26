@@ -1464,7 +1464,12 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       // not "no buzz"), per pricing-model.md's mean-centering rule.
       const liveHype = (live && live.hype) ? live.hype[id] : null;
       const hypeRaw = liveHype ? liveHype.score : 0;
-      const moodSig=Math.max(6,Math.min(99,46+hypeRaw*0.6+(stars?14:0)));
+      // Getting knocked out collapses forward-looking buzz independently of
+      // how well the player personally did in the last match — no more
+      // matches means no more spotlight. This is a hype-axis effect, not a
+      // performance one, so it's applied here rather than to fotmob/formSig.
+      const eliminated = atWC && !!wcEff && /^Eliminated/.test(wcEff.status);
+      const moodSig=Math.max(6,Math.min(99,(46+hypeRaw*0.6+(stars?14:0)) - (eliminated?30:0)));
       const tmVal=(mv!=null)?mv:Math.round((tierBase[tier]*(0.9+0.5*r())) * (youth?1.18:1) /10)*5;
       const tmTrendUp = change30d>=0;
       const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*0.6));
@@ -1516,6 +1521,21 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
           const decay=Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);
           hist[j]+=bump*eased*decay; } }
+      // Getting knocked out is its own one-time shock to the chart — distinct
+      // from the moodSig floor above (which lowers where the price *settles*
+      // going forward), this is the visible "plummet" on the day it happens.
+      // Slower half-life than a match bump: attention doesn't recover from
+      // a tournament exit as fast as it does from one bad game.
+      if(eliminated && wcEff.fixtures && wcEff.fixtures.length){
+        const elimOffset = offOf(wcEff.fixtures[wcEff.fixtures.length-1].d);
+        const idx=N-1-elimOffset;
+        if(idx>=0 && idx<N){
+          const bump=-price*0.08, ramp=2, halfLife=10;
+          for(let j=idx;j<N;j++){ const daysIn=j-idx;
+            const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
+            const decay=Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);
+            hist[j]+=bump*eased*decay; } }
+      }
       // No override here: hist[N-1] already equals price + the still-live
       // portion of any recent event's bump (noise is pinned to 0 at i=N-1 by
       // the bridge construction above). That live-bump-inclusive value *is*
