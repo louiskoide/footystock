@@ -808,11 +808,7 @@ Samu Aghehowa|Porto|ST|21|5
     add('Mexico','Santiago Giménez');
     add('Scotland','John McGinn,Scott McTominay');
     add('Japan','Takefusa Kubo');
-    // Confirmed absentees from a nation's final squad even though they share
-    // the nationality (kept in NATION for display) — e.g. Frimpong was left
-    // out of the Netherlands' final 26.
-    const EXCLUDED=new Set(['Jeremie Frimpong','Cole Palmer','Phil Foden','Trent Alexander-Arnold','Warren Zaïre-Emery']);
-    this._data={WC,STARS,NEWS,MOOD,NATION:nat,EXCLUDED};
+    this._data={WC,STARS,NEWS,MOOD,NATION:nat};
     return this._data;
   }
 
@@ -866,18 +862,17 @@ Samu Aghehowa|Porto|ST|21|5
       const wcEff = liveTeam || wc;
       const starsEff = (livePlayer && livePlayer.events && livePlayer.events.length) ? livePlayer.events : stars;
       // API-Football's official squad list (live.teams[nation].squad) is the
-      // ground truth for "actually picked for the World Cup" — it replaces
-      // the hand-typed NATION/EXCLUDED guess once the worker has fetched it.
-      // Until then (cold start, or no live data at all) fall back to the
-      // static EXCLUDED guess so the app isn't blank on first load.
+      // sole ground truth for "actually picked for the World Cup" — no more
+      // hand-typed guessing. Until the worker has fetched a nation's squad,
+      // inSquad is simply false for that nation rather than guessing.
       const normSq=(s)=>s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g,'').replace(/[^a-z0-9 ]+/g,'').trim();
-      const squadConfirmed = (liveTeam && liveTeam.squad && liveTeam.squad.length) ? (()=>{
+      const squadConfirmed = !!(liveTeam && liveTeam.squad && liveTeam.squad.length && (()=>{
         const norm=normSq(name);
         if(liveTeam.squad.some(s=>normSq(s)===norm)) return true;
         const surname=norm.split(' ').pop();
         return liveTeam.squad.some(s=>normSq(s).split(' ').pop()===surname);
-      })() : null;
-      const inSquad = !!(nation && wcEff && (squadConfirmed===null ? !D.EXCLUDED.has(name) : squadConfirmed));
+      })());
+      const inSquad = !!(nation && wcEff && squadConfirmed);
       if(starsEff){ atWC=true; wcStatus=(wcEff?wcEff.status:'At the 2026 World Cup');
         for(const s of starsEff){ const g=s.g||0,a=s.a||0; let delta=parseFloat(((s.rating-6.9)*1.3+g*1.0+a*0.6).toFixed(2));
           const st=[]; if(g)st.push(g+'G'); if(a)st.push(a+'A'); if(!g&&!a)st.push('—');

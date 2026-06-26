@@ -43,7 +43,7 @@ export function loadCrosswalk(htmlPath) {
     rosterByName[name] = parts[1]; // club team
   }
 
-  const natBlock = html.match(/const nat=\{\};([\s\S]*?)\/\/ Confirmed absentees/);
+  const natBlock = html.match(/const nat=\{\};([\s\S]*?)this\._data=/);
   if (!natBlock) throw new Error('Could not find NATION add() calls in FootyStock_dc.html');
   const nationByName = {};
   const addRe = /add\('([^']+)','([^']+)'\)/g;
@@ -53,15 +53,8 @@ export function loadCrosswalk(htmlPath) {
     for (const n of names.split(',')) nationByName[n.trim()] = country;
   }
 
-  const exBlock = html.match(/const EXCLUDED=new Set\(\[([^\]]*)\]\)/);
-  const excluded = new Set();
-  if (exBlock) {
-    for (const m2 of exBlock[1].matchAll(/'([^']+)'/g)) excluded.add(m2[1]);
-  }
-
   const players = [];
   for (const name of Object.keys(nationByName)) {
-    if (excluded.has(name)) continue;
     const team = rosterByName[name];
     if (!team) continue; // nation-tagged but not in club roster — skip, no slug to attach to
     players.push({ name, team, nation: nationByName[name], id: slug(name + '-' + team) });
