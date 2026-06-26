@@ -181,7 +181,8 @@
           <!-- chart -->
           <div style="position:relative;margin-top:8px">
             <svg viewBox="0 0 760 260" width="100%" height="260" preserveAspectRatio="none" style="display:block;overflow:visible;cursor:crosshair"
-                 onMouseMove="{{ d.onChartMove }}" onMouseDown="{{ d.onChartDown }}" onMouseUp="{{ d.onChartUp }}" onMouseLeave="{{ d.onChartLeave }}">
+                 onMouseMove="{{ d.onChartMove }}" onMouseDown="{{ d.onChartDown }}" onMouseUp="{{ d.onChartUp }}" onMouseLeave="{{ d.onChartLeave }}"
+                 onTouchStart="{{ d.onChartTouchStart }}" onTouchMove="{{ d.onChartTouchMove }}" onTouchEnd="{{ d.onChartTouchEnd }}" onTouchCancel="{{ d.onChartTouchEnd }}">
               <defs><linearGradient id="fsArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="{{ d.chartColor }}" stop-opacity="0.18"></stop><stop offset="100%" stop-color="{{ d.chartColor }}" stop-opacity="0"></stop></linearGradient></defs>
               <sc-for list="{{ d.gridY }}" as="g" hint-placeholder-count="3">
                 <g>
@@ -1866,6 +1867,15 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           this.setState({chartDragStart:k,chartHoverIdx:k}); };
         const onChartUp=()=>{ if(this.state.chartDragStart!=null) this.setState({chartDragStart:null}); };
         const onChartLeave=()=>{ this.setState({chartHoverIdx:null,chartDragStart:null}); };
+        // touchscreens have no hover concept — a finger drag across the chart
+        // is the touch equivalent of mouse-move-while-hovering, so mirror the
+        // mouse handlers off touch coordinates (and block page scroll while
+        // dragging across the chart, since the swipe is meant for the chart).
+        const onChartTouchStart=(e)=>{ e.preventDefault(); const t=e.touches[0]; const k=idxFromClientX(t.clientX,e.currentTarget.getBoundingClientRect());
+          this.setState({chartDragStart:k,chartHoverIdx:k}); };
+        const onChartTouchMove=(e)=>{ e.preventDefault(); const t=e.touches[0]; const k=idxFromClientX(t.clientX,e.currentTarget.getBoundingClientRect());
+          if(this.state.chartHoverIdx!==k) this.setState({chartHoverIdx:k}); };
+        const onChartTouchEnd=()=>{ if(this.state.chartDragStart!=null) this.setState({chartDragStart:null}); };
 
         const hoverIdx=S.chartHoverIdx; const dragStartIdx=S.chartDragStart;
         const dragging = dragStartIdx!=null && hoverIdx!=null;
@@ -1933,6 +1943,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',wkColor:cc,wkBg:up7?GBG:RBG,
           chartColor:cc,linePath,areaPath,gridY,markers,axisLabels,signals,events:evDisp,driverSummary,
           hover,dragSel,tooltip,onChartMove,onChartDown,onChartUp,onChartLeave,
+          onChartTouchStart,onChartTouchMove,onChartTouchEnd,
           hasEvents:p.events.length>0, noEvents:p.events.length===0,
           eventsTitle:p.atWC?'World Cup 2026 — match by match':'Recent activity',
           eventsSub:p.atWC?'Real fixtures and ratings moving the price — sustained excellence compounds.':'No competitive matches right now; prices move on the transfer market.',

@@ -18,15 +18,23 @@ Entertainment only — **no real money is involved**.
 - The static frontend polls the worker's `/prices.json` every 30s and merges
   it live. If the worker is unreachable, it degrades silently to the
   hand-typed `STARS`/`NEWS` fallback already baked into `DATA()`.
-- **Deploys are automatic.** `.github/workflows/deploy-worker.yml` redeploys
-  the worker to Fly on every push to `main` that touches
-  `scripts/live-worker/`, `scripts/lib/`, `fly.toml`, `Dockerfile`, or
-  `FootyStock_dc.html` — the worker serves that HTML file directly
-  (`scripts/live-worker/server.mjs`), so frontend-only edits need this trigger
-  too, not just backend changes. `.github/workflows/pages.yml` is unused dead
-  weight: GitHub Pages was never enabled for this repo, so it fails on every
-  run — `footystock.fly.dev` (the Fly worker) is the real production
-  frontend. Manual `fly deploy` is no longer required for normal changes.
+- **The worker only serves the JSON API, not the page.**
+  `scripts/live-worker/server.mjs` has exactly three routes: `/health`,
+  `/prices.json` (and `/`, same handler) returning `publicSnapshot(state)` as
+  JSON, and a 404 fallback. It reads `FootyStock_dc.html` at boot purely to
+  build the player crosswalk (`loadCrosswalk(HTML_PATH)`) — it never serves
+  that file's markup to a browser. `footystock.fly.dev` is the live data
+  source the frontend's `LIVE_WORKER_URL` fetches from, not a page host.
+  `.github/workflows/deploy-worker.yml` redeploys this worker to Fly on every
+  push to `main` touching `scripts/live-worker/`, `scripts/lib/`, `fly.toml`,
+  `Dockerfile`, or `FootyStock_dc.html` (the last one only matters because the
+  crosswalk is baked into the Docker image at build time).
+- **The static frontend has no confirmed automatic deploy right now.**
+  `.github/workflows/pages.yml` fails on every run (`Get Pages site failed` —
+  GitHub Pages was never enabled in repo settings for `louiskoide/footystock`),
+  so don't assume pushing to `main` makes `FootyStock_dc.html` show up
+  anywhere publicly. Until Pages is enabled (or another static host is wired
+  up), treat `FootyStock_dc.html` as opened directly/locally for testing.
 
 ## Architecture rules — do not violate
 
