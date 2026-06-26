@@ -1,0 +1,19 @@
+name: Test TheSportsDB (diagnostic, one-off)
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test-sportsdb:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Probe TheSportsDB for WC2026 goal scorer data
+        env:
+          SPORTSDB_KEY: ${{ secrets.SPORTSDB_KEY }}
+        run: node scripts/test-sportsdb.mjs
