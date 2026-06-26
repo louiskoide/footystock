@@ -1,8 +1,8 @@
 FROM node:20-alpine
 WORKDIR /app
 
-# The worker reads FootyStock_dc.html (crosswalk) and imports ../lib/crosswalk.mjs
-# at runtime, so it needs the repo root, not just this directory.
+# The worker reads FootyStock_dc.html (crosswalk) and imports scripts/lib/
+# at runtime, so it needs the repo root, not just scripts/live-worker/.
 COPY FootyStock_dc.html ./FootyStock_dc.html
 COPY scripts/lib ./scripts/lib
 COPY scripts/live-worker ./scripts/live-worker

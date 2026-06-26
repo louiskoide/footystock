@@ -448,8 +448,7 @@ class Component extends DCLogic {
     // never fetched from the browser to a third-party API (see CLAUDE.md
     // rule 1). Missing/unreachable worker degrades silently to the hand-typed
     // STARS/WC fallback already in DATA().
-    // TODO: replace with the real https://<your-app>.fly.dev URL after `fly deploy`.
-    const LIVE_WORKER_URL = 'https://footystock-live.fly.dev/prices.json';
+    const LIVE_WORKER_URL = 'https://footystock.fly.dev/prices.json';
     const pollLive = ()=>{
       fetch(LIVE_WORKER_URL).then(r=>r.ok?r.json():null).then(data=>{
         if(!data) return;
