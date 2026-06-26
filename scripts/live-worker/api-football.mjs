@@ -27,5 +27,6 @@ export function makeClient(apiKey) {
     fixtureStatistics: (fixtureId) => apiGet(`/fixtures/statistics?fixture=${fixtureId}`),
     fixturePlayers: (fixtureId) => apiGet(`/fixtures/players?fixture=${fixtureId}`),
     fixtureEvents: (fixtureId) => apiGet(`/fixtures/events?fixture=${fixtureId}`),
+    playersSquad: (teamId) => apiGet(`/players/squads?team=${teamId}`),
   };
 }

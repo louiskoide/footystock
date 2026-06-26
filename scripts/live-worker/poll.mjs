@@ -107,11 +107,37 @@ async function processFixture(client, fixture, nationIndex, trackedNations, stat
   }
 }
 
+// Official squad lists from API-Football are the ground truth for "is this
+// player actually picked for the World Cup" — replaces guessing from the
+// hand-typed NATION list, which drifts from real squad announcements (see
+// FootyStock_dc.html EXCLUDED comment history). Squads don't change during
+// the tournament, so fetch each tracked nation's once and cache it.
+async function ensureSquads(client, fixtures, trackedNations, state, log) {
+  state._squadFetched = state._squadFetched || new Set();
+  for (const nation of trackedNations) {
+    if (state._squadFetched.has(nation)) continue;
+    const fx = fixtures.find(f => canonNation(f.teams.home.name) === nation || canonNation(f.teams.away.name) === nation);
+    if (!fx) continue;
+    const teamId = canonNation(fx.teams.home.name) === nation ? fx.teams.home.id : fx.teams.away.id;
+    try {
+      const resp = await client.playersSquad(teamId);
+      const squad = (resp?.[0]?.players || []).map(p => p.name);
+      state.teams[nation] = state.teams[nation] || { fixtures: [] };
+      state.teams[nation].squad = squad;
+      state._squadFetched.add(nation);
+      log(`squad: ${nation} -> ${squad.length} players`);
+    } catch (e) {
+      log(`playersSquad ${nation} (team ${teamId}) failed: ${e.message}`);
+    }
+  }
+}
+
 export async function pollOnce(client, crosswalk, state, log = console.log) {
   const trackedNations = new Set(crosswalk.map(p => p.nation));
   const nationIndex = buildNationIndex(crosswalk);
 
   const fixtures = await client.fixtures({ league: WC_LEAGUE_ID, season: state.season });
+  await ensureSquads(client, fixtures, trackedNations, state, log);
   let liveCount = 0, finishedNew = 0;
 
   for (const fixture of fixtures) {
@@ -150,7 +176,7 @@ export function makeInitialState(season) {
 export function publicSnapshot(state) {
   const teams = {};
   for (const [nation, t] of Object.entries(state.teams)) {
-    teams[nation] = { status: t.status, fixtures: t.fixtures.map(({ _fid, ...rest }) => rest) };
+    teams[nation] = { status: t.status, squad: t.squad || [], fixtures: t.fixtures.map(({ _fid, ...rest }) => rest) };
   }
   const players = {};
   for (const [id, p] of Object.entries(state.players)) {
