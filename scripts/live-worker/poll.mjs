@@ -62,7 +62,14 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
     const existing = t.fixtures.find(f => f._fid === fid);
     const entry = { d: date, opp, gf: myGoals, ga: oppGoals, _fid: fid };
     if (existing) Object.assign(existing, entry); else t.fixtures.push(entry);
-    t.status = knockout ? `Through to the ${round}` : round;
+    // Knockout result always wins (more specific than any group-stage verdict).
+    // Group-stage status is owned by applyGroupStandings(), which runs earlier
+    // in pollOnce() and knows the real top-2/best-8-thirds picture — don't
+    // clobber it back down to a bare round label here. Only fall back to the
+    // round label if standings haven't set anything yet (e.g. its API call
+    // failed this cycle, or this is the very first poll for a new team).
+    if (knockout) t.status = `Through to the ${round}`;
+    else if (!t.status) t.status = round;
 
     let playersResp;
     try { playersResp = await client.fixturePlayers(fid); } catch (e) { log(`fixturePlayers ${fid} failed: ${e.message}`); continue; }
@@ -158,11 +165,64 @@ async function discoverNations(client, fixtures, flatIndex, state, log) {
   }
 }
 
+// World Cup 2026 format: 12 groups of 4, top 2 of each plus the best 8 of
+// the 12 third-placed teams advance to the round of 32. A third-placed
+// team's fate depends on every other group finishing too, so this never
+// labels one "Eliminated" before the whole group stage is actually done —
+// fixes a real bug where a hand-typed fallback had a team "Eliminated" on
+// a 1-point record while two of its own group's games hadn't even been
+// played yet. Runs before the fixtures loop so any knockout-stage fixture
+// processed below (which sets a more specific "Through to the {round}"
+// label) always has the final say once a team progresses past Group Stage.
+async function applyGroupStandings(client, season, state, log) {
+  let resp;
+  try { resp = await client.standings({ league: WC_LEAGUE_ID, season }); }
+  catch (e) { log(`standings failed: ${e.message}`); return; }
+  const groups = resp?.[0]?.league?.standings || [];
+  if (!groups.length) return;
+
+  const thirdPlaceRows = [];
+  let allGroupsDone = true;
+
+  for (const group of groups) {
+    const groupName = roundLabel(group[0]?.group || '');
+    const done = group.every(row => (row.all?.played || 0) >= 3);
+    if (!done) allGroupsDone = false;
+    for (const row of group) {
+      const nation = canonNation(row.team.name);
+      state.teams[nation] = state.teams[nation] || { fixtures: [] };
+      if (!done) { state.teams[nation].status = groupName; continue; }
+      if (row.rank === 1) state.teams[nation].status = `Through to the R32 · won ${groupName}`;
+      else if (row.rank === 2) state.teams[nation].status = `Through to the R32 · ${groupName}`;
+      else if (row.rank === 4) state.teams[nation].status = `Eliminated · ${groupName}`;
+      else thirdPlaceRows.push({ nation, points: row.points, gd: row.goalsDiff, gf: row.all?.goals?.for || 0, groupName });
+    }
+  }
+
+  if (!allGroupsDone) {
+    // Some other group still has games left — a 3rd-place finish isn't
+    // decided yet, so leave it at the plain group label rather than
+    // guessing "Eliminated" or "Through".
+    for (const t of thirdPlaceRows) state.teams[t.nation].status = t.groupName;
+    return;
+  }
+
+  // Every group is done — rank all twelve 3rd-place finishers and take the
+  // best 8 (points, then goal difference, then goals scored).
+  thirdPlaceRows.sort((a, b) => b.points - a.points || b.gd - a.gd || b.gf - a.gf);
+  thirdPlaceRows.forEach((t, i) => {
+    state.teams[t.nation].status = i < 8
+      ? `Through to the R32 · best third-place, ${t.groupName}`
+      : `Eliminated · ${t.groupName}`;
+  });
+}
+
 export async function pollOnce(client, crosswalk, state, log = console.log) {
   const flatIndex = buildFlatIndex(crosswalk);
 
   const fixtures = await client.fixtures({ league: WC_LEAGUE_ID, season: state.season });
   await discoverNations(client, fixtures, flatIndex, state, log);
+  await applyGroupStandings(client, state.season, state, log);
   const trackedNations = state._trackedNations;
   const nationOf = state._nationOf;
   let liveCount = 0, finishedNew = 0;
