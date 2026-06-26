@@ -399,6 +399,7 @@
     <div style="font:600 12.5px 'Hanken Grotesk';color:#d23b2c;margin-top:10px;min-height:16px">{{ tr.error }}</div>
 
     <button onClick="{{ tr.confirm }}" style="width:100%;margin-top:8px;font:700 15px 'Hanken Grotesk';background: {{ tr.confirmBg }};color:#fff;border:none;padding:15px;border-radius:13px;cursor: {{ tr.confirmCursor }};opacity: {{ tr.confirmOpacity }}">{{ tr.confirmLabel }}</button>
+    <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c;text-align:center;margin-top:10px">Fills at the next price update, not the price shown above</div>
   </div>
 </div>
 </sc-if>
@@ -435,7 +436,7 @@ class Component extends DCLogic {
     this.state = {
       view:'market', selectedId:null, league:'ALL', search:'', range:90,
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
-      showReward:false, tick:0,
+      showReward:false, tick:0, pendingOrders:[],
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
       streak: saved.streak, lastClaim: saved.lastClaim,
     };
@@ -460,6 +461,9 @@ class Component extends DCLogic {
         next = Math.max(0.985, Math.min(1.015, next));
         this.live[p.id] = next;
       }
+      // orders fill at the next price tick, not the price shown when confirmed —
+      // closes the "watch it happen on TV, buy before the price reacts" window.
+      this.fillPendingOrders(DB);
       this.setState(s=>({tick:s.tick+1}));
     }, 9000);
     // auto-open reward if claimable on first load
@@ -993,21 +997,35 @@ Samu Aghehowa|Porto|ST|21|5
   setTradeQty(q){ this.setState({tradeQty:Math.max(1,q)}); }
   confirmTrade(){
     const id=this.state.tradeId, side=this.state.tradeSide, qty=this.state.tradeQty;
-    const p=this.byId(id); if(!p) return; const price=this.curPrice(p); const total=price*qty;
+    const p=this.byId(id); if(!p) return;
+    // queue the order — it fills at the *next* price tick, not the price shown
+    // right now. Anyone watching a match live and trying to beat the price
+    // reaction gets the same next-tick price as everyone else.
+    const pendingOrders=this.state.pendingOrders.concat([{id,side,qty}]);
+    this.setState({pendingOrders,tradeOpen:false});
+  }
+  fillPendingOrders(DB){
+    if(!this.state.pendingOrders.length) return;
     const holdings=Object.assign({},this.state.holdings); const txns=this.state.txns.slice();
-    if(side==='buy'){
-      if(total>this.state.cash+1e-9) return;
-      const cur=holdings[id]||{qty:0,avg:0};
-      const newQty=cur.qty+qty; const newAvg=(cur.qty*cur.avg+qty*price)/newQty;
-      holdings[id]={qty:newQty,avg:newAvg};
-      txns.unshift({side:'BUY',id,name:p.name,qty,price,total,date:this.todayStr()});
-      this.setState({holdings,txns,cash:this.state.cash-total,tradeOpen:false},()=>this.persist());
-    } else {
-      const cur=holdings[id]; if(!cur||cur.qty<qty) return;
-      const newQty=cur.qty-qty; if(newQty<=0) delete holdings[id]; else holdings[id]={qty:newQty,avg:cur.avg};
-      txns.unshift({side:'SELL',id,name:p.name,qty,price,total,date:this.todayStr()});
-      this.setState({holdings,txns,cash:this.state.cash+total,tradeOpen:false},()=>this.persist());
+    let cash=this.state.cash;
+    for(const order of this.state.pendingOrders){
+      const p=this.byId(order.id); if(!p) continue;
+      const price=this.curPrice(p); const qty=order.qty; const total=price*qty;
+      if(order.side==='buy'){
+        if(total>cash+1e-9) continue; // can't afford at the fill price — order lapses
+        const cur=holdings[order.id]||{qty:0,avg:0};
+        const newQty=cur.qty+qty; const newAvg=(cur.qty*cur.avg+qty*price)/newQty;
+        holdings[order.id]={qty:newQty,avg:newAvg};
+        txns.unshift({side:'BUY',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
+        cash-=total;
+      } else {
+        const cur=holdings[order.id]; if(!cur||cur.qty<qty) continue; // no longer holds enough — order lapses
+        const newQty=cur.qty-qty; if(newQty<=0) delete holdings[order.id]; else holdings[order.id]={qty:newQty,avg:cur.avg};
+        txns.unshift({side:'SELL',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
+        cash+=total;
+      }
     }
+    this.setState({holdings,txns,cash,pendingOrders:[]},()=>this.persist());
   }
   openReward(){ this.setState({showReward:true}); }
   closeReward(){ this.setState({showReward:false}); }
