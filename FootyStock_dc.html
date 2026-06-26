@@ -877,10 +877,13 @@ Samu Aghehowa|Porto|ST|21|5
         for(const s of starsEff){ const g=s.g||0,a=s.a||0; let delta=parseFloat(((s.rating-6.9)*1.3+g*1.0+a*0.6).toFixed(2));
           const st=[]; if(g)st.push(g+'G'); if(a)st.push(a+'A'); if(!g&&!a)st.push('—');
           events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,fantasy:Math.round(s.rating*1.3+g*4+a*3),goals:g,assists:a,delta,statLine:st.join(' '),note:s.note}); } }
-      else if(inSquad){ atWC=true; wcStatus=wcEff.status;
-        for(const f of wcEff.fixtures){ const diff=Math.max(-1,Math.min(1,(f.gf-f.ga)*0.3));
-          const rating=parseFloat((6.9+diff).toFixed(2)); const delta=parseFloat((diff*1.3).toFixed(2));
-          events.push({offset:offOf(f.d),oppTeam:f.opp,rating,fantasy:Math.round(rating*1.3),goals:0,assists:0,delta,statLine:'—',note:null}); } }
+      else if(inSquad){
+        // Confirmed on the real squad list but no actual per-match minutes
+        // recorded yet (matchPlayer never saw them play) — show them as
+        // named to the squad without fabricating match-by-match price moves
+        // for games they may not have featured in at all.
+        atWC=true; wcStatus=wcEff.status+' (squad — no minutes yet)';
+      }
       const newsDelta = news?news.bias:0;
       let change7d, change30d;
       if(atWC||news){ change7d=sum(events.filter(e=>e.offset<=8).map(e=>e.delta))+((news&&offOf(news.d)<=8)?newsDelta:0);
