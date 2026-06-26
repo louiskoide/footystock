@@ -497,14 +497,15 @@ class Component extends DCLogic {
   mulberry(seed){ let a=seed>>>0; return function(){ a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 
   // ---------- static config ----------
-  LEAGUE_NAME(){ return {EPL:'Premier League',LAL:'La Liga',SEA:'Serie A',BUN:'Bundesliga',LI1:'Ligue 1',PROS:'Top Prospects'}; }
+  LEAGUE_NAME(){ return {EPL:'Premier League',LAL:'La Liga',SEA:'Serie A',BUN:'Bundesliga',LI1:'Ligue 1',PROS:'Top Prospects',OTH:'Other Leagues'}; }
   TEAMS(){ return {
-    'Man City':['MCI','EPL'],'Arsenal':['ARS','EPL'],'Liverpool':['LIV','EPL'],'Chelsea':['CHE','EPL'],'Man Utd':['MUN','EPL'],'Tottenham':['TOT','EPL'],'Newcastle':['NEW','EPL'],'Aston Villa':['AVL','EPL'],
+    'Man City':['MCI','EPL'],'Arsenal':['ARS','EPL'],'Liverpool':['LIV','EPL'],'Chelsea':['CHE','EPL'],'Man Utd':['MUN','EPL'],'Tottenham':['TOT','EPL'],'Newcastle':['NEW','EPL'],'Aston Villa':['AVL','EPL'],'Crystal Palace':['CRY','EPL'],
     'Real Madrid':['RMA','LAL'],'Barcelona':['BAR','LAL'],'Atlético':['ATM','LAL'],'Athletic':['ATH','LAL'],'Villarreal':['VIL','LAL'],'Real Sociedad':['RSO','LAL'],
     'Inter':['INT','SEA'],'Milan':['MIL','SEA'],'Juventus':['JUV','SEA'],'Napoli':['NAP','SEA'],'Roma':['ROM','SEA'],'Atalanta':['ATA','SEA'],
     'Bayern':['BAY','BUN'],'Leverkusen':['B04','BUN'],'Dortmund':['BVB','BUN'],'RB Leipzig':['RBL','BUN'],'Stuttgart':['VFB','BUN'],'Eintracht':['SGE','BUN'],
     'Paris SG':['PSG','LI1'],'Monaco':['ASM','LI1'],'Marseille':['OM','LI1'],'Lille':['LIL','LI1'],'Lyon':['OL','LI1'],
-    'Ajax':['AJA','PROS'],'PSV':['PSV','PROS'],'Benfica':['SLB','PROS'],'Sporting':['SCP','PROS'],'Porto':['POR','PROS']
+    'Ajax':['AJA','PROS'],'PSV':['PSV','PROS'],'Benfica':['SLB','PROS'],'Sporting':['SCP','PROS'],'Porto':['POR','PROS'],
+    'Inter Miami':['MIA','OTH'],'Al-Nassr':['NAS','OTH']
   }; }
   ROSTER(){ return `
 Erling Haaland|Man City|ST|25|1
@@ -686,6 +687,40 @@ Francisco Trincão|Sporting|RW|26|5
 Morten Hjulmand|Sporting|CM|27|5
 Rodrigo Mora|Porto|AM|18|5
 Samu Aghehowa|Porto|ST|21|5
+Theo Hernández|Milan|LB|28|4
+Ibrahima Konaté|Liverpool|CB|26|3
+Christopher Nkunku|Chelsea|AM|28|4
+Youssouf Fofana|Milan|CM|27|5
+John Stones|Man City|CB|32|4
+Eberechi Eze|Crystal Palace|AM|27|4
+Marc Guéhi|Crystal Palace|CB|25|4
+Alisson|Liverpool|GK|33|4
+Éder Militão|Real Madrid|CB|28|4
+Casemiro|Man Utd|CM|34|4
+Unai Simón|Athletic|GK|29|5
+Mikel Merino|Arsenal|CM|29|4
+Manuel Neuer|Bayern|GK|40|5
+Robert Andrich|Leverkusen|CM|31|5
+Lionel Messi|Inter Miami|RW|38|3
+Alexis Mac Allister|Liverpool|CM|27|4
+Rodrigo De Paul|Atlético|CM|31|5
+Cristiano Ronaldo|Al-Nassr|ST|41|3
+Rúben Dias|Man City|CB|28|3
+Diogo Costa|Porto|GK|26|5
+Cody Gakpo|Liverpool|LW|27|3
+Denzel Dumfries|Inter|RB|30|4
+Xavi Simons|RB Leipzig|AM|23|3
+Nathan Aké|Man City|CB|31|4
+Richard Ríos|Benfica|CM|25|5
+Weston McKennie|Juventus|CM|27|5
+Mateo Kovačić|Man City|CM|32|5
+Brahim Díaz|Real Madrid|AM|26|4
+Takehiro Tomiyasu|Arsenal|CB|27|5
+Darwin Núñez|Liverpool|ST|26|4
+Ronald Araújo|Barcelona|CB|27|4
+Rodrigo Bentancur|Tottenham|CM|28|5
+Thibaut Courtois|Real Madrid|GK|33|4
+Youri Tielemans|Aston Villa|CM|28|5
 `; }
 
   OPPONENTS_BY_LEAGUE(){
@@ -720,6 +755,10 @@ Samu Aghehowa|Porto|ST|21|5
     A('Maghnes Akliouche 55,Folarin Balogun 40,Aleksandr Golovin 30,Ansu Fati 35,Eliesse Ben Seghir 50,Mason Greenwood 55,Pierre-Emerick Aubameyang 10,Amine Gouiri 35,Igor Paixão 40');
     A('Olivier Giroud 4,Hákon Haraldsson 35,Benjamin André 12,Malick Fofana 40,Pavel Šulc 40');
     A('Mika Godts 35,Wim Bounida 20,Ricardo Pepi 35,Sem Steijn 35,Sergiño Dest 20,Vangelis Pavlidis 40,Kerem Aktürkoğlu 35,Gianluca Prestianni 30,Geovany Quenda 50,Francisco Trincão 40,Morten Hjulmand 45,Rodrigo Mora 45,Samu Aghehowa 45');
+    A('Theo Hernández 30,Ibrahima Konaté 50,Christopher Nkunku 35,Youssouf Fofana 30,John Stones 20,Eberechi Eze 65,Marc Guéhi 45,Alisson 18,Éder Militão 50,Casemiro 25');
+    A('Unai Simón 20,Mikel Merino 40,Manuel Neuer 5,Robert Andrich 20,Lionel Messi 15,Alexis Mac Allister 65,Rodrigo De Paul 20,Cristiano Ronaldo 12,Rúben Dias 65,Diogo Costa 40');
+    A('Cody Gakpo 50,Denzel Dumfries 35,Xavi Simons 60,Nathan Aké 20,Richard Ríos 30,Weston McKennie 20,Mateo Kovačić 12,Brahim Díaz 30,Takehiro Tomiyasu 25');
+    A('Darwin Núñez 60,Ronald Araújo 55,Rodrigo Bentancur 35,Thibaut Courtois 15,Youri Tielemans 18');
     this._val=v; return v;
   }
 
@@ -742,7 +781,12 @@ Samu Aghehowa|Porto|ST|21|5
       Scotland:{status:'Eliminated · Group C',fixtures:[F('06-13','Haiti',1,0),F('06-19','Morocco',0,1),F('06-24','Brazil',0,3)]},
       Morocco:{status:'Through to the R32 · Group C',fixtures:[F('06-13','Brazil',1,1),F('06-19','Scotland',1,0),F('06-24','Haiti',4,2)]},
       Mexico:{status:'Through to the R32 · won Group A',fixtures:[F('06-11','South Africa',2,0),F('06-18','South Korea',1,0)]},
-      Japan:{status:'Group F',fixtures:[F('06-16','Netherlands',2,2),F('06-21','Tunisia',4,0)]}
+      Japan:{status:'Group F',fixtures:[F('06-16','Netherlands',2,2),F('06-21','Tunisia',4,0)]},
+      Sweden:{status:'Eliminated · Group F',fixtures:[F('06-16','Tunisia',1,2),F('06-20','Netherlands',1,5)]},
+      Uruguay:{status:'Through to the R32 · Group D',fixtures:[F('06-12','Australia',1,1),F('06-19','Paraguay',2,0)]},
+      Turkey:{status:'Through to the R32 · Group E',fixtures:[F('06-15','Ivory Coast',1,1),F('06-18','Curaçao',4,0)]},
+      Egypt:{status:'Group H',fixtures:[F('06-15','Saudi Arabia',1,1),F('06-21','Cape Verde',2,0)]},
+      Belgium:{status:'Through to the R32 · Group J',fixtures:[F('06-16','Austria',2,0),F('06-22','Algeria',1,0)]}
     };
     const S=(d,opp,g,a,rating,note)=>({d,opp,g,a,rating,note});
     const STARS={
@@ -765,6 +809,8 @@ Samu Aghehowa|Porto|ST|21|5
       'matheus-cunha-man-utd':[S('06-13','Morocco',0,0,6.2,'Came on as a 62nd-minute substitute for Igor Thiago — no goal involvements in the 1-1 draw'),S('06-19','Haiti',2,0,8.7,'Brace in the first half to seal a 3-0 win'),S('06-24','Scotland',1,0,7.9,'Scored to extend the lead in a 3-0 win — his third goal of the tournament')],
       'bruno-fernandes-man-utd':[S('06-17','DR Congo',0,0,7.0,'Went close late on but couldn’t find a breakthrough in a shock 1-1 draw'),S('06-23','Uzbekistan',0,1,8.0,'Assist for Ronaldo in the 5-0 win — carrying the form driving his PFA POTY case')],
       'lautaro-martinez-inter':[S('06-16','Algeria',0,0,7.0,'Selfless work as Messi struck a hat-trick'),S('06-22','Austria',0,0,7.1,'Worked the channels as Messi scored twice')],
+      'lionel-messi-inter-miami':[S('06-16','Algeria',3,0,9.5,'Hat-trick in the World Cup opener, won Group J at a canter'),S('06-22','Austria',2,0,9.0,'Brace as Argentina topped Group J')],
+      'cristiano-ronaldo-al-nassr':[S('06-17','DR Congo',0,0,6.8,'Quiet night for Portugal in a shock 1-1 draw'),S('06-23','Uzbekistan',1,0,8.2,'Scored from a Bruno Fernandes assist in the 5-0 win')],
       'john-mcginn-aston-villa':[S('06-13','Haiti',1,0,7.5,'Scored Scotland\u2019s winner')],
       'pedri-barcelona':[S('06-15','Cape Verde',0,0,6.9,'Tidy but contained'),S('06-21','Saudi Arabia',0,1,7.8,'Pulled the strings in the 4-0')],
       'raphinha-barcelona':[S('06-13','Morocco',0,1,7.3,'Assist in the draw'),S('06-19','Haiti',0,0,7.0,'Tidy outlet as Cunha’s brace and a Vinícius strike sealed the rout')]
@@ -795,27 +841,27 @@ Samu Aghehowa|Porto|ST|21|5
     };
     const nat={};
     const add=(country,names)=>names.split(',').forEach(n=>nat[n.trim()]=country);
-    add('France','Kylian Mbappé,Ousmane Dembélé,Michael Olise,Aurélien Tchouaméni,Eduardo Camavinga,William Saliba,Désiré Doué,Bradley Barcola,Warren Zaïre-Emery,Mike Maignan,Manu Koné,Marcus Thuram,Adrien Rabiot');
-    add('England','Jude Bellingham,Harry Kane,Bukayo Saka,Declan Rice,Phil Foden,James Maddison,Cole Palmer,Marcus Rashford,Morgan Rogers,Kobbie Mainoo,Ollie Watkins,Trent Alexander-Arnold,Noni Madueke');
-    add('Brazil','Vinícius Júnior,Raphinha,Rodrygo,Bruno Guimarães,Matheus Cunha,Gabriel Martinelli,Savinho,Endrick,Gleison Bremer');
-    add('Spain','Lamine Yamal,Pedri,Dani Olmo,Pau Cubarsí,Alejandro Balde,Mikel Oyarzabal,Martín Zubimendi,Nico Williams,Alex Baena,Gavi,Dean Huijsen');
-    add('Germany','Jamal Musiala,Florian Wirtz,Kai Havertz,Joshua Kimmich,Nico Schlotterbeck,Aleksandar Pavlović,Jonathan Burkardt,Karim Adeyemi,Deniz Undav,Angelo Stiller,Maximilian Beier');
-    add('Argentina','Lautaro Martínez,Enzo Fernández,Julián Álvarez,Thiago Almada,Giuliano Simeone');
-    add('Portugal','Nuno Mendes,Vitinha,João Neves,Gonçalo Ramos,Pedro Neto,Rafael Leão,Francisco Trincão,Geovany Quenda,Rodrigo Mora,Bruno Fernandes');
+    add('France','Kylian Mbappé,Ousmane Dembélé,Michael Olise,Aurélien Tchouaméni,Eduardo Camavinga,William Saliba,Désiré Doué,Bradley Barcola,Warren Zaïre-Emery,Mike Maignan,Manu Koné,Marcus Thuram,Adrien Rabiot,Antoine Griezmann,Theo Hernández,Ibrahima Konaté,Christopher Nkunku,Youssouf Fofana');
+    add('England','Jude Bellingham,Harry Kane,Bukayo Saka,Declan Rice,Phil Foden,James Maddison,Cole Palmer,Marcus Rashford,Morgan Rogers,Kobbie Mainoo,Ollie Watkins,Trent Alexander-Arnold,Noni Madueke,Anthony Gordon,John Stones,Eberechi Eze,Marc Guéhi');
+    add('Brazil','Vinícius Júnior,Raphinha,Rodrygo,Bruno Guimarães,Matheus Cunha,Gabriel Martinelli,Savinho,Endrick,Gleison Bremer,Estêvão,Alisson,Éder Militão,Casemiro');
+    add('Spain','Lamine Yamal,Pedri,Dani Olmo,Pau Cubarsí,Alejandro Balde,Mikel Oyarzabal,Martín Zubimendi,Nico Williams,Alex Baena,Gavi,Dean Huijsen,Rodri,Unai Simón,Mikel Merino');
+    add('Germany','Jamal Musiala,Florian Wirtz,Kai Havertz,Joshua Kimmich,Nico Schlotterbeck,Aleksandar Pavlović,Jonathan Burkardt,Karim Adeyemi,Deniz Undav,Angelo Stiller,Maximilian Beier,Manuel Neuer,Robert Andrich');
+    add('Argentina','Lautaro Martínez,Enzo Fernández,Julián Álvarez,Thiago Almada,Giuliano Simeone,Emiliano Martínez,Cristian Romero,Lionel Messi,Alexis Mac Allister,Rodrigo De Paul');
+    add('Portugal','Nuno Mendes,Vitinha,João Neves,Gonçalo Ramos,Pedro Neto,Rafael Leão,Francisco Trincão,Geovany Quenda,Rodrigo Mora,Bruno Fernandes,Cristiano Ronaldo,Rúben Dias,Diogo Costa');
     add('Norway','Erling Haaland,Antonio Nusa,Martin Ødegaard,Alexander Sørloth');
-    add('Netherlands','Virgil van Dijk,Frenkie de Jong,Ryan Gravenberch,Micky van de Ven,Jeremie Frimpong,Tijjani Reijnders');
-    add('Colombia','Luis Díaz');
-    add('USA','Christian Pulišić,Folarin Balogun,Sergiño Dest,Ricardo Pepi');
-    add('Croatia','Luka Modrić,Joško Gvardiol');
-    add('Morocco','Achraf Hakimi');
+    add('Netherlands','Virgil van Dijk,Frenkie de Jong,Ryan Gravenberch,Micky van de Ven,Jeremie Frimpong,Tijjani Reijnders,Cody Gakpo,Denzel Dumfries,Xavi Simons,Nathan Aké');
+    add('Colombia','Luis Díaz,Richard Ríos');
+    add('USA','Christian Pulišić,Folarin Balogun,Sergiño Dest,Ricardo Pepi,Weston McKennie');
+    add('Croatia','Luka Modrić,Joško Gvardiol,Mateo Kovačić');
+    add('Morocco','Achraf Hakimi,Brahim Díaz');
     add('Mexico','Santiago Giménez');
     add('Scotland','John McGinn,Scott McTominay');
-    add('Japan','Takefusa Kubo');
-    add('Sweden','Alexander Isak,Viktor Gyökeres');
-    add('Uruguay','Federico Valverde');
+    add('Japan','Takefusa Kubo,Takehiro Tomiyasu');
+    add('Sweden','Alexander Isak,Viktor Gyökeres,Dejan Kulusevski');
+    add('Uruguay','Federico Valverde,Darwin Núñez,Ronald Araújo,Rodrigo Bentancur');
     add('Turkey','Arda Güler,Hakan Çalhanoğlu,Kenan Yıldız,Can Uzun,Kerem Aktürkoğlu');
     add('Egypt','Mohamed Salah,Omar Marmoush');
-    add('Belgium','Romelu Lukaku,Kevin De Bruyne,Jérémy Doku,Charles De Ketelaere,Loïs Openda,Johan Bakayoko,Malick Fofana');
+    add('Belgium','Romelu Lukaku,Kevin De Bruyne,Jérémy Doku,Charles De Ketelaere,Loïs Openda,Johan Bakayoko,Malick Fofana,Thibaut Courtois,Youri Tielemans');
     this._data={WC,STARS,NEWS,MOOD,NATION:nat};
     return this._data;
   }
