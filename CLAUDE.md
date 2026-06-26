@@ -27,8 +27,15 @@ Entertainment only — **no real money is involved**.
   source the frontend's `LIVE_WORKER_URL` fetches from, not a page host.
   `.github/workflows/deploy-worker.yml` redeploys this worker to Fly on every
   push to `main` touching `scripts/live-worker/`, `scripts/lib/`, `fly.toml`,
-  `Dockerfile`, or `FootyStock_dc.html` (the last one only matters because the
-  crosswalk is baked into the Docker image at build time).
+  or `Dockerfile`. **It deliberately does NOT trigger on `FootyStock_dc.html`**
+  anymore — the worker's `state` (teams/players/fixture history) lives only
+  in memory with zero persistence (`makeInitialState()` in `poll.mjs`), so a
+  redeploy mid-tournament wipes everything accumulated so far and forces a
+  cold re-fetch from API-Football. A frontend-only chart/styling tweak must
+  never restart the live worker. (The crosswalk baked from `FootyStock_dc.html`
+  into the Docker image does go stale until the next *worker-code* deploy —
+  acceptable, since the roster rarely changes mid-tournament; trigger
+  `workflow_dispatch` manually if it ever needs a forced refresh.)
 - **The static frontend has no confirmed automatic deploy right now.**
   `.github/workflows/pages.yml` fails on every run (`Get Pages site failed` —
   GitHub Pages was never enabled in repo settings for `louiskoide/footystock`),
