@@ -20,9 +20,13 @@ Entertainment only — **no real money is involved**.
   hand-typed `STARS`/`NEWS` fallback already baked into `DATA()`.
 - **Deploys are automatic.** `.github/workflows/deploy-worker.yml` redeploys
   the worker to Fly on every push to `main` that touches
-  `scripts/live-worker/`, `scripts/lib/`, `fly.toml`, or the `Dockerfile`.
-  `.github/workflows/pages.yml` redeploys the static frontend on every push to
-  `main`. Manual `fly deploy` is no longer required for normal changes.
+  `scripts/live-worker/`, `scripts/lib/`, `fly.toml`, `Dockerfile`, or
+  `FootyStock_dc.html` — the worker serves that HTML file directly
+  (`scripts/live-worker/server.mjs`), so frontend-only edits need this trigger
+  too, not just backend changes. `.github/workflows/pages.yml` is unused dead
+  weight: GitHub Pages was never enabled for this repo, so it fails on every
+  run — `footystock.fly.dev` (the Fly worker) is the real production
+  frontend. Manual `fly deploy` is no longer required for normal changes.
 
 ## Architecture rules — do not violate
 

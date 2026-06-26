@@ -8,6 +8,7 @@ on:
       - 'scripts/lib/**'
       - 'fly.toml'
       - 'Dockerfile'
+      - 'FootyStock_dc.html'
   workflow_dispatch:
 
 jobs:
