@@ -6,6 +6,7 @@ import { computeRating } from './rating.mjs';
 
 const WC_LEAGUE_ID = 1;
 const LIVE_STATUSES = new Set(['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE', 'INT']);
+const FINAL_GRACE_POLLS = 3; // re-check a finished fixture this many extra times for late stat corrections
 
 function buildNationIndex(crosswalkPlayers) {
   const byNation = {};
@@ -114,11 +115,15 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
     const fid = fixture.fixture.id;
     if (status === 'NS' || status === 'TBD' || status === 'PST') continue;
 
-    const already = state._processedFinal.has(fid);
     if (status === 'FT' || status === 'AET' || status === 'PEN') {
-      if (already) continue; // finished and already finalized — no need to re-poll
+      // API-Football's official player stats (assists, late-corrected goal
+      // tallies) can lag the final whistle by a few minutes, so don't lock
+      // a fixture as done after a single FT-status poll — keep re-checking
+      // it for a few more cycles before treating it as truly final.
+      const polls = state._finalPolls.get(fid) || 0;
+      if (polls >= FINAL_GRACE_POLLS) continue;
       await processFixture(client, fixture, nationIndex, trackedNations, state, log);
-      state._processedFinal.add(fid);
+      state._finalPolls.set(fid, polls + 1);
       finishedNew++;
     } else if (LIVE_STATUSES.has(status)) {
       await processFixture(client, fixture, nationIndex, trackedNations, state, log);
@@ -132,7 +137,7 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
 }
 
 export function makeInitialState(season) {
-  return { generatedAt: null, season, teams: {}, players: {}, _processedFinal: new Set() };
+  return { generatedAt: null, season, teams: {}, players: {}, _finalPolls: new Map() };
 }
 
 // Public snapshot strips the internal bookkeeping (_fid, _processedFinal)
