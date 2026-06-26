@@ -9,6 +9,7 @@ import path from 'path';
 import { loadCrosswalk } from '../lib/crosswalk.mjs';
 import { makeClient } from './api-football.mjs';
 import { pollOnce, makeInitialState, publicSnapshot } from './poll.mjs';
+import { refreshHype } from './hype.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -19,6 +20,7 @@ const SEASON = process.env.WC_SEASON || '2026';
 const PORT = process.env.PORT || 8080;
 const LIVE_POLL_MS = 30_000;   // while a tracked match is in play
 const IDLE_POLL_MS = 300_000;  // nothing live — just watching for kickoffs/results
+const HYPE_POLL_MS = 30 * 60_000; // pricing-model.md: hype refreshes every ~15-60 min, independent of match polling
 
 if (!API_KEY) {
   console.error('API_FOOTBALL_KEY not set — refusing to start.');
@@ -43,6 +45,16 @@ async function tick() {
   setTimeout(tick, nextDelay);
 }
 tick();
+
+async function hypeTick() {
+  try {
+    await refreshHype(crosswalk, state);
+  } catch (e) {
+    console.error('hype refresh failed:', e.message);
+  }
+  setTimeout(hypeTick, HYPE_POLL_MS);
+}
+hypeTick();
 
 const server = createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');

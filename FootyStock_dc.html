@@ -914,10 +914,16 @@ Samu Aghehowa|Porto|ST|21|5
       const fotmob=avgR?Math.max(8,Math.min(99,(avgR-5.6)/3.4*100)):0;
       const fantasySig=avgF?Math.max(8,Math.min(99,avgF/16*100)):0;
       const formSig=atWC?Math.max(6,Math.min(99,46+change7d*2.4+streakLen*9)):8;
-      const moodSig=Math.max(6,Math.min(99,46+change7d*3.0+(stars?14:0)));
+      // Real hype (Google Trends search-interest delta, see scripts/live-worker/hype.mjs)
+      // — independent of performance by construction, since it never reads
+      // change7d/change30d/events. 0 = no live signal yet (cold-start neutral,
+      // not "no buzz"), per docs/pricing-model.md's mean-centering rule.
+      const liveHype = (live && live.hype) ? live.hype[id] : null;
+      const hypeRaw = liveHype ? liveHype.score : 0;
+      const moodSig=Math.max(6,Math.min(99,46+hypeRaw*0.6+(stars?14:0)));
       const tmVal=(mv!=null)?mv:Math.round((tierBase[tier]*(0.9+0.5*r())) * (youth?1.18:1) /10)*5;
       const tmTrendUp = change30d>=0;
-      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,44+change30d*1.6+youth*10));
+      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*0.6));
 
       // ---- price = anchor + performance + form + hype, in log space (see
       // docs/pricing-model.md). A player with no real signal trades flat at

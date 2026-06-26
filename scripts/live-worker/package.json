@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.mjs"
   },
+  "dependencies": {
+    "google-trends-api": "^4.9.2"
+  },
   "engines": {
     "node": ">=20"
   }
