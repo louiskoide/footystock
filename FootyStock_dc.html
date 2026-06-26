@@ -1518,7 +1518,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       // lasting fundamental effect; the bump is just the transient overreaction).
       for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N) continue;
         const bump=(e.delta/100)*price*0.6, ramp=3, halfLife=6;
-        for(let j=idx;j<N;j++){ const daysIn=j-idx;
+        for(let j=idx;j<N;j++){ const daysIn=j-idx+1; // +1: the match day itself is already day 1 of the ramp, not day 0 — otherwise a same-day event (idx===N-1) eases in at 0 and never visibly moves today's price.
           const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
           const decay=Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);
           hist[j]+=bump*eased*decay; } }
@@ -1532,7 +1532,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         const idx=N-1-elimOffset;
         if(idx>=0 && idx<N){
           const bump=-price*0.08, ramp=2, halfLife=10;
-          for(let j=idx;j<N;j++){ const daysIn=j-idx;
+          for(let j=idx;j<N;j++){ const daysIn=j-idx+1; // see match-bump loop above: keeps day-of from easing in at 0
             const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
             const decay=Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);
             hist[j]+=bump*eased*decay; } }
