@@ -173,7 +173,7 @@
 
           <!-- range tabs -->
           <div style="display:flex;gap:6px;margin:20px 0 6px">
-            <sc-for list="{{ rangeTabs }}" as="r" hint-placeholder-count="4">
+            <sc-for list="{{ rangeTabs }}" as="r" hint-placeholder-count="5">
               <button onClick="{{ r.onClick }}" style="font:600 12px 'Hanken Grotesk';background: {{ r.bg }};color: {{ r.color }};border:none;padding:6px 13px;border-radius:8px;cursor:pointer">{{ r.label }}</button>
             </sc-for>
           </div>
@@ -1733,10 +1733,15 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       const p=this.byId(S.selectedId);
       if(p){
         const price=this.curPrice(p); const up7=p.change7d>=0; const cc=up7?GREEN:RED;
-        const N=p.hist.length; const range=S.range; const is24h=range==='24h';
+        const N=p.hist.length; const range=S.range; const is24h=range==='24h'; const is90m=range==='90m';
         // no intraday history is stored (CLAUDE.md: daily snapshot, not real-time) —
-        // render the latest day's move as a seeded hourly curve instead of a second data source
-        const slice=is24h?(()=>{ const prevClose=p.hist[N-2]??p.hist[N-1]; const HOURS=24; const s=[];
+        // render the latest day's move as a seeded hourly (or, for 90m, match-minute)
+        // curve instead of a second data source
+        const slice=is90m?(()=>{ const prevClose=p.hist[N-2]??p.hist[N-1]; const MINS=90; const s=[];
+          for(let m=0;m<=MINS;m++){ const t=m/MINS; const noise=(this.rand01(p.id+':90m:'+m)-0.5)*(price*0.008);
+            s.push(prevClose+(price-prevClose)*t+noise); }
+          s[MINS]=price; return s; })()
+          : is24h?(()=>{ const prevClose=p.hist[N-2]??p.hist[N-1]; const HOURS=24; const s=[];
           for(let h=0;h<=HOURS;h++){ const t=h/HOURS; const noise=(this.rand01(p.id+':24h:'+h)-0.5)*(price*0.01);
             s.push(prevClose+(price-prevClose)*t+noise); }
           s[HOURS]=price; return s; })() : p.hist.slice(N-range);
@@ -1752,13 +1757,15 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         const areaPath=`M0,${Y(slice[0]).toFixed(1)} `+slice.map((v,k)=>`L${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')+` L${W},${H} L0,${H} Z`;
         const gridY=[0,0.33,0.66,1].map(f=>({y:(top+(H-top)*f).toFixed(1)}));
         // markers for events in range
-        const markers=is24h
+        const markers=(is90m||is24h)
           ? p.events.filter(e=>e.offset===0).map(e=>({x:X(slice.length-1).toFixed(1),y:Y(slice[slice.length-1]).toFixed(1),color:e.delta>=0?GREEN:RED}))
           : p.events.filter(e=>e.offset<range).map(e=>{ const k=slice.length-1-e.offset; if(k<0)return null; return {x:X(k).toFixed(1),y:Y(slice[k]).toFixed(1),color:e.delta>=0?GREEN:RED}; }).filter(Boolean);
         // axis labels
         const today=new Date('2026-06-24T12:00:00Z');
         const offOf=(dStr)=>Math.round((today-new Date('2026-'+dStr+'T18:00:00Z'))/86400000);
-        const axisLabels=is24h
+        const axisLabels=is90m
+          ? [0,0.25,0.5,0.75,1].map(f=>{ const minute=Math.round(90*f); return {label:minute===0?'KO':minute===90?'FT':minute+"'"}; })
+          : is24h
           ? [0,0.25,0.5,0.75,1].map(f=>{ const hoursAgo=Math.round(24*(1-f)); return {label:hoursAgo===0?'now':`-${hoursAgo}h`}; })
           : [0,0.25,0.5,0.75,1].map(f=>{ const daysAgo=Math.round(range*(1-f)); const dt=new Date(today.getTime()-daysAgo*86400000); return {label:this.dateShort(dt)}; });
 
@@ -1811,7 +1818,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           sellBg:hasPos?'#fff':'#f5f6f3',sellColor:hasPos?'#16201a':'#bfc6be',sellBorder:hasPos?'#e1e4dd':'#eef1ec',sellCursor:hasPos?'pointer':'not-allowed' };
       }
     }
-    const rangeTabs=[['24h','24H'],[7,'7D'],[30,'30D'],[90,'90D']].map(([v,label])=>({label,onClick:()=>this.setRange(v),
+    const rangeTabs=[['90m',"90'"],['24h','24H'],[7,'7D'],[30,'30D'],[90,'90D']].map(([v,label])=>({label,onClick:()=>this.setRange(v),
       bg:S.range===v?'#16201a':'#eef1ec',color:S.range===v?'#fff':'#46504a'}));
 
     // ---- holdings list ----
