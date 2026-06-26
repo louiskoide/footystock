@@ -43,7 +43,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
   const away = canonNation(fixture.teams.away.name);
   const homeTracked = trackedNations.has(home);
   const awayTracked = trackedNations.has(away);
-  if (!homeTracked && !awayTracked) return;
+  if (!homeTracked && !awayTracked) return true;
 
   const gf = fixture.goals.home;
   const ga = fixture.goals.away;
@@ -73,6 +73,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
     }
   } catch (e) { log(`fixtureEvents ${fid} failed: ${e.message}`); }
 
+  let ok = true;
   for (const [nation, tracked, me, opp, myGoals, oppGoals] of [
     [home, homeTracked, home, away, gf, ga],
     [away, awayTracked, away, home, ga, gf],
@@ -94,9 +95,9 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
     else if (!t.status) t.status = round;
 
     let playersResp;
-    try { playersResp = await client.fixturePlayers(fid); } catch (e) { log(`fixturePlayers ${fid} failed: ${e.message}`); continue; }
+    try { playersResp = await client.fixturePlayers(fid); } catch (e) { log(`fixturePlayers ${fid} failed: ${e.message}`); ok = false; continue; }
     const teamBlock = (playersResp || []).find(tb => canonNation(tb.team.name) === me);
-    if (!teamBlock) continue;
+    if (!teamBlock) { ok = false; continue; }
 
     for (const pl of teamBlock.players || []) {
       const stats = pl.statistics?.[0];
@@ -144,6 +145,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
       if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
     }
   }
+  return ok;
 }
 
 // Nation/squad membership is discovered entirely from API-Football, never
@@ -166,7 +168,6 @@ async function discoverNations(client, fixtures, flatIndex, state, log) {
 
   for (const [teamId, nation] of teamsById) {
     if (state._squadFetched.has(teamId)) continue;
-    state._squadFetched.add(teamId);
     try {
       const resp = await client.playersSquad(teamId);
       const squad = (resp?.[0]?.players || []).map(p => p.name);
@@ -181,6 +182,10 @@ async function discoverNations(client, fixtures, flatIndex, state, log) {
       }
       if (matched > 0) state._trackedNations.add(nation);
       log(`squad: ${nation} -> ${squad.length} players (${matched} on our roster)`);
+      // Only mark this team as fetched once the call actually succeeded —
+      // a transient failure (rate limit, timeout) must retry next poll
+      // rather than permanently losing that nation's roster mapping.
+      state._squadFetched.add(teamId);
     } catch (e) {
       log(`playersSquad ${nation} (team ${teamId}) failed: ${e.message}`);
     }
@@ -261,8 +266,11 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
       // it for a few more cycles before treating it as truly final.
       const polls = state._finalPolls.get(fid) || 0;
       if (polls >= FINAL_GRACE_POLLS) continue;
-      await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
-      state._finalPolls.set(fid, polls + 1);
+      const ok = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
+      // Only spend a grace poll on a fetch that actually succeeded — a
+      // transient API error (rate limit, timeout) must not permanently give
+      // up on a fixture's data after 3 unlucky failures in a row.
+      if (ok) state._finalPolls.set(fid, polls + 1);
       finishedNew++;
     } else if (LIVE_STATUSES.has(status)) {
       await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: true, elapsed: fixture.fixture.status.elapsed });
