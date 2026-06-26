@@ -1814,8 +1814,14 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           }
           return s; })()
           : is24h?(()=>{ const prevClose=p.hist[N-2]??p.hist[N-1]; const HOURS=24; const s=[];
-          for(let h=0;h<=HOURS;h++){ const t=h/HOURS; const noise=(this.rand01(p.id+':24h:'+h)-0.5)*(price*0.01);
-            s.push(prevClose+(price-prevClose)*t+noise); }
+          // a live match's whole price reaction should sit in the hours since
+          // it actually kicked off — smearing the day's full move evenly
+          // across all 24 hours (the old behavior) buries "since kickoff" in
+          // noise even when the match is the entire reason the price moved.
+          const kickoffH=liveNow?Math.max(0,HOURS-matchMinute/60):0;
+          for(let h=0;h<=HOURS;h++){ const noise=(this.rand01(p.id+':24h:'+h)-0.5)*(price*0.01);
+            if(h<=kickoffH){ s.push(prevClose+noise); }
+            else{ const t=(h-kickoffH)/(HOURS-kickoffH); s.push(prevClose+(price-prevClose)*t+noise); } }
           s[HOURS]=price; return s; })() : p.hist.slice(N-range);
         const W=760,H=240,top=6;
         let min=Math.min(...slice),max=Math.max(...slice);
