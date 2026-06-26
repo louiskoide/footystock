@@ -46,10 +46,12 @@ async function main() {
 
   console.log('\n--- /fixtures/players?fixture=', fid, '---');
   const players = await get(`/fixtures/players?fixture=${fid}`);
-  const firstTeam = players.response?.[0];
   console.log('teams returned:', (players.response || []).length);
-  const firstPlayer = firstTeam?.players?.[0];
-  console.log('SAMPLE_PLAYER_STATS', JSON.stringify(firstPlayer, null, 2));
+  const allPlayers = (players.response || []).flatMap(t => t.players || []);
+  const keeper = allPlayers.find(pl => pl.statistics?.[0]?.games?.position === 'G');
+  const outfield = allPlayers.find(pl => pl.statistics?.[0]?.games?.position !== 'G' && (pl.statistics?.[0]?.games?.minutes || 0) > 0);
+  console.log('GOALKEEPER_STATS', JSON.stringify(keeper, null, 2));
+  console.log('OUTFIELD_STATS', JSON.stringify(outfield, null, 2));
 
   console.log('\n--- /fixtures/events?fixture=', fid, '(goals/cards timeline) ---');
   const events = await get(`/fixtures/events?fixture=${fid}`);
