@@ -93,6 +93,10 @@ async function processFixture(client, fixture, nationIndex, trackedNations, stat
       else if (goals === 2) note = 'Brace';
       else if (red) note = 'Sent off';
       else if (yellow) note = 'Booked';
+      else if (goals === 1 && assists >= 1) note = 'Goal & assist';
+      else if (goals === 1) note = 'Scored';
+      else if (assists >= 2) note = `${assists} assists`;
+      else if (assists === 1) note = 'Assist';
 
       state.players[id] = state.players[id] || { events: [] };
       const evs = state.players[id].events;
