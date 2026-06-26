@@ -8,25 +8,18 @@ const WC_LEAGUE_ID = 1;
 const LIVE_STATUSES = new Set(['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE', 'INT']);
 const FINAL_GRACE_POLLS = 3; // re-check a finished fixture this many extra times for late stat corrections
 
-function buildNationIndex(crosswalkPlayers) {
-  const byNation = {};
-  for (const p of crosswalkPlayers) {
-    byNation[p.nation] = byNation[p.nation] || [];
-    byNation[p.nation].push({ id: p.id, name: p.name, norm: normName(p.name) });
-  }
-  return byNation;
+function buildFlatIndex(crosswalkPlayers) {
+  return crosswalkPlayers.map(p => ({ id: p.id, name: p.name, norm: normName(p.name) }));
 }
 
-function matchPlayer(nationIndex, nation, apiName) {
-  const candidates = nationIndex[nation];
-  if (!candidates) return null;
+function matchPlayer(flatIndex, apiName) {
   const norm = normName(apiName);
-  let hit = candidates.find(c => c.norm === norm);
+  let hit = flatIndex.find(c => c.norm === norm);
   if (hit) return hit.id;
   // Fall back to surname match (API-Football sometimes returns a short
   // display name like "Mbappé" where our roster has "Kylian Mbappé").
   const surname = norm.split(' ').pop();
-  hit = candidates.find(c => c.norm.split(' ').pop() === surname);
+  hit = flatIndex.find(c => c.norm.split(' ').pop() === surname);
   return hit ? hit.id : null;
 }
 
@@ -44,7 +37,7 @@ function roundLabel(round) {
   return (round || '').replace(/^Group Stage - /i, 'Group ').trim() || 'World Cup';
 }
 
-async function processFixture(client, fixture, nationIndex, trackedNations, state, log) {
+async function processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log) {
   const fid = fixture.fixture.id;
   const home = canonNation(fixture.teams.home.name);
   const away = canonNation(fixture.teams.away.name);
@@ -79,8 +72,12 @@ async function processFixture(client, fixture, nationIndex, trackedNations, stat
     for (const pl of teamBlock.players || []) {
       const stats = pl.statistics?.[0];
       if (!stats) continue;
-      const id = matchPlayer(nationIndex, me, pl.player.name);
-      if (!id) continue;
+      const id = matchPlayer(flatIndex, pl.player.name);
+      // Matching is global (not nation-scoped), so confirm this roster
+      // player was actually discovered in *this* nation's official squad —
+      // otherwise a name collision with some other club player on our
+      // roster could get falsely credited with another country's match.
+      if (!id || nationOf[id] !== me) continue;
 
       const minutes = stats.games?.minutes || 0;
       state.players[id] = state.players[id] || { events: [] };
@@ -120,25 +117,41 @@ async function processFixture(client, fixture, nationIndex, trackedNations, stat
   }
 }
 
-// Official squad lists from API-Football are the ground truth for "is this
-// player actually picked for the World Cup" — replaces guessing from the
-// hand-typed NATION list, which drifts from real squad announcements (see
-// FootyStock_dc.html EXCLUDED comment history). Squads don't change during
-// the tournament, so fetch each tracked nation's once and cache it.
-async function ensureSquads(client, fixtures, trackedNations, state, log) {
-  state._squadFetched = state._squadFetched || new Set();
-  for (const nation of trackedNations) {
-    if (state._squadFetched.has(nation)) continue;
-    const fx = fixtures.find(f => canonNation(f.teams.home.name) === nation || canonNation(f.teams.away.name) === nation);
-    if (!fx) continue;
-    const teamId = canonNation(fx.teams.home.name) === nation ? fx.teams.home.id : fx.teams.away.id;
+// Nation/squad membership is discovered entirely from API-Football, never
+// from a hand-typed list: fetch every team's official squad (one call per
+// team, cached for the worker's lifetime since squads don't change mid-
+// tournament) and match each squad name against the *full* roster. A roster
+// player only becomes trackable once their name actually turns up in some
+// nation's real squad response — new qualifiers or players we forgot to
+// tag can never silently fall through a static list again.
+async function discoverNations(client, fixtures, flatIndex, state, log) {
+  state._squadFetched = state._squadFetched || new Set(); // team ids already queried
+  state._nationOf = state._nationOf || {}; // playerId -> nation
+  state._trackedNations = state._trackedNations || new Set();
+
+  const teamsById = new Map();
+  for (const fx of fixtures) {
+    teamsById.set(fx.teams.home.id, canonNation(fx.teams.home.name));
+    teamsById.set(fx.teams.away.id, canonNation(fx.teams.away.name));
+  }
+
+  for (const [teamId, nation] of teamsById) {
+    if (state._squadFetched.has(teamId)) continue;
+    state._squadFetched.add(teamId);
     try {
       const resp = await client.playersSquad(teamId);
       const squad = (resp?.[0]?.players || []).map(p => p.name);
       state.teams[nation] = state.teams[nation] || { fixtures: [] };
       state.teams[nation].squad = squad;
-      state._squadFetched.add(nation);
-      log(`squad: ${nation} -> ${squad.length} players`);
+      let matched = 0;
+      for (const squadName of squad) {
+        const id = matchPlayer(flatIndex, squadName);
+        if (!id) continue;
+        state._nationOf[id] = nation;
+        matched++;
+      }
+      if (matched > 0) state._trackedNations.add(nation);
+      log(`squad: ${nation} -> ${squad.length} players (${matched} on our roster)`);
     } catch (e) {
       log(`playersSquad ${nation} (team ${teamId}) failed: ${e.message}`);
     }
@@ -146,11 +159,12 @@ async function ensureSquads(client, fixtures, trackedNations, state, log) {
 }
 
 export async function pollOnce(client, crosswalk, state, log = console.log) {
-  const trackedNations = new Set(crosswalk.map(p => p.nation));
-  const nationIndex = buildNationIndex(crosswalk);
+  const flatIndex = buildFlatIndex(crosswalk);
 
   const fixtures = await client.fixtures({ league: WC_LEAGUE_ID, season: state.season });
-  await ensureSquads(client, fixtures, trackedNations, state, log);
+  await discoverNations(client, fixtures, flatIndex, state, log);
+  const trackedNations = state._trackedNations;
+  const nationOf = state._nationOf;
   let liveCount = 0, finishedNew = 0;
 
   for (const fixture of fixtures) {
@@ -165,11 +179,11 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
       // it for a few more cycles before treating it as truly final.
       const polls = state._finalPolls.get(fid) || 0;
       if (polls >= FINAL_GRACE_POLLS) continue;
-      await processFixture(client, fixture, nationIndex, trackedNations, state, log);
+      await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log);
       state._finalPolls.set(fid, polls + 1);
       finishedNew++;
     } else if (LIVE_STATUSES.has(status)) {
-      await processFixture(client, fixture, nationIndex, trackedNations, state, log);
+      await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log);
       liveCount++;
     }
   }
@@ -193,7 +207,7 @@ export function publicSnapshot(state) {
   }
   const players = {};
   for (const [id, p] of Object.entries(state.players)) {
-    players[id] = { events: p.events.map(({ _fid, ...rest }) => rest) };
+    players[id] = { nation: (state._nationOf && state._nationOf[id]) || null, events: p.events.map(({ _fid, ...rest }) => rest) };
   }
   return { generatedAt: state.generatedAt, season: state.season, teams, players };
 }

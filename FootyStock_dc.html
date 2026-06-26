@@ -845,8 +845,6 @@ Samu Aghehowa|Porto|ST|21|5
       // below push price away from this; it is not randomized on its own.
       const anchor = (mv!=null) ? mv : tierBase[tier]*(0.9+0.5*r())*(youth?1.15:1);
       const D=this.DATA();
-      const nation=D.NATION[name]||null;
-      const wc=(nation&&D.WC[nation])?D.WC[nation]:null;
       const stars=D.STARS[id]||null;
       const news=D.NEWS[id]||null;
       const mood=D.MOOD[id]||null;
@@ -854,19 +852,24 @@ Samu Aghehowa|Porto|ST|21|5
       const sum=(arr)=>arr.reduce((a,b)=>a+b,0);
       let events=[]; let atWC=false; let wcStatus='';
       // Players with curated, confirmed individual match data (STARS) count
-      // as "at the World Cup" with their real per-match stats. Sharing a
-      // nationality with a country that's competing is NOT evidence of squad
-      // membership on its own (that fabricated Cole Palmer into England's
-      // Croatia/Ghana results) — so the fallback below only fires for names
-      // on the curated squad list (NATION minus confirmed EXCLUDED), and it
-      // never invents personal goals/assists, only team-result-based form.
-      // Live fetched data (prices.json, written by the daily GitHub Action that
+      // as "at the World Cup" with their real per-match stats. The fallback
+      // below only fires for names the live worker itself has matched into a
+      // real nation's official squad — never invents personal goals/assists,
+      // only team-result-based form.
+      // Live fetched data (prices.json, written by the always-on worker that
       // pulls real World Cup results from API-Football) takes priority over
       // the hand-typed STARS/WC literals below — those literals are now only
       // the offline fallback for before the pipeline's first successful run.
       const live = this._wcLive;
-      const liveTeam = (live && live.teams && nation) ? live.teams[nation] : null;
       const livePlayer = (live && live.players) ? live.players[id] : null;
+      // Nation is discovered by the live worker from API-Football's official
+      // squad lists (never a hand-typed list — see live-worker/poll.mjs) so
+      // a newly-qualified country or a player we forgot to tag can't get
+      // silently dropped. D.NATION is only a cold-start fallback for before
+      // the worker's first successful poll.
+      const nation=(livePlayer&&livePlayer.nation)||D.NATION[name]||null;
+      const wc=(nation&&D.WC[nation])?D.WC[nation]:null;
+      const liveTeam = (live && live.teams && nation) ? live.teams[nation] : null;
       const wcEff = liveTeam || wc;
       const starsEff = (livePlayer && livePlayer.events && livePlayer.events.length) ? livePlayer.events : stars;
       // API-Football's official squad list (live.teams[nation].squad) is the

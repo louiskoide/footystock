@@ -53,11 +53,16 @@ export function loadCrosswalk(htmlPath) {
     for (const n of names.split(',')) nationByName[n.trim()] = country;
   }
 
+  // Every rostered player is a crosswalk candidate, not just the ones with a
+  // hand-typed nation tag — the live worker (see live-worker/poll.mjs)
+  // discovers nation/squad membership itself from API-Football's official
+  // squad lists, so it needs the full roster to match against. `nation` here
+  // is kept only as a legacy hint for scripts/update-prices.mjs (the old
+  // daily job); the live worker ignores it.
   const players = [];
-  for (const name of Object.keys(nationByName)) {
+  for (const name of Object.keys(rosterByName)) {
     const team = rosterByName[name];
-    if (!team) continue; // nation-tagged but not in club roster — skip, no slug to attach to
-    players.push({ name, team, nation: nationByName[name], id: slug(name + '-' + team) });
+    players.push({ name, team, nation: nationByName[name] || null, id: slug(name + '-' + team) });
   }
   return players;
 }
