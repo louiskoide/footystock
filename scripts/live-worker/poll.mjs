@@ -81,6 +81,22 @@ async function processFixture(client, fixture, nationIndex, trackedNations, stat
       if (!stats) continue;
       const id = matchPlayer(nationIndex, me, pl.player.name);
       if (!id) continue;
+
+      const minutes = stats.games?.minutes || 0;
+      state.players[id] = state.players[id] || { events: [] };
+      const evs = state.players[id].events;
+      const existingEv = evs.find(e => e._fid === fid);
+
+      if (minutes <= 0) {
+        // Named in the matchday squad but never came on — a genuine bench
+        // appearance, distinct from not being in the squad for this match
+        // at all (which never reaches this loop, since they're absent from
+        // teamBlock.players entirely).
+        const ev = { d: date, opp, rating: null, g: 0, a: 0, yellow: false, red: false, min: 0, note: null, _fid: fid };
+        if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
+        continue;
+      }
+
       const rating = computeRating(stats, { knockout, result });
       if (rating == null) continue;
 
@@ -98,10 +114,7 @@ async function processFixture(client, fixture, nationIndex, trackedNations, stat
       else if (assists >= 2) note = `${assists} assists`;
       else if (assists === 1) note = 'Assist';
 
-      state.players[id] = state.players[id] || { events: [] };
-      const evs = state.players[id].events;
-      const existingEv = evs.find(e => e._fid === fid);
-      const ev = { d: date, opp, rating, g: goals, a: assists, note, _fid: fid };
+      const ev = { d: date, opp, rating, g: goals, a: assists, yellow: !!yellow, red: !!red, min: minutes, note, _fid: fid };
       if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
     }
   }
