@@ -46,13 +46,30 @@ async function tick() {
 }
 tick();
 
+// Google Trends (unofficial, scraped endpoint) periodically blocks an IP
+// outright once hit too hard — every request comes back as an HTML
+// challenge page instead of JSON. Hammering it every HYPE_POLL_MS while
+// blocked just prolongs the block, so back off exponentially on a cycle
+// that's almost entirely failures, and reset once it recovers.
+const HYPE_BACKOFF_MAX_MS = 4 * 60 * 60_000; // 4h cap
+let hypeBackoffMs = HYPE_POLL_MS;
 async function hypeTick() {
+  let nextHypeDelay = HYPE_POLL_MS;
   try {
-    await refreshHype(crosswalk, state);
+    const { ok, failed, total } = await refreshHype(crosswalk, state);
+    if (total > 0 && failed / total > 0.8) {
+      hypeBackoffMs = Math.min(hypeBackoffMs * 2, HYPE_BACKOFF_MAX_MS);
+      nextHypeDelay = hypeBackoffMs;
+      console.error(`hype: ${failed}/${total} failed — likely rate-limited/blocked, backing off to ${Math.round(nextHypeDelay / 60000)}m.`);
+    } else {
+      hypeBackoffMs = HYPE_POLL_MS; // recovered — reset backoff
+    }
   } catch (e) {
     console.error('hype refresh failed:', e.message);
+    hypeBackoffMs = Math.min(hypeBackoffMs * 2, HYPE_BACKOFF_MAX_MS);
+    nextHypeDelay = hypeBackoffMs;
   }
-  setTimeout(hypeTick, HYPE_POLL_MS);
+  setTimeout(hypeTick, nextHypeDelay);
 }
 hypeTick();
 

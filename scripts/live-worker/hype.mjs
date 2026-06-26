@@ -53,4 +53,5 @@ export async function refreshHype(crosswalk, state, log = console.log) {
     await new Promise(r => setTimeout(r, REQUEST_GAP_MS));
   }
   log(`hype: refreshed ${ok}/${crosswalk.length} players (${failed} failed).`);
+  return { ok, failed, total: crosswalk.length };
 }
