@@ -1457,7 +1457,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       // Real hype (Google Trends search-interest delta, see scripts/live-worker/hype.mjs)
       // — independent of performance by construction, since it never reads
       // change7d/change30d/events. 0 = no live signal yet (cold-start neutral,
-      // not "no buzz"), per docs/pricing-model.md's mean-centering rule.
+      // not "no buzz"), per pricing-model.md's mean-centering rule.
       const liveHype = (live && live.hype) ? live.hype[id] : null;
       const hypeRaw = liveHype ? liveHype.score : 0;
       const moodSig=Math.max(6,Math.min(99,46+hypeRaw*0.6+(stars?14:0)));
@@ -1466,7 +1466,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*0.6));
 
       // ---- price = anchor + performance + form + hype, in log space (see
-      // docs/pricing-model.md). A player with no real signal trades flat at
+      // pricing-model.md). A player with no real signal trades flat at
       // the anchor; real output and real news move it, not raw market value.
       const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
       const wPerf=0.5, wForm=0.3, wHype=0.2;
@@ -1485,7 +1485,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       // (WC performance or curated news) actually drifted to get here, so
       // the 90d baseline trends; a quiet player's fundamentals barely move
       // day to day, so its baseline stays close to flat (per the once-a-day
-      // fundamentals / intraday-hype model in docs/pricing-model.md).
+      // fundamentals / intraday-hype model in pricing-model.md).
       const hasSignal = atWC || !!news;
       const N=90; const hist=[];
       const trend = hasSignal ? clamp(change30d/100,-0.4,0.4) : (r()-0.5)*0.04;

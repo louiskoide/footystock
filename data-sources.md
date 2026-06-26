@@ -2,16 +2,22 @@
 
 This is the spec for where data comes from and how feeds are combined. Read it
 before touching anything that fetches, stores, or merges external data.
-Everything here is built around staying **$0 until the game is popular**.
 
-## The free stack (each source has one job)
+**Update (live era):** we now pay for an API-Football tier with a 7,500
+req/day cap, specifically to support live in-play polling instead of a
+once-daily batch (see "Why live polling fits the budget" below). Everything
+else — Trends, GDELT, TheSportsDB, the localStorage-only portfolio model —
+stays on free tiers; this project is not trying to spend money broadly, just
+on the one feed that buys live updates.
 
-No single free source does it all, so we layer complementary ones. Division of
+## The stack (each source has one job)
+
+No single source does it all, so we layer complementary ones. Division of
 labor:
 
-| Source              | Role | Notes / free-tier reality |
+| Source              | Role | Notes |
 |---------------------|------|---------------------------|
-| **API-Football** (api-sports.io), free tier | Per-player events: goals, assists, cards, minutes | ~100 requests/day cap; player stats + events on free; commercial use allowed on free. The primary performance feed. |
+| **API-Football** (api-sports.io), paid tier (7,500 req/day) | Per-player events: goals, assists, cards, minutes — polled live during matches | The primary performance feed; polled every 30s while a tracked match is in play, every 5 min when idle (`scripts/live-worker/`). |
 | **football-data.org**, free | Skeleton: fixtures, schedules, final scores, lineups | Free forever, ~10 req/min, professional-grade. Thin on per-player stats on free (goals via scorers endpoint; assists/minutes/shots behind a paid add-on). Use as the reliable backbone + fallback. |
 | **StatsBomb Open Data** (GitHub) | Offline model building/validation; xG depth | Free, rich event data incl. xG, but **static & historical, not live**. Attribution to StatsBomb required. Use to tune the rating before paying for anything. |
 | **TheSportsDB**, free | Media layer: club badges, player photos | Crowd-sourced; image accuracy doesn't matter. Commercial use needs the ~$9/mo tier — fine while non-commercial. Do NOT trust it for performance stats. |
@@ -27,33 +33,36 @@ labor:
   licensed (Opta/Stats Perform). We compute our **own** rating instead (see
   `pricing-model.md`). This is a hard rule, not a preference.
 
-## Why 100 req/day is fine
+## Why live polling fits the budget
 
-We update **once a day**, not live. After matches finish, one batched pull
-(by fixture/league, not per-player) covers a few dozen players inside the cap.
-This matches the app's existing daily-snapshot behavior — it's automation, not
-a downgrade. Live in-play is the one thing we deliberately skip until paid.
+With a 7,500 req/day cap, polling every tracked World Cup fixture every 30s
+while it's live, plus a 5-min idle heartbeat, comfortably fits inside the cap
+for the tournament's match volume — see `scripts/live-worker/server.mjs` for
+the exact poll intervals. This replaced the old free-tier ~100 req/day plan,
+which could only afford one batched pull per day after matches finished.
 
-## Architecture ($0, almost no backend)
+## Architecture (always-on worker, not a daily batch)
 
 ```
-GitHub Action (daily cron)
-  → pulls API-Football (+ football-data.org fallback, Trends, GDELT)
+Fly.io worker (always-on, scripts/live-worker/)
+  → polls API-Football continuously (live-match-aware interval)
   → resolves every record to our canonical slug ID
   → computes each player's price (see pricing-model.md)
-  → writes prices.json, commits it to the repo
-Static frontend
-  → fetches prices.json, renders the market
+  → serves prices.json-shaped JSON over HTTP (no commit/repo write)
+Static frontend (GitHub Pages)
+  → polls the worker's /prices.json every 30s, merges it live
+  → falls back silently to the hand-typed STARS/NEWS snapshot if unreachable
 User portfolios/trades
   → stay in localStorage (per-user, no server needed yet)
 ```
 
-- **GitHub Actions** runs the cron for free (generous free minutes; unlimited
-  on public repos). A daily pull is seconds of compute.
-- **No database yet.** Prices live in `prices.json`; portfolios in
-  `localStorage`. Only add a DB (Supabase free tier) when cross-device
-  portfolios or a real cross-user leaderboard require it. The daily Action
-  doubles as the "keep-alive" that stops a free Supabase project from pausing.
+Both the worker (`deploy-worker.yml`) and the frontend (`pages.yml`) auto-deploy
+on push to `main` — no manual `fly deploy` or commit-prices step needed.
+
+- **No database yet.** Prices are served live by the worker, never committed
+  to the repo; portfolios stay in `localStorage`. Only add a DB (Supabase free
+  tier) when cross-device portfolios or a real cross-user leaderboard require
+  it.
 - **Never fetch from the browser.** Keys, CORS, and rate limits all forbid it.
 
 ## The merge layer (the genuinely fiddly part)
@@ -103,7 +112,7 @@ just less precisely. **Graceful degradation beats a broken snapshot.**
 Do **not** wire all six feeds together on day one. That's how these projects
 stall. Sequence:
 
-1. **API-Football free → compute prices → `prices.json` → static page.**
+1. **API-Football → compute prices → live `prices.json` → static page.**
    Get the whole pipeline working end-to-end with one source.
 2. Add **TheSportsDB** (images) — zero stat-join risk, instant polish.
 3. Add **Google Trends + GDELT** (hype basket).
