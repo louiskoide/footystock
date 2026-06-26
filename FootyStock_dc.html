@@ -238,11 +238,28 @@
                 <sc-if value="{{ e.isBench }}" hint-placeholder-val="{{ false }}"><span title="Bench" style="font:600 11px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;border-radius:6px;padding:3px 7px">🪑 Bench</span></sc-if>
                 <sc-if value="{{ e.notBench }}" hint-placeholder-val="{{ true }}"><span style="font:700 12px 'Space Grotesk';color:#46504a">{{ e.minsLabel }}</span></sc-if>
               </span>
-              <span style="text-align:center;font:600 12px 'Hanken Grotesk';color:#46504a">{{ e.fantasy }} fpts</span>
+              <span style="text-align:center;font:700 13px 'Space Grotesk';color:#46504a">{{ e.ratingLabel }}</span>
               <span style="text-align:right;font:700 13px 'Space Grotesk';color: {{ e.deltaColor }}">{{ e.deltaArrow }}{{ e.delta }}</span>
             </div>
           </sc-for>
         </div>
+
+        <!-- related articles -->
+        <sc-if value="{{ d.hasRelatedArticles }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px 26px">
+          <div style="font:700 16px 'Space Grotesk';letter-spacing:-.01em;margin-bottom:14px">In the news</div>
+          <sc-for list="{{ d.relatedArticles }}" as="a" hint-placeholder-count="2">
+            <div onClick="{{ a.onClick }}" style="cursor:pointer;padding:12px 0;border-top:1px solid #f1f3ef">
+              <div style="display:flex;align-items:center;gap:9px;margin-bottom:5px">
+                <span style="font:700 10px 'Hanken Grotesk';letter-spacing:.05em;color:#16a85f">{{ a.tag }}</span>
+                <span style="font:500 11px 'Hanken Grotesk';color:#a7afa7">{{ a.date }}</span>
+              </div>
+              <div style="font:700 14.5px 'Space Grotesk';letter-spacing:-.005em;color:#16201a">{{ a.headline }}</div>
+              <div style="font:500 12.5px 'Hanken Grotesk';color:#8a938c;margin-top:3px">{{ a.dek }}</div>
+            </div>
+          </sc-for>
+        </div>
+        </sc-if>
       </div>
 
       <!-- right: trade panel -->
@@ -349,6 +366,56 @@
   </div>
   </sc-if>
 
+  <!-- ============ ARTICLES VIEW ============ -->
+  <sc-if value="{{ isArticles }}" hint-placeholder-val="{{ false }}">
+  <div style="padding:24px 26px 0">
+    <sc-if value="{{ noSelectedArticle }}" hint-placeholder-val="{{ true }}">
+      <div style="font:700 20px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 4px">Articles</div>
+      <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 18px">Daily World Cup recaps, written in-house from our own match data — never scraped.</div>
+      <sc-if value="{{ hasArticles }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:30px">
+        <sc-for list="{{ articlesAll }}" as="a" hint-placeholder-count="6">
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px 26px">
+            <div style="display:flex;align-items:center;gap:9px;margin-bottom:8px">
+              <span style="font:700 10px 'Hanken Grotesk';letter-spacing:.05em;color:#16a85f">{{ a.tag }}</span>
+              <span style="font:500 11.5px 'Hanken Grotesk';color:#a7afa7">{{ a.date }}</span>
+            </div>
+            <div onClick="{{ a.open }}" style="cursor:pointer;font:700 20px 'Space Grotesk';letter-spacing:-.01em;color:#16201a;margin-bottom:6px">{{ a.headline }}</div>
+            <div style="font:500 13.5px 'Hanken Grotesk';color:#46504a;line-height:1.5;margin-bottom:12px">{{ a.dek }}</div>
+            <div style="display:flex;gap:7px;flex-wrap:wrap">
+              <sc-for list="{{ a.refs }}" as="r" hint-placeholder-count="3">
+                <button onClick="{{ r.onClick }}" style="font:600 12px 'Hanken Grotesk';background:#eef1ec;border:none;color:#16a85f;padding:6px 11px;border-radius:999px;cursor:pointer">{{ r.name }}</button>
+              </sc-for>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <sc-if value="{{ noArticles }}" hint-placeholder-val="{{ false }}">
+        <div style="background:#fff;border:1px dashed #d6dccf;border-radius:16px;padding:46px;text-align:center"><div style="font:700 17px 'Space Grotesk'">No articles yet</div><div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-top:6px">Check back after the next matchday.</div></div>
+      </sc-if>
+    </sc-if>
+
+    <sc-if value="{{ hasSelectedArticle }}" hint-placeholder-val="{{ false }}">
+      <button onClick="{{ backToArticles }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#16a85f;padding:6px 0;margin-bottom:14px">← Back to all articles</button>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:30px 32px;margin-bottom:30px;max-width:680px">
+        <div style="display:flex;align-items:center;gap:9px;margin-bottom:10px">
+          <span style="font:700 10px 'Hanken Grotesk';letter-spacing:.05em;color:#16a85f">{{ selectedArticle.tag }}</span>
+          <span style="font:500 11.5px 'Hanken Grotesk';color:#a7afa7">{{ selectedArticle.date }}</span>
+        </div>
+        <div style="font:700 28px 'Space Grotesk';letter-spacing:-.015em;color:#16201a;margin-bottom:10px">{{ selectedArticle.headline }}</div>
+        <div style="font:600 15px 'Hanken Grotesk';color:#586159;line-height:1.55;margin-bottom:18px">{{ selectedArticle.dek }}</div>
+        <div style="font:500 14.5px 'Hanken Grotesk';color:#2a332d;line-height:1.7;white-space:pre-line">{{ selectedArticle.body }}</div>
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:22px;padding-top:18px;border-top:1px solid #f1f3ef">
+          <sc-for list="{{ selectedArticle.refs }}" as="r" hint-placeholder-count="3">
+            <button onClick="{{ r.onClick }}" style="font:600 12px 'Hanken Grotesk';background:#eef1ec;border:none;color:#16a85f;padding:6px 11px;border-radius:999px;cursor:pointer">{{ r.name }}</button>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+  </div>
+  </sc-if>
+
   <!-- ============ LEADERBOARD VIEW ============ -->
   <sc-if value="{{ isLeaders }}" hint-placeholder-val="{{ false }}">
   <div style="padding:24px 26px 0">
@@ -437,7 +504,7 @@ class Component extends DCLogic {
     super(props);
     const saved = this.load();
     this.state = {
-      view:'market', selectedId:null, league:'ALL', search:'', range:90,
+      view:'market', selectedId:null, selectedArticleId:null, league:'ALL', search:'', range:90,
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
       showReward:false, tick:0, pendingOrders:[],
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
@@ -1211,6 +1278,36 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       'luis-diaz-bayern':'Colombia trending after his match-winner',
       'bruno-fernandes-man-utd':'Premier League Player of the Season talk all over his timeline'
     };
+    // Daily World Cup recap articles — each covers the standout games from
+    // one matchday, with refs to the players whose stock pages should link
+    // back here (CLAUDE.md: our own writeup, never a scraped third-party article).
+    const AT=(d,tag,headline,dek,body,refs)=>({d,tag,headline,dek,body,refs});
+    const ARTICLES=[
+      AT('06-15','MATCH DAY','Germany run riot in a 7-1 demolition of Curaçao',
+        'One of the most one-sided scorelines of the group stage.',
+        'Germany put seven past Curaçao without reply at the other end bar one consolation goal. Jamal Musiala and Florian Wirtz combined for two goal involvements apiece, while Kai Havertz was also on the scoresheet as Germany made an emphatic start to Group E.',
+        ['jamal-musiala-bayern','florian-wirtz-liverpool','kai-havertz-arsenal']),
+      AT('06-16','MATCH DAY','Brace day in Group I as France and Norway both win',
+        'Mbappé and Haaland both scored twice on a rough day for Senegal.',
+        'France brushed Senegal aside 3-1 with Kylian Mbappé scoring twice, all four of his shots on target. The same day, Erling Haaland finally announced himself at a World Cup with a brace as Norway won 3-2 — his first goals at the tournament after years of near-misses.',
+        ['kylian-mbappe-real-madrid','erling-haaland-man-city']),
+      AT('06-17','MATCH DAY','Ronaldo blanked as DR Congo hold Portugal; Bellingham and Kane fire England past Croatia',
+        'A shock draw for the five-time Ballon d’Or winner contrasted with goals at the other end of Group L.',
+        'Cristiano Ronaldo was a peripheral figure as Portugal could only draw 1-1 with DR Congo, prompting pointed questions from pundits about his influence at this stage of his career. Bruno Fernandes also went close but couldn’t break the deadlock. Elsewhere, Jude Bellingham and a Harry Kane brace — including a penalty — fired England to a 4-2 win over Croatia.',
+        ['cristiano-ronaldo-al-nassr','bruno-fernandes-man-utd','jude-bellingham-real-madrid','harry-kane-bayern']),
+      AT('06-19','MATCH DAY','Cunha brace sends Brazil through as Scotland’s World Cup ends in Group C',
+        'Brazil’s in-form forward continues to make a compelling case for a starting role.',
+        'Matheus Cunha scored twice in the first half to seal a 3-0 win over Haiti, taking his tournament tally to two goals and underlining his growing influence for Brazil ahead of the knockouts, on a day Scotland’s own World Cup came to an end in Group C.',
+        ['matheus-cunha-man-utd']),
+      AT('06-22','MATCH DAY','Messi and Mbappé both strike again as the group stage winds down',
+        'Two of the tournament’s outstanding individual performers added to their tallies.',
+        'Lionel Messi scored twice as Argentina beat Austria 2-0 to top Group J, taking his tournament tally to five goals in two games. Kylian Mbappé matched him goal-for-goal, netting a brace against Iraq on his 100th France cap as Les Bleus eased into the round of 32.',
+        ['lionel-messi-inter-miami','kylian-mbappe-real-madrid']),
+      AT('06-23','MATCH DAY','Portugal rout Uzbekistan as Ghana scrape through on a flat night with England',
+        'Ronaldo and Bruno Fernandes combine in a statement win, while Ghana’s defense earns a tournament-defining point.',
+        'Cristiano Ronaldo answered his DR Congo critics with a goal from a Bruno Fernandes assist as Portugal thrashed Uzbekistan 5-0. The same night, Ghana’s goalless draw with England was enough to send them through, with Mohammed Kudus praised for marshalling the midfield in a backs-to-the-wall display.',
+        ['cristiano-ronaldo-al-nassr','bruno-fernandes-man-utd','mohammed-kudus-tottenham'])
+    ];
     const nat={};
     const add=(country,names)=>names.split(',').forEach(n=>nat[n.trim()]=country);
     add('France','Kylian Mbappé,Ousmane Dembélé,Michael Olise,Aurélien Tchouaméni,Eduardo Camavinga,William Saliba,Désiré Doué,Bradley Barcola,Warren Zaïre-Emery,Mike Maignan,Manu Koné,Marcus Thuram,Adrien Rabiot,Antoine Griezmann,Theo Hernández,Ibrahima Konaté,Christopher Nkunku,Youssouf Fofana,Rayan Cherki,Maghnes Akliouche,Lucas Chevalier,Wesley Fofana,Lucas Hernández,Randal Kolo Muani');
@@ -1262,7 +1359,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     add('Panama','Adalberto Carrasquilla,Orlando Mosquera,Eric Davis,José Luis Rodríguez');
     add('DR Congo','Yoane Wissa,Chancel Mbemba,Lionel Mpasi,Arthur Masuaku,Samuel Moutoussamy,Cédric Bakambu');
     add('Uzbekistan','Eldor Shomurodov,Abbosbek Fayzullaev,Utkir Yusupov,Abduqodir Khusanov,Jasur Yakhshiboev');
-    this._data={WC,STARS,NEWS,MOOD,NATION:nat};
+    this._data={WC,STARS,NEWS,MOOD,ARTICLES,NATION:nat};
     return this._data;
   }
 
@@ -1335,7 +1432,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           const bench = s.rating==null;
           const g=s.g||0,a=s.a||0; const delta=bench?0:parseFloat(((s.rating-6.9)*1.3+g*1.0+a*0.6).toFixed(2));
           const st=[]; if(g)st.push(g+'G'); if(a)st.push(a+'A'); if(!g&&!a)st.push('—');
-          events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,fantasy:bench?0:Math.round(s.rating*1.3+g*4+a*3),goals:g,assists:a,yellow:!!s.yellow,red:!!s.red,min:(s.min==null?null:s.min),bench,delta,statLine:st.join(' '),note:s.note}); } }
+          events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,goals:g,assists:a,yellow:!!s.yellow,red:!!s.red,min:(s.min==null?null:s.min),bench,delta,statLine:st.join(' '),note:s.note}); } }
       else if(inSquad){
         // Confirmed on the real squad list but no actual per-match minutes
         // recorded yet (matchPlayer never saw them play) — show them as
@@ -1354,11 +1451,8 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       let streakLen=0; for(const rt of ratingsByRecency){ if(rt>=7.4) streakLen++; else break; }
       const ratingVals=events.map(e=>e.rating).filter(x=>x>0);
       const avgR=ratingVals.length?sum(ratingVals)/ratingVals.length:0;
-      const fantVals=events.map(e=>e.fantasy).filter(x=>x>0);
-      const avgF=fantVals.length?sum(fantVals)/fantVals.length:0;
       // signals (0-100, ~46 = average player)
       const fotmob=avgR?Math.max(8,Math.min(99,(avgR-5.7)/2.6*100)):0;
-      const fantasySig=avgF?Math.max(8,Math.min(99,avgF/16*100)):0;
       const formSig=atWC?Math.max(6,Math.min(99,46+change7d*2.4+streakLen*9)):8;
       // Real hype (Google Trends search-interest delta, see scripts/live-worker/hype.mjs)
       // — independent of performance by construction, since it never reads
@@ -1415,10 +1509,14 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         for(let j=idx;j<N;j++){ const k=Math.min(1,(j-idx)/ramp); const eased=k*k*(3-2*k); hist[j]+=bump*eased; } }
       hist[N-1]=price;
 
+      // Articles mentioning this player — only elite/notable performances get
+      // a writeup (see DATA().ARTICLES), shown under the player page when
+      // recent rather than duplicated for every routine match.
+      const playerArticles = D.ARTICLES.filter(a=>a.refs.includes(id));
       db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price,
         change7d,change30d,hist,events,streakLen,atWC,wcStatus,nation,news,mood,
-        signals:{fotmob,fantasy:fantasySig,form:formSig,twitter:moodSig,transfermarkt:transferSig}, avgR,avgF,
-        tmVal,tmTrendUp });
+        signals:{fotmob,form:formSig,twitter:moodSig,transfermarkt:transferSig}, avgR,
+        tmVal,tmTrendUp,articles:playerArticles });
     }
     // assign ranks by price desc
     db.sort((a,b)=>b.price-a.price);
@@ -1464,10 +1562,11 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   }
 
   // ---------- actions ----------
-  nav(v){ this.setState({view:v}); }
+  nav(v){ this.setState({view:v,selectedArticleId:null}); }
   goHome(){ this.setState({view:'market'}); }
   openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90}); }
   goBack(){ this.setState({view:'market'}); }
+  openArticle(id){ this.setState({view:'articles',selectedArticleId:id}); }
   setLeague(lg){ this.setState({league:lg}); }
   setRange(r){ this.setState({range:r}); }
   onSearch(e){ this.setState({search:e.target.value}); }
@@ -1573,7 +1672,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     const marketList=list.map(decorate);
 
     // nav tabs
-    const tabsDef=[['market','Market'],['portfolio','Portfolio'],['watch','Watchlist'],['leaders','Leaderboard']];
+    const tabsDef=[['market','Market'],['articles','Articles'],['portfolio','Portfolio'],['watch','Watchlist'],['leaders','Leaderboard']];
     const navTabs=tabsDef.map(([k,label])=>{ const on=S.view===k||(k==='market'&&S.view==='detail'); return {label,onClick:()=>this.nav(k),
       color:on?'#16201a':'#9aa39b',underline:on?'#16a85f':'transparent'}; });
 
@@ -1617,13 +1716,13 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           : p.events.filter(e=>e.offset<range).map(e=>{ const k=slice.length-1-e.offset; if(k<0)return null; return {x:X(k).toFixed(1),y:Y(slice[k]).toFixed(1),color:e.delta>=0?GREEN:RED}; }).filter(Boolean);
         // axis labels
         const today=new Date('2026-06-24T12:00:00Z');
+        const offOf=(dStr)=>Math.round((today-new Date('2026-'+dStr+'T18:00:00Z'))/86400000);
         const axisLabels=is24h
           ? [0,0.25,0.5,0.75,1].map(f=>{ const hoursAgo=Math.round(24*(1-f)); return {label:hoursAgo===0?'now':`-${hoursAgo}h`}; })
           : [0,0.25,0.5,0.75,1].map(f=>{ const daysAgo=Math.round(range*(1-f)); const dt=new Date(today.getTime()-daysAgo*86400000); return {label:this.dateShort(dt)}; });
 
         const sigDefs=[
           ['Match rating · World Cup',p.signals.fotmob, p.avgR?p.avgR.toFixed(2)+' avg':'No WC matches'],
-          ['Fantasy score · World Cup',p.signals.fantasy, p.avgF?p.avgF.toFixed(0)+' fpts/gm':'—'],
           ['World Cup form',p.signals.form, (p.streakLen>=2?('🔥 '+p.streakLen+'-match streak'):(p.atWC?(p.streakLen+'-match form'):'Not at the World Cup'))],
           ['Search interest (Google Trends)',p.signals.twitter, (p.signals.twitter>66?'Buzzing':p.signals.twitter>40?'Steady':'Quiet')],
           ['Transfer market & value',p.signals.transfermarkt, '€'+p.tmVal+'M '+(p.tmTrendUp?'▲':'▼')]];
@@ -1636,7 +1735,8 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
             balls:'⚽'.repeat(e.goals||0), boots:'👟'.repeat(e.assists||0),
             card: e.red?'🟥':(e.yellow?'🟨':''),
             isBench, notBench:!isBench, minsLabel: isBench?'':(e.min!=null?(e.min+"'"):''),
-            fantasy:e.fantasy, delta:Math.abs(e.delta).toFixed(2)+'%', deltaArrow:up?'▲':'▼', deltaColor:up?GREEN:RED }; });
+            ratingLabel: (e.rating!=null && e.rating>0) ? e.rating.toFixed(1) : '—',
+            delta:Math.abs(e.delta).toFixed(2)+'%', deltaArrow:up?'▲':'▼', deltaColor:up?GREEN:RED }; });
 
         const held=S.holdings[p.id]; const hasPos=!!held&&held.qty>0;
         const posValue=hasPos?this.curPrice(p)*held.qty:0; const posCost=hasPos?held.avg*held.qty:0; const posPl=posValue-posCost; const posUp=posPl>=0;
@@ -1649,8 +1749,12 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         else if(p.news) driverSummary=p.news.text+'.';
         else driverSummary='The club season is over and '+lastName+' is not at the World Cup — the price stays quiet until transfer news moves it.';
         const moodText = p.mood || (p.change7d>3?'Search interest spiking — fans piling in':p.change7d>0?'Mild positive buzz':p.change7d<-3?'Sentiment souring online':'Quiet search interest right now');
+        const relatedArticles = p.articles.slice().sort((a,b)=>offOf(a.d)-offOf(b.d)).map(a=>({
+          id:a.d+'|'+a.headline, date:this.dateShort(new Date(today.getTime()-offOf(a.d)*86400000)),
+          tag:a.tag, headline:a.headline, dek:a.dek, onClick:()=>this.openArticle(a.d+'|'+a.headline) }));
 
         d={ name:p.name,team:p.team,pos:p.pos,age:p.age,lg:p.abbr,price:this.money(price),
+          relatedArticles, hasRelatedArticles:relatedArticles.length>0, noRelatedArticles:relatedArticles.length===0,
           wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',wkColor:cc,wkBg:up7?GBG:RBG,
           chartColor:cc,linePath,areaPath,gridY,markers,axisLabels,signals,events:evDisp,driverSummary,
           hasEvents:p.events.length>0, noEvents:p.events.length===0,
@@ -1683,6 +1787,21 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
 
     // ---- watch ----
     const watchList=S.watch.map(id=>this.byId(id)).filter(Boolean).map(p=>{ const dec=decorate(p); dec.onRemove=()=>this.toggleWatch(p.id); return dec; });
+
+    // ---- articles ----
+    const D=this.DATA();
+    const today0=new Date('2026-06-24T12:00:00Z');
+    const offOf0=(d)=>Math.round((today0-new Date('2026-'+d+'T18:00:00Z'))/86400000);
+    const articleVM=(a)=>{
+      const refsResolved=a.refs.map(rid=>this.byId(rid)).filter(Boolean).map(p=>({name:p.name,onClick:()=>this.openPlayer(p.id)}));
+      return { id:a.d+'|'+a.headline, date:this.dateShort(new Date(today0.getTime()-offOf0(a.d)*86400000)),
+        tag:a.tag, headline:a.headline, dek:a.dek, body:a.body, refs:refsResolved,
+        open:()=>this.openArticle(a.d+'|'+a.headline) };
+    };
+    const articlesSorted=D.ARTICLES.slice().sort((a,b)=>offOf0(a.d)-offOf0(b.d));
+    const articlesAll=articlesSorted.map(articleVM);
+    const selectedArticle=S.selectedArticleId?articlesAll.find(a=>a.id===S.selectedArticleId):null;
+    const hasSelectedArticle=!!selectedArticle, noSelectedArticle=!selectedArticle;
 
     // ---- leaderboard ----
     const lb=this.leaderboardData(); const medals={1:'🥇',2:'🥈',3:'🥉'};
@@ -1735,7 +1854,10 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       cashFmt:this.money(this.state.cash),
       rewardBtnLabel,rewardBtnColor,rewardBtnBg, openReward:()=>this.openReward(),
       // views
-      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders',
+      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders', isArticles:S.view==='articles',
+      // articles
+      articlesAll, hasSelectedArticle, noSelectedArticle, selectedArticle, backToArticles:()=>this.setState({selectedArticleId:null}),
+      hasArticles:articlesAll.length>0, noArticles:articlesAll.length===0,
       // market
       netWorthFmt:this.money(nw), investedFmt:this.money(hv), holdingCount:holdCount, rankFmt:'#'+rank,
       plArrow:plUp?'▲':'▼', plAbsFmt:this.money(Math.abs(pl)), plPctFmt:this.pct((pl/10000)*100),
