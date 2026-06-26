@@ -180,16 +180,35 @@
 
           <!-- chart -->
           <div style="position:relative;margin-top:8px">
-            <svg viewBox="0 0 760 260" width="100%" height="260" preserveAspectRatio="none" style="display:block;overflow:visible">
+            <svg viewBox="0 0 760 260" width="100%" height="260" preserveAspectRatio="none" style="display:block;overflow:visible;cursor:crosshair"
+                 onMouseMove="{{ d.onChartMove }}" onMouseDown="{{ d.onChartDown }}" onMouseUp="{{ d.onChartUp }}" onMouseLeave="{{ d.onChartLeave }}">
               <defs><linearGradient id="fsArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="{{ d.chartColor }}" stop-opacity="0.18"></stop><stop offset="100%" stop-color="{{ d.chartColor }}" stop-opacity="0"></stop></linearGradient></defs>
-              <sc-for list="{{ d.gridY }}" as="g" hint-placeholder-count="4"><line x1="0" y1="{{ g.y }}" x2="760" y2="{{ g.y }}" stroke="#eef1ec" stroke-width="1"></line></sc-for>
+              <sc-for list="{{ d.gridY }}" as="g" hint-placeholder-count="3">
+                <line x1="0" y1="{{ g.y }}" x2="745" y2="{{ g.y }}" stroke="#eef1ec" stroke-width="1" stroke-dasharray="4,4"></line>
+                <text x="749" y="{{ g.y }}" dy="3.5" font-size="10" text-anchor="start" fill="#a7afa7">{{ g.label }}</text>
+              </sc-for>
               <path d="{{ d.areaPath }}" fill="url(#fsArea)"></path>
               <polyline points="{{ d.linePath }}" fill="none" stroke="{{ d.chartColor }}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>
               <sc-for list="{{ d.markers }}" as="m" hint-placeholder-count="5">
                 <circle cx="{{ m.x }}" cy="{{ m.y }}" r="{{ m.r }}" fill="#fff" stroke="{{ m.color }}" stroke-width="2.5"></circle>
                 <sc-if value="{{ m.hasIcon }}" hint-placeholder-val="{{ false }}"><text x="{{ m.x }}" y="{{ m.ty }}" font-size="11" text-anchor="middle">{{ m.icon }}</text></sc-if>
               </sc-for>
+              <sc-if value="{{ d.dragSel.show }}" hint-placeholder-val="{{ false }}">
+                <rect x="{{ d.dragSel.x1 }}" y="0" width="{{ d.dragSel.w }}" height="260" fill="{{ d.dragSel.fill }}"></rect>
+                <line x1="{{ d.dragSel.lineX1 }}" y1="0" x2="{{ d.dragSel.lineX1 }}" y2="260" stroke="#8a938c" stroke-width="1" stroke-dasharray="3,3"></line>
+                <line x1="{{ d.dragSel.lineX2 }}" y1="0" x2="{{ d.dragSel.lineX2 }}" y2="260" stroke="#8a938c" stroke-width="1" stroke-dasharray="3,3"></line>
+              </sc-if>
+              <sc-if value="{{ d.hover.show }}" hint-placeholder-val="{{ false }}">
+                <line x1="{{ d.hover.x }}" y1="0" x2="{{ d.hover.x }}" y2="260" stroke="#8a938c" stroke-width="1" stroke-dasharray="3,3"></line>
+                <circle cx="{{ d.hover.x }}" cy="{{ d.hover.y }}" r="4" fill="{{ d.chartColor }}" stroke="#fff" stroke-width="2"></circle>
+              </sc-if>
             </svg>
+            <sc-if value="{{ d.tooltip.show }}" hint-placeholder-val="{{ false }}">
+              <div style="position:absolute;top:4px;left:{{ d.tooltip.leftPct }}%;transform:translateX(-50%);background:#16201a;color:#fff;font:600 12px 'Hanken Grotesk';padding:6px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;box-shadow:0 6px 14px rgba(0,0,0,.18);z-index:2">
+                <span style="color: {{ d.tooltip.color }}">{{ d.tooltip.line1 }}</span>
+                <span style="color:#cfd6cf;margin-left:6px">{{ d.tooltip.line2 }}</span>
+              </div>
+            </sc-if>
             <div style="display:flex;justify-content:space-between;margin-top:8px;font:500 11px 'Hanken Grotesk';color:#a7afa7">
               <sc-for list="{{ d.axisLabels }}" as="a" hint-placeholder-count="5"><span>{{ a.label }}</span></sc-for>
             </div>
@@ -508,6 +527,7 @@ class Component extends DCLogic {
     const saved = this.load();
     this.state = {
       view:'market', selectedId:null, selectedArticleId:null, league:'ALL', search:'', range:90,
+      chartHoverIdx:null, chartDragStart:null,
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
       showReward:false, tick:0, pendingOrders:[],
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
@@ -1581,6 +1601,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   money0(n){ return '$'+Math.round(n).toLocaleString('en-US'); }
   pct(n){ return (n>=0?'+':'')+n.toFixed(1)+'%'; }
   dateShort(dt){ return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
+  timeShort(dt){ return dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
   sparkPts(hist,w,h){
     const N=Math.min(hist.length,30); const slice=hist.slice(hist.length-N);
     let min=Math.min(...slice),max=Math.max(...slice); const pad=2;
@@ -1741,6 +1762,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       const p=this.byId(S.selectedId);
       if(p){
         const price=this.curPrice(p); const up7=p.change7d>=0; const cc=up7?GREEN:RED;
+        const today=new Date();
         const N=p.hist.length;
         // Real kickoff-relative minute marks (goals/cards), pulled from
         // API-Football's fixture events by the live worker — when present,
@@ -1797,7 +1819,10 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         const X=k=>(W*k/(slice.length-1)); const Y=v=>top+(H-top)*(1-(v-min)/span);
         const linePath=slice.map((v,k)=>`${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
         const areaPath=`M0,${Y(slice[0]).toFixed(1)} `+slice.map((v,k)=>`L${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')+` L${W},${H} L0,${H} Z`;
-        const gridY=[0,0.33,0.66,1].map(f=>({y:(top+(H-top)*f).toFixed(1)}));
+        // ceiling/mid/floor reference lines — a reasonable top/bottom band
+        // and a midpoint, labeled with their actual price like a real
+        // brokerage chart's axis, instead of bare unlabeled gridlines.
+        const gridY=[{f:0,v:max},{f:0.5,v:(max+min)/2},{f:1,v:min}].map(g=>({y:(top+(H-top)*g.f).toFixed(1),label:this.money(g.v)}));
         // markers for events in range — when 90m has real minute marks, plot
         // one icon per actual goal/card/assist minute (instead of a plain
         // dot) so the chart reads like a real match timeline.
@@ -1807,8 +1832,50 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           : (is90m||is24h)
           ? p.events.filter(e=>e.offset===0).map(e=>({x:X(slice.length-1).toFixed(1),y:Y(slice[slice.length-1]).toFixed(1),ty:(Y(slice[slice.length-1])+3.5).toFixed(1),r:4.5,color:e.delta>=0?GREEN:RED,icon:'',hasIcon:false}))
           : p.events.filter(e=>e.offset<range).map(e=>{ const k=slice.length-1-e.offset; if(k<0)return null; return {x:X(k).toFixed(1),y:Y(slice[k]).toFixed(1),ty:(Y(slice[k])+3.5).toFixed(1),r:4.5,color:e.delta>=0?GREEN:RED,icon:'',hasIcon:false}; }).filter(Boolean);
+
+        // ---- hover / drag-select interactivity (Google Finance-style) ----
+        // A point's "time" label depends on what kind of range we're in —
+        // match minute for 90', a fabricated clock time for 24h (no real
+        // intraday series is stored, see comment above), or a calendar date
+        // for the multi-day tabs.
+        const pointLabel=(k)=>{
+          if(is90m) return k===0?'KO':(k===matchMinute?'now':k+"'");
+          if(is24h){ const HOURS=24; if(k===HOURS) return 'now'; const dt=new Date(today.getTime()-(HOURS-k)*3600000); return this.timeShort(dt); }
+          const daysAgo=(slice.length-1)-k; if(daysAgo===0) return 'Today'; return this.dateShort(new Date(today.getTime()-daysAgo*86400000));
+        };
+        const idxFromClientX=(clientX,rect)=>{
+          const relX=((clientX-rect.left)/rect.width)*W;
+          return Math.max(0,Math.min(slice.length-1,Math.round(relX/(W/(slice.length-1)))));
+        };
+        const onChartMove=(e)=>{ const k=idxFromClientX(e.clientX,e.currentTarget.getBoundingClientRect());
+          if(this.state.chartHoverIdx!==k) this.setState({chartHoverIdx:k}); };
+        const onChartDown=(e)=>{ const k=idxFromClientX(e.clientX,e.currentTarget.getBoundingClientRect());
+          this.setState({chartDragStart:k,chartHoverIdx:k}); };
+        const onChartUp=()=>{ if(this.state.chartDragStart!=null) this.setState({chartDragStart:null}); };
+        const onChartLeave=()=>{ this.setState({chartHoverIdx:null,chartDragStart:null}); };
+
+        const hoverIdx=S.chartHoverIdx; const dragStartIdx=S.chartDragStart;
+        const dragging = dragStartIdx!=null && hoverIdx!=null;
+        const hover = (hoverIdx!=null && !dragging)
+          ? {show:true,x:X(hoverIdx).toFixed(1),y:Y(slice[hoverIdx]).toFixed(1)}
+          : {show:false,x:'0',y:'0'};
+        const dragSel = dragging
+          ? {show:true,x1:Math.min(X(dragStartIdx),X(hoverIdx)).toFixed(1),w:Math.max(0.1,Math.abs(X(hoverIdx)-X(dragStartIdx))).toFixed(1),
+             lineX1:X(dragStartIdx).toFixed(1),lineX2:X(hoverIdx).toFixed(1),
+             fill:(slice[hoverIdx]-slice[dragStartIdx]>=0)?'rgba(22,168,95,0.12)':'rgba(214,69,69,0.12)'}
+          : {show:false,x1:'0',w:'0',lineX1:'0',lineX2:'0',fill:'transparent'};
+        const tooltip = (hoverIdx==null) ? {show:false,leftPct:'50',line1:'',line2:'',color:'#16201a'}
+          : dragging ? (()=>{
+              const startV=slice[dragStartIdx], endV=slice[hoverIdx];
+              const deltaAbs=endV-startV, deltaPct=startV?(deltaAbs/startV)*100:0, up=deltaAbs>=0;
+              const lo=Math.min(dragStartIdx,hoverIdx), hi=Math.max(dragStartIdx,hoverIdx);
+              return {show:true,leftPct:((X(hoverIdx)/W)*100).toFixed(1),
+                line1:(up?'▲ ':'▼ ')+this.money(Math.abs(deltaAbs))+' ('+Math.abs(deltaPct).toFixed(2)+'%)',
+                line2:pointLabel(lo)+' – '+pointLabel(hi), color:up?GREEN:RED}; })()
+          : {show:true,leftPct:((X(hoverIdx)/W)*100).toFixed(1),
+             line1:this.money(slice[hoverIdx]), line2:pointLabel(hoverIdx), color:'#16201a'};
+
         // axis labels
-        const today=new Date();
         const offOf=(dStr)=>Math.round((today-new Date('2026-'+dStr+'T18:00:00Z'))/86400000);
         const axisLabels=is90m
           ? [0,0.25,0.5,0.75,1].map(f=>{ const minute=Math.round(matchMinute*f); return {label:minute===0?'KO':minute===matchMinute?'now':minute+"'"}; })
@@ -1852,6 +1919,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           relatedArticles, hasRelatedArticles:relatedArticles.length>0, noRelatedArticles:relatedArticles.length===0,
           wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',wkColor:cc,wkBg:up7?GBG:RBG,
           chartColor:cc,linePath,areaPath,gridY,markers,axisLabels,signals,events:evDisp,driverSummary,
+          hover,dragSel,tooltip,onChartMove,onChartDown,onChartUp,onChartLeave,
           hasEvents:p.events.length>0, noEvents:p.events.length===0,
           eventsTitle:p.atWC?'World Cup 2026 — match by match':'Recent activity',
           eventsSub:p.atWC?'Real fixtures and ratings moving the price — sustained excellence compounds.':'No competitive matches right now; prices move on the transfer market.',
