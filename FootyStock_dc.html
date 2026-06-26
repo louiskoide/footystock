@@ -1374,7 +1374,12 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     const teams=this.TEAMS(), lgName=this.LEAGUE_NAME(), opp=this.OPPONENTS_BY_LEAGUE();
     const tierBase={1:228,2:158,3:99,4:58,5:35,6:23};
     const lines=this.ROSTER().trim().split('\n');
-    const today=new Date('2026-06-24T12:00:00Z');
+    // Real wall-clock date, not a fixed demo anchor — live match dates from
+    // the worker are real calendar dates, so "today" has to track the
+    // actual day or a live event's offset never lands on 0 (the whole
+    // same-day price-bump/90' mechanism silently breaks once the real date
+    // drifts past whatever was hardcoded here).
+    const today=new Date();
     const db=[];
     const seen={};
     for(const line of lines){
@@ -1437,7 +1442,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           const bench = s.rating==null;
           const g=s.g||0,a=s.a||0; const delta=bench?0:parseFloat(((s.rating-6.9)*1.3+g*1.0+a*0.6).toFixed(2));
           const st=[]; if(g)st.push(g+'G'); if(a)st.push(a+'A'); if(!g&&!a)st.push('—');
-          events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,goals:g,assists:a,yellow:!!s.yellow,red:!!s.red,min:(s.min==null?null:s.min),bench,delta,statLine:st.join(' '),note:s.note,marks:s.marks||[]}); } }
+          events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,goals:g,assists:a,yellow:!!s.yellow,red:!!s.red,min:(s.min==null?null:s.min),bench,delta,statLine:st.join(' '),note:s.note,marks:s.marks||[],live:!!s.live,elapsed:(s.elapsed==null?null:s.elapsed)}); } }
       else if(inSquad){
         // Confirmed on the real squad list but no actual per-match minutes
         // recorded yet (matchPlayer never saw them play) — show them as
@@ -1591,8 +1596,8 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   allTimePL(){ return this.netWorth() - 10000; }
 
   // ---------- daily reward ----------
-  todayStr(){ return new Date('2026-06-24').toISOString().slice(0,10); }
-  yesterdayStr(){ return new Date(new Date('2026-06-24').getTime()-86400000).toISOString().slice(0,10); }
+  todayStr(){ return new Date().toISOString().slice(0,10); }
+  yesterdayStr(){ return new Date(Date.now()-86400000).toISOString().slice(0,10); }
   isClaimable(){ return this.state.lastClaim !== this.todayStr(); }
   rewardSchedule(){ return [250,300,350,400,500,600,1000]; }
   nextStreakDay(){ // what day in cycle this claim will be
@@ -1728,12 +1733,12 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     const rank=this.myRank();
 
     // ---- detail ----
-    let d=null;
+    let d=null; let detailLiveNow=false;
     if(S.view==='detail' && S.selectedId){
       const p=this.byId(S.selectedId);
       if(p){
         const price=this.curPrice(p); const up7=p.change7d>=0; const cc=up7?GREEN:RED;
-        const N=p.hist.length; const range=S.range; const is24h=range==='24h'; const is90m=range==='90m';
+        const N=p.hist.length;
         // Real kickoff-relative minute marks (goals/cards), pulled from
         // API-Football's fixture events by the live worker — when present,
         // the 90' chart steps at the actual minute each happened instead of
@@ -1742,11 +1747,18 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         // poll or for an older match.
         const todaysEvent = p.events.find(e=>e.offset===0);
         const todaysMarks = (todaysEvent && todaysEvent.marks && todaysEvent.marks.length) ? todaysEvent.marks : null;
+        // The 90' tab is a live in-play ticker, not a historical chart — it
+        // only makes sense (and only gets shown, see rangeTabs below) while
+        // this player's match is actually in progress right now.
+        const liveNow = !!(todaysEvent && todaysEvent.live); detailLiveNow = liveNow;
+        const matchMinute = liveNow ? Math.max(1, Math.min(90, todaysEvent.elapsed||1)) : 90;
+        const range = (S.range==='90m' && !liveNow) ? '24h' : S.range;
+        const is24h=range==='24h'; const is90m=range==='90m';
         const markWeight = {goal:0.6, assist:0.35, yellow:-0.3, red:-1.0, owngoal:-0.6};
         // no intraday history is stored (CLAUDE.md: daily snapshot, not real-time) —
         // render the latest day's move as a seeded hourly (or, for 90m, match-minute)
         // curve instead of a second data source
-        const slice=is90m?(()=>{ const prevClose=p.hist[N-2]??p.hist[N-1]; const MINS=90; const s=[];
+        const slice=is90m?(()=>{ const prevClose=p.hist[N-2]??p.hist[N-1]; const MINS=matchMinute; const s=[];
           if(todaysMarks){
             const totalW=todaysMarks.reduce((sum,mk)=>sum+(markWeight[mk.kind]||0),0);
             const totalMove=price-prevClose;
@@ -1779,15 +1791,15 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         // markers for events in range — when 90m has real minute marks, plot
         // one dot per actual goal/card minute instead of a single end-of-match dot
         const markers=(is90m&&todaysMarks)
-          ? todaysMarks.map(mk=>({x:X(mk.minute).toFixed(1),y:Y(slice[mk.minute]).toFixed(1),color:(markWeight[mk.kind]||0)>=0?GREEN:RED}))
+          ? todaysMarks.filter(mk=>mk.minute<=matchMinute).map(mk=>({x:X(mk.minute).toFixed(1),y:Y(slice[mk.minute]).toFixed(1),color:(markWeight[mk.kind]||0)>=0?GREEN:RED}))
           : (is90m||is24h)
           ? p.events.filter(e=>e.offset===0).map(e=>({x:X(slice.length-1).toFixed(1),y:Y(slice[slice.length-1]).toFixed(1),color:e.delta>=0?GREEN:RED}))
           : p.events.filter(e=>e.offset<range).map(e=>{ const k=slice.length-1-e.offset; if(k<0)return null; return {x:X(k).toFixed(1),y:Y(slice[k]).toFixed(1),color:e.delta>=0?GREEN:RED}; }).filter(Boolean);
         // axis labels
-        const today=new Date('2026-06-24T12:00:00Z');
+        const today=new Date();
         const offOf=(dStr)=>Math.round((today-new Date('2026-'+dStr+'T18:00:00Z'))/86400000);
         const axisLabels=is90m
-          ? [0,0.25,0.5,0.75,1].map(f=>{ const minute=Math.round(90*f); return {label:minute===0?'KO':minute===90?'FT':minute+"'"}; })
+          ? [0,0.25,0.5,0.75,1].map(f=>{ const minute=Math.round(matchMinute*f); return {label:minute===0?'KO':minute===matchMinute?'now':minute+"'"}; })
           : is24h
           ? [0,0.25,0.5,0.75,1].map(f=>{ const hoursAgo=Math.round(24*(1-f)); return {label:hoursAgo===0?'now':`-${hoursAgo}h`}; })
           : [0,0.25,0.5,0.75,1].map(f=>{ const daysAgo=Math.round(range*(1-f)); const dt=new Date(today.getTime()-daysAgo*86400000); return {label:this.dateShort(dt)}; });
@@ -1841,7 +1853,9 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           sellBg:hasPos?'#fff':'#f5f6f3',sellColor:hasPos?'#16201a':'#bfc6be',sellBorder:hasPos?'#e1e4dd':'#eef1ec',sellCursor:hasPos?'pointer':'not-allowed' };
       }
     }
-    const rangeTabs=[['90m',"90'"],['24h','24H'],[7,'7D'],[30,'30D'],[90,'90D']].map(([v,label])=>({label,onClick:()=>this.setRange(v),
+    const rangeTabs=[['90m',"90'"],['24h','24H'],[7,'7D'],[30,'30D'],[90,'90D']]
+      .filter(([v])=>v!=='90m'||detailLiveNow)
+      .map(([v,label])=>({label,onClick:()=>this.setRange(v),
       bg:S.range===v?'#16201a':'#eef1ec',color:S.range===v?'#fff':'#46504a'}));
 
     // ---- holdings list ----
@@ -1861,7 +1875,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
 
     // ---- articles ----
     const D=this.DATA();
-    const today0=new Date('2026-06-24T12:00:00Z');
+    const today0=new Date();
     const offOf0=(d)=>Math.round((today0-new Date('2026-'+d+'T18:00:00Z'))/86400000);
     const articleVM=(a)=>{
       const refsResolved=a.refs.map(rid=>this.byId(rid)).filter(Boolean).map(p=>({name:p.name,onClick:()=>this.openPlayer(p.id)}));

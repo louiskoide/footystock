@@ -37,7 +37,7 @@ function roundLabel(round) {
   return (round || '').replace(/^Group Stage - /i, 'Group ').trim() || 'World Cup';
 }
 
-async function processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log) {
+async function processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, matchInfo = { live: false, elapsed: null }) {
   const fid = fixture.fixture.id;
   const home = canonNation(fixture.teams.home.name);
   const away = canonNation(fixture.teams.away.name);
@@ -118,7 +118,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
         // appearance, distinct from not being in the squad for this match
         // at all (which never reaches this loop, since they're absent from
         // teamBlock.players entirely).
-        const ev = { d: date, opp, rating: null, g: 0, a: 0, yellow: false, red: false, min: 0, note: null, marks: [], _fid: fid };
+        const ev = { d: date, opp, rating: null, g: 0, a: 0, yellow: false, red: false, min: 0, note: null, marks: [], live: matchInfo.live, elapsed: matchInfo.elapsed, _fid: fid };
         if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
         continue;
       }
@@ -140,7 +140,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
       else if (assists >= 2) note = `${assists} assists`;
       else if (assists === 1) note = 'Assist';
 
-      const ev = { d: date, opp, rating, g: goals, a: assists, yellow: !!yellow, red: !!red, min: minutes, note, marks: marksByPlayer[id] || [], _fid: fid };
+      const ev = { d: date, opp, rating, g: goals, a: assists, yellow: !!yellow, red: !!red, min: minutes, note, marks: marksByPlayer[id] || [], live: matchInfo.live, elapsed: matchInfo.elapsed, _fid: fid };
       if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
     }
   }
@@ -261,11 +261,11 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
       // it for a few more cycles before treating it as truly final.
       const polls = state._finalPolls.get(fid) || 0;
       if (polls >= FINAL_GRACE_POLLS) continue;
-      await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log);
+      await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
       state._finalPolls.set(fid, polls + 1);
       finishedNew++;
     } else if (LIVE_STATUSES.has(status)) {
-      await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log);
+      await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: true, elapsed: fixture.fixture.status.elapsed });
       liveCount++;
     }
   }
