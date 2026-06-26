@@ -13,9 +13,10 @@
 // `inSquad` fallback in buildDB(), just without individual goal attribution.
 //
 // Run: FOOTBALL_DATA_KEY=xxx node scripts/update-prices.mjs
-import { readFileSync, writeFileSync } from 'fs';
+import { writeFileSync } from 'fs';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { loadCrosswalk, canonNation } from './lib/crosswalk.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -31,71 +32,6 @@ const MIN_REQUEST_GAP_MS = 6500; // free tier: 10 req/min
 if (!API_KEY) {
   console.error('FOOTBALL_DATA_KEY not set — skipping fetch, leaving prices.json untouched.');
   process.exit(0);
-}
-
-function slug(name) {
-  return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
-}
-
-function normName(name) {
-  return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9 ]+/g, '').trim();
-}
-
-// football-data.org sometimes names a country differently than our DATA().
-// Map API name -> the nation key we use internally.
-const NATION_ALIASES = {
-  'usa': 'USA', 'united states': 'USA',
-  'ivory coast': 'Ivory Coast', "cote d'ivoire": 'Ivory Coast', 'côte d’ivoire': 'Ivory Coast',
-  'dr congo': 'DR Congo', 'congo dr': 'DR Congo', 'congo democratic republic': 'DR Congo',
-  'south korea': 'South Korea', 'korea republic': 'South Korea', 'korea south': 'South Korea',
-  'cape verde': 'Cape Verde', 'cape verde islands': 'Cape Verde',
-};
-function canonNation(apiName) {
-  const n = normName(apiName);
-  return NATION_ALIASES[n] || apiName;
-}
-
-// ---------- pull ROSTER / NATION / EXCLUDED straight out of the app source,
-// so the crosswalk never drifts out of sync with the live roster ----------
-function loadCrosswalk() {
-  const html = readFileSync(HTML_PATH, 'utf8');
-
-  const rosterBlock = html.match(/ROSTER\(\)\{ return `([\s\S]*?)`; \}/);
-  if (!rosterBlock) throw new Error('Could not find ROSTER() block in FootyStock_dc.html');
-  const rosterByName = {};
-  for (const line of rosterBlock[1].trim().split('\n')) {
-    const parts = line.split('|');
-    if (parts.length < 5) continue;
-    const name = parts[0].replace(/ dummy$/, '');
-    rosterByName[name] = parts[1]; // club team
-  }
-
-  const natBlock = html.match(/const nat=\{\};([\s\S]*?)\/\/ Confirmed absentees/);
-  if (!natBlock) throw new Error('Could not find NATION add() calls in FootyStock_dc.html');
-  const nationByName = {};
-  const addRe = /add\('([^']+)','([^']+)'\)/g;
-  let m;
-  while ((m = addRe.exec(natBlock[1]))) {
-    const [, country, names] = m;
-    for (const n of names.split(',')) nationByName[n.trim()] = country;
-  }
-
-  const exBlock = html.match(/const EXCLUDED=new Set\(\[([^\]]*)\]\)/);
-  const excluded = new Set();
-  if (exBlock) {
-    for (const m2 of exBlock[1].matchAll(/'([^']+)'/g)) excluded.add(m2[1]);
-  }
-
-  const players = [];
-  for (const name of Object.keys(nationByName)) {
-    if (excluded.has(name)) continue;
-    const team = rosterByName[name];
-    if (!team) continue; // nation-tagged but not in club roster — skip, no slug to attach to
-    players.push({ name, team, nation: nationByName[name], id: slug(name + '-' + team) });
-  }
-  return players;
 }
 
 let lastRequestAt = 0;
@@ -126,7 +62,7 @@ function roundLabel(stage, group) {
 }
 
 async function main() {
-  const players = loadCrosswalk();
+  const players = loadCrosswalk(HTML_PATH);
   const trackedNations = new Set(players.map(p => p.nation));
   console.log(`Tracking ${players.length} players across ${trackedNations.size} nations.`);
 

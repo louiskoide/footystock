@@ -443,15 +443,22 @@ class Component extends DCLogic {
     this.live = {}; // id -> live multiplier
   }
   componentDidMount(){
-    // prices.json is written server-side by .github/workflows/update-prices.yml
-    // (real API-Football data, never fetched from the browser directly — see
-    // CLAUDE.md). Missing file / offline / not-yet-run all degrade silently to
-    // the hand-typed STARS/WC fallback already in DATA().
-    fetch('prices.json').then(r=>r.ok?r.json():null).then(data=>{
-      if(!data) return;
-      this._wcLive = data; this._db = null;
-      this.setState(s=>({tick:s.tick+1}));
-    }).catch(()=>{});
+    // Live data comes from the always-on Fly.io worker (scripts/live-worker/),
+    // which polls API-Football and serves prices.json-shaped JSON directly —
+    // never fetched from the browser to a third-party API (see CLAUDE.md
+    // rule 1). Missing/unreachable worker degrades silently to the hand-typed
+    // STARS/WC fallback already in DATA().
+    // TODO: replace with the real https://<your-app>.fly.dev URL after `fly deploy`.
+    const LIVE_WORKER_URL = 'https://footystock-live.fly.dev/prices.json';
+    const pollLive = ()=>{
+      fetch(LIVE_WORKER_URL).then(r=>r.ok?r.json():null).then(data=>{
+        if(!data) return;
+        this._wcLive = data; this._db = null;
+        this.setState(s=>({tick:s.tick+1}));
+      }).catch(()=>{});
+    };
+    pollLive();
+    this.liveTimer = setInterval(pollLive, 30000);
     this.timer = setInterval(()=>{
       const DB = this.getDB();
       for(const p of DB){
