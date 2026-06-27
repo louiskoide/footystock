@@ -43,14 +43,14 @@
     .fs-stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
 
     .fs-scrollx{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -12px;padding:0 12px}
-    .fs-row-market{min-width:700px!important;padding:12px 14px!important;grid-template-columns:42px minmax(150px,1fr) 110px 120px 96px 96px!important}
+    .fs-row-market{min-width:920px!important;padding:12px 14px!important;grid-template-columns:42px minmax(150px,1fr) 100px 110px 80px 80px 80px 130px!important}
     .fs-row-holdings{min-width:620px!important;padding:12px 14px!important;grid-template-columns:minmax(150px,1fr) 90px 110px 110px 110px!important}
     .fs-row-watch{min-width:600px!important;padding:12px 14px!important;grid-template-columns:minmax(150px,1fr) 110px 120px 96px 80px!important}
     .fs-row-leader{min-width:460px!important;padding:12px 14px!important;grid-template-columns:60px minmax(120px,1fr) 130px 120px!important}
     .fs-row-events{min-width:420px!important}
     .fs-row-txn{padding:12px 14px!important}
 
-    .fs-detail-grid{grid-template-columns:1fr!important}
+    .fs-detail-grid{grid-template-columns:minmax(0,1fr)!important}
     .fs-trade-panel{position:static!important;top:auto!important;order:-1!important}
     .fs-detail-name{font-size:24px!important}
     .fs-detail-price{font-size:26px!important}
@@ -163,12 +163,14 @@
 
     <!-- market table -->
     <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
-      <div class="fs-row-market" style="display:grid;grid-template-columns:42px 1fr 110px 120px 96px 96px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase">
-        <span>#</span><span>Player</span><span style="text-align:center">7-day</span><span style="text-align:right">Price</span><span style="text-align:right">1d</span><span style="text-align:right">7d</span>
+      <div class="fs-row-market" style="display:grid;grid-template-columns:42px 1fr 100px 110px 80px 80px 80px 130px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase">
+        <sc-for list="{{ marketCols }}" as="c" hint-placeholder-count="8">
+          <span onClick="{{ c.onClick }}" style="text-align: {{ c.align }};cursor: {{ c.cursor }};user-select:none">{{ c.label }}</span>
+        </sc-for>
       </div>
       <div style="max-height:560px;overflow-y:auto">
         <sc-for list="{{ marketList }}" as="p" hint-placeholder-count="14">
-          <div onClick="{{ p.onClick }}" class="fs-row-market" style="display:grid;grid-template-columns:42px 1fr 110px 120px 96px 96px;gap:14px;align-items:center;padding:12px 22px;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:grid;grid-template-columns:42px 1fr 110px 120px 96px 96px;gap:14px;align-items:center;padding:12px 22px;border-bottom:1px solid #f3f4f0;cursor:pointer;background:#fafbf8">
+          <div onClick="{{ p.onClick }}" class="fs-row-market" style="display:grid;grid-template-columns:42px 1fr 100px 110px 80px 80px 80px 130px;gap:14px;align-items:center;padding:12px 22px;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:grid;grid-template-columns:42px 1fr 100px 110px 80px 80px 80px 130px;gap:14px;align-items:center;padding:12px 22px;border-bottom:1px solid #f3f4f0;cursor:pointer;background:#fafbf8">
             <span style="font:600 13px 'Space Grotesk';color:#aab2ab">{{ p.rank }}</span>
             <span style="display:flex;flex-direction:column;min-width:0">
               <b style="font:600 15px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</b>
@@ -178,6 +180,8 @@
             <span style="text-align:right;font:700 16px 'Space Grotesk'">{{ p.price }}</span>
             <span style="text-align:right;font:600 13px 'Hanken Grotesk';color: {{ p.dayColor }}">{{ p.dayArrow }}{{ p.dayAbs }}</span>
             <span style="text-align:right;font:700 13px 'Hanken Grotesk';color: {{ p.wkColor }}">{{ p.wkArrow }}{{ p.wkAbs }}</span>
+            <span style="text-align:right;font:600 13px 'Hanken Grotesk';color:#586159">{{ p.volDisplay }}</span>
+            <span style="text-align:right;font:500 12px 'Hanken Grotesk';color:#8a938c;white-space:nowrap">{{ p.rangeDisplay }}</span>
           </div>
         </sc-for>
       </div>
@@ -196,16 +200,20 @@
       <div style="display:flex;flex-direction:column;gap:18px">
         <div class="fs-card-pad" style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:24px 26px">
           <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
-            <div>
-              <div style="display:flex;align-items:center;gap:9px">
+            <div style="min-width:0">
+              <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
                 <span style="display:inline-flex;align-items:center;justify-content:center;font:700 11px 'Space Grotesk';color:#586159;background:#eef1ec;border-radius:6px;padding:4px 8px">{{ d.lg }}</span>
                 <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">{{ d.team }} · {{ d.pos }} · Age {{ d.age }}</span>
               </div>
               <div class="fs-detail-name" style="font:700 34px 'Space Grotesk';letter-spacing:-.02em;margin-top:9px">{{ d.name }}</div>
             </div>
-            <div style="text-align:right">
+            <div style="text-align:right;min-width:0">
               <div class="fs-detail-price" style="font:700 36px 'Space Grotesk';letter-spacing:-.02em">{{ d.price }}</div>
               <div style="display:inline-flex;align-items:center;gap:6px;margin-top:5px;background: {{ d.wkBg }};color: {{ d.wkColor }};font:700 13px 'Hanken Grotesk';padding:4px 10px;border-radius:999px">{{ d.wkArrow }} {{ d.wkAbs }} · 7d</div>
+              <div style="display:flex;gap:6px;margin-top:7px;justify-content:flex-end;flex-wrap:wrap">
+                <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;padding:3px 9px;border-radius:999px;white-space:nowrap">Vol {{ d.volDisplay }}</span>
+                <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;padding:3px 9px;border-radius:999px;white-space:nowrap">52d {{ d.rangeDisplay }}</span>
+              </div>
             </div>
           </div>
 
@@ -572,6 +580,7 @@ class Component extends DCLogic {
     const saved = this.load();
     this.state = {
       view:'market', selectedId:null, selectedArticleId:null, league:'ALL', search:'', range:90,
+      sortKey:'rank', sortDir:'asc',
       chartHoverIdx:null, chartDragStart:null,
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
       showReward:false, tick:0, pendingOrders:[],
@@ -1722,6 +1731,12 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   goBack(){ this.setState({view:'market'}); }
   openArticle(id){ this.setState({view:'articles',selectedArticleId:id}); }
   setLeague(lg){ this.setState({league:lg}); }
+  setSort(key){
+    const S=this.state;
+    if(S.sortKey===key){ this.setState({sortDir:S.sortDir==='asc'?'desc':'asc'}); return; }
+    const descDefault=new Set(['price','day','week','vol','range']);
+    this.setState({sortKey:key,sortDir:descDefault.has(key)?'desc':'asc'});
+  }
   setRange(r){ this.setState({range:r}); }
   onSearch(e){ this.setState({search:e.target.value}); }
   toggleWatch(id){ const w=this.state.watch.slice(); const i=w.indexOf(id); if(i>=0)w.splice(i,1); else w.push(id); this.setState({watch:w},()=>this.persist()); }
@@ -1788,11 +1803,24 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     const DB=this.getDB(); const S=this.state;
     const GREEN='#16a85f',RED='#d23b2c',GBG='#e7f6ec',RBG='#fbe9e7';
     const cd=(n)=>n>=0?'#3ddc8a':'#ff5d5d';
+    // stdev of daily returns (annualized) + 52-day high/low, off the same p.hist
+    // every other stat already reads from — keeps "volatility" consistent with
+    // the chart instead of inventing a second source of truth.
+    const riskStats=(p)=>{
+      const hist=p.hist, hN=hist.length;
+      let sum=0,sumSq=0,n=0;
+      for(let i=1;i<hN;i++){ const r=(hist[i]-hist[i-1])/hist[i-1]; sum+=r; sumSq+=r*r; n++; }
+      const mean=n?sum/n:0; const variance=n?Math.max(sumSq/n-mean*mean,0):0;
+      const volPct=Math.sqrt(variance)*Math.sqrt(252)*100;
+      const win=hist.slice(Math.max(0,hN-52));
+      return { volPct, hi52:Math.max(...win), lo52:Math.min(...win) };
+    };
     const decorate=(p)=>{
       const price=this.curPrice(p); const up7=p.change7d>=0;
       const hN=p.hist.length; const prevClose=p.hist[hN-2]??p.hist[hN-1];
       const dayChg=prevClose?((price-prevClose)/prevClose)*100:0;
       const upDay=dayChg>=0;
+      const {volPct,hi52,lo52}=riskStats(p);
       return {
         id:p.id,name:p.name,last:p.name.split(' ').slice(-1)[0],team:p.team,abbr:p.abbr,lg:p.abbr,
         league:p.lgName,pos:p.pos,rank:p.rank,price:this.money(price),
@@ -1800,6 +1828,8 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',
         wkColor:up7?GREEN:RED,wkBg:up7?GBG:RBG,
         dayAbs:Math.abs(dayChg).toFixed(1)+'%',dayArrow:upDay?'▲':'▼',dayColor:upDay?GREEN:RED,
+        volDisplay:volPct.toFixed(1)+'%',rangeDisplay:this.money(lo52)+' – '+this.money(hi52),
+        priceNum:price,dayChgNum:dayChg,wkChgNum:p.change7d,volNum:volPct,hi52Num:hi52,lo52Num:lo52,
         spark:this.sparkPts(p.hist,120,26),
         onClick:()=>this.openPlayer(p.id),
       };
@@ -1825,6 +1855,25 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       return true;
     });
     const marketList=list.map(decorate);
+    const sortFieldMap={name:'name',price:'priceNum',day:'dayChgNum',week:'wkChgNum',vol:'volNum',range:'hi52Num',rank:'rank'};
+    const sortField=sortFieldMap[S.sortKey]||'rank';
+    const sortDir=S.sortDir==='desc'?-1:1;
+    marketList.sort((a,b)=>{
+      const av=a[sortField], bv=b[sortField];
+      if(typeof av==='string') return av.localeCompare(bv)*sortDir;
+      return (av-bv)*sortDir;
+    });
+    const sortArrow=(key)=>S.sortKey===key?(S.sortDir==='asc'?' ▲':' ▼'):'';
+    const marketCols=[
+      {label:'#',align:'left',cursor:'default',onClick:()=>{}},
+      {label:'Player'+sortArrow('name'),align:'left',cursor:'pointer',onClick:()=>this.setSort('name')},
+      {label:'7-day',align:'center',cursor:'default',onClick:()=>{}},
+      {label:'Price'+sortArrow('price'),align:'right',cursor:'pointer',onClick:()=>this.setSort('price')},
+      {label:'1d'+sortArrow('day'),align:'right',cursor:'pointer',onClick:()=>this.setSort('day')},
+      {label:'7d'+sortArrow('week'),align:'right',cursor:'pointer',onClick:()=>this.setSort('week')},
+      {label:'Vol'+sortArrow('vol'),align:'right',cursor:'pointer',onClick:()=>this.setSort('vol')},
+      {label:'52d Range'+sortArrow('range'),align:'right',cursor:'pointer',onClick:()=>this.setSort('range')},
+    ];
 
     // nav tabs
     const tabsDef=[['market','Market'],['articles','Articles'],['portfolio','Portfolio'],['watch','Watchlist'],['leaders','Leaderboard']];
@@ -2012,6 +2061,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
             // performance formula score — see the bump loop above.
             delta:Math.abs(impact).toFixed(2)+'%', deltaArrow:up?'▲':'▼', deltaColor:up?GREEN:RED }; });
 
+        const {volPct:dVolPct,hi52:dHi52,lo52:dLo52}=riskStats(p);
         const held=S.holdings[p.id]; const hasPos=!!held&&held.qty>0;
         const posValue=hasPos?this.curPrice(p)*held.qty:0; const posCost=hasPos?held.avg*held.qty:0; const posPl=posValue-posCost; const posUp=posPl>=0;
         const watched=S.watch.includes(p.id);
@@ -2030,6 +2080,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         d={ name:p.name,team:p.team,pos:p.pos,age:p.age,lg:p.abbr,price:this.money(price),
           relatedArticles, hasRelatedArticles:relatedArticles.length>0, noRelatedArticles:relatedArticles.length===0,
           wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',wkColor:cc,wkBg:up7?GBG:RBG,
+          volDisplay:dVolPct.toFixed(1)+'%',rangeDisplay:this.money(dLo52)+' – '+this.money(dHi52),
           chartColor:cc,linePath,areaPath,gridY,markers,axisLabels,signals,events:evDisp,driverSummary,
           hover,dragSel,tooltip,onChartMove,onChartDown,onChartUp,onChartLeave,
           onChartTouchStart,onChartTouchMove,onChartTouchEnd,
@@ -2127,7 +2178,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
 
     return {
       // shell
-      navTabs, ticker, leagueChips, search:S.search, onSearch:(e)=>this.onSearch(e),
+      navTabs, ticker, leagueChips, marketCols, search:S.search, onSearch:(e)=>this.onSearch(e),
       goHome:()=>this.goHome(), goLeaders:()=>this.nav('leaders'),
       cashFmt:this.money(this.state.cash),
       rewardBtnLabel,rewardBtnColor,rewardBtnBg, openReward:()=>this.openReward(),
