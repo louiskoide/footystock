@@ -21,11 +21,13 @@
   @keyframes fs-fade{from{opacity:0}to{opacity:1}}
   @keyframes fs-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
   .fs-tape:hover{animation-play-state:paused}
-  /* the reward modal's sc-if tag is raw, un-interpolated markup in the DOM
+  /* sc-if/sc-for tags sit in the DOM as raw, un-interpolated {{ }} markup
      until the heavy initial DB-build script finishes and the framework's
-     first render replaces it — hide it for that window so the user never
-     sees literal {{ rw.title }} placeholder text flash on load */
-  sc-if[value="{{ showReward }}"]{display:none}
+     first render consumes and replaces them — hide them for that window
+     so the user never sees literal placeholder text flash on load. Once
+     hydrated, these tags no longer exist in the DOM (replaced by the
+     rendered fragments), so this rule has no effect afterward. */
+  sc-if,sc-for{display:none}
 
   @media (max-width:760px){
     .fs-header-top{padding:10px 12px!important;gap:8px!important}
