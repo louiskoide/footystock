@@ -1790,7 +1790,8 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     const cd=(n)=>n>=0?'#3ddc8a':'#ff5d5d';
     const decorate=(p)=>{
       const price=this.curPrice(p); const up7=p.change7d>=0;
-      const dayChg=((this.live[p.id]||1)-1)*100 + (this.rand01(p.id+this.todayStr())-0.5)*1.4;
+      const hN=p.hist.length; const prevClose=p.hist[hN-2]??p.hist[hN-1];
+      const dayChg=prevClose?((price-prevClose)/prevClose)*100:0;
       const upDay=dayChg>=0;
       return {
         id:p.id,name:p.name,last:p.name.split(' ').slice(-1)[0],team:p.team,abbr:p.abbr,lg:p.abbr,
