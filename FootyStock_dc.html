@@ -1496,13 +1496,14 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       let streakLen=0; for(const rt of ratingsByRecency){ if(rt>=7.4) streakLen++; else break; }
       const ratingVals=events.map(e=>e.rating).filter(x=>x>0);
       const avgR=ratingVals.length?sum(ratingVals)/ratingVals.length:0;
-      // signals (0-100, ~46 = average player). Recentered so the anonymous
-      // rating baseline (6.0, see rating.mjs) maps to fotmob=38 — the exact
-      // neutral point perfScore subtracts below — so an average performance
-      // scores 0 on perf per pricing-model.md's mean-centering rule, instead
-      // of reading as a below-average game and dragging price down for doing
-      // nothing wrong.
-      const fotmob=avgR?Math.max(8,Math.min(99,(avgR-3.5)/6.4*100)):0;
+      // signals (0-100, ~46 = average player). perfScore used to subtract
+      // 38 here instead of the 46 every other signal (form/mood/transfer)
+      // centers on — an inconsistency that predates this fix. Recentered
+      // both constants together: the anonymous rating baseline (6.0, see
+      // rating.mjs) now maps to fotmob=46, matching the documented "~46 =
+      // average player" convention, so an average performance scores
+      // exactly 0 on perf, same as it would on form/hype.
+      const fotmob=avgR?Math.max(8,Math.min(99,(avgR-2.6)/7.4*100)):0;
       // Form = EWMA of recent per-match ratings (λ=0.75, last ~6 rated
       // matches) minus the player's own season-long baseline (avgR), per
       // pricing-model.md — smooth recency weighting instead of a hard
@@ -1538,7 +1539,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       const wPerf=0.5, wForm=0.3, wHype=0.2;
       // perf/form only apply when we actually have real match data (atWC) —
       // "no data" must stay neutral (0), never read as "bad".
-      const perfScore = atWC ? clamp((fotmob-38)/30, -1, 1) : 0;
+      const perfScore = atWC ? clamp((fotmob-46)/30, -1, 1) : 0;
       const formScore = atWC ? clamp((formSig-46)/30, -1, 1) : 0;
       // hype basket = mood + transfer/news signal, capped so buzz alone can
       // never dwarf fundamentals.
