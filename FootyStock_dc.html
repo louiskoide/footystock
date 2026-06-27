@@ -2127,7 +2127,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           // identical on every device. base = recorded daily close (no wobble);
           // the right edge is base*intradayMult(now) = the headline price.
           const base=p.hist[N-1], prevClose=p.hist[N-2]??base;
-          const STEP_MIN=5, STEPS=288, nowSec=Math.floor(Date.now()/1000); // 288*5min = 24h
+          const STEP_MIN=15, STEPS=96, nowSec=Math.floor(Date.now()/1000); // 96*15min = 24h
           // for a live match, ramp the price reaction in since kickoff on top of
           // the normal intraday wobble; otherwise it's just the wobble around close.
           const koSteps=liveNow?Math.min(STEPS,Math.max(1,Math.round(matchMinute/STEP_MIN))):0;
@@ -2177,7 +2177,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         // for the multi-day tabs.
         const pointLabel=(k)=>{
           if(is90m) return k===0?'KO':(k===matchMinute?'now':k+"'");
-          if(is24h){ const STEP_MIN=5, STEPS=288; if(k===STEPS) return 'now'; const dt=new Date(today.getTime()-(STEPS-k)*STEP_MIN*60000); return this.timeShort(dt); }
+          if(is24h){ const STEP_MIN=15, STEPS=96; if(k===STEPS) return 'now'; const dt=new Date(today.getTime()-(STEPS-k)*STEP_MIN*60000); return this.timeShort(dt); }
           const daysAgo=(slice.length-1)-k; if(daysAgo===0) return 'Today'; return this.dateShort(new Date(today.getTime()-daysAgo*86400000));
         };
         const idxFromClientX=(clientX,rect)=>{
