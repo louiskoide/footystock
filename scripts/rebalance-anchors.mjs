@@ -211,11 +211,12 @@ async function main() {
     const oldVal = valMap[r.name];
     if (oldVal == null) continue;
     const delta = Math.max(-CAP, Math.min(CAP, K * (r.idx - bucketAvg[r.bucket])));
-    const ageMult = ageMultiplier(r.age);
-    const newVal = Math.max(4, Math.round(oldVal * Math.exp(delta) * ageMult / 5) * 5);
+    // Age multiplier deliberately not applied yet — pending a fix to the
+    // underlying production-index saturation issue first (see ageMultiplier()).
+    const newVal = Math.max(4, Math.round(oldVal * Math.exp(delta) / 5) * 5);
     out.push({ name: r.name, team: r.team, bucket: r.bucket, minutes: r.minutes, age: r.age,
       goals: r.goals, assists: r.assists, idx: +r.idx.toFixed(3), bucketAvg: +bucketAvg[r.bucket].toFixed(3),
-      ageMult, oldVal, newVal, pctChange: +((newVal / oldVal - 1) * 100).toFixed(1) });
+      oldVal, newVal, pctChange: +((newVal / oldVal - 1) * 100).toFixed(1) });
   }
   out.sort((a, b) => b.pctChange - a.pctChange);
   console.log(JSON.stringify({ generatedAt: new Date().toISOString(), season: SEASON, players: out,
