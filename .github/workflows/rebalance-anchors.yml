@@ -25,3 +25,8 @@ jobs:
           name: anchor-rebalance-report
           path: anchor-rebalance-report.json
           retention-days: 7
+      - name: Print report to logs
+        run: |
+          echo "===REPORT-START==="
+          cat anchor-rebalance-report.json
+          echo "===REPORT-END==="
