@@ -55,9 +55,10 @@ export function computeRating(stats, { knockout = false, result = 'draw', cleanS
   if (isKeeper) rating += minuteScale * 0.18 * saves;
   if (cleanSheet && (isKeeper || isDefender)) rating += minuteScale * 0.5;
 
-  // Defenders also wear conceded goals: first couple cost a bit, every
-  // goal from the 3rd onward (a backline that's been cut open) costs more.
-  if (isDefender && goalsConceded > 0) {
+  // Defenders and keepers also wear conceded goals: first couple cost a
+  // bit, every goal from the 3rd onward (a defense that's been cut open)
+  // costs more.
+  if ((isDefender || isKeeper) && goalsConceded > 0) {
     let concededPenalty = 0;
     for (let i = 1; i <= goalsConceded; i++) concededPenalty += i <= 2 ? 0.25 : 0.4;
     rating -= minuteScale * concededPenalty;
