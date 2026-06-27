@@ -633,9 +633,19 @@ class Component extends DCLogic {
     const cachedLive = this.loadCachedLive();
     if(cachedLive){ this._wcLive = cachedLive; }
     const LIVE_WORKER_URL = 'https://footystock.fly.dev/prices.json';
+    // Only adopt a fetched snapshot if it isn't OLDER than the one we already
+    // have. If the worker is (transiently) still answering from more than one
+    // machine with divergent in-memory state, this stops the price from
+    // bouncing backward to a staler machine's view — we only ever move forward
+    // in generatedAt. (The real cure is one machine; this just smooths the gap.)
+    const fresher = (data)=>{
+      const cur=this._wcLive;
+      if(!cur||!cur.generatedAt||!data.generatedAt) return true;
+      return data.generatedAt >= cur.generatedAt;
+    };
     const pollLive = ()=>{
       fetch(LIVE_WORKER_URL).then(r=>r.ok?r.json():null).then(data=>{
-        if(data){ this._wcLive = data; this._db = null; this.saveCachedLive(data); }
+        if(data && fresher(data)){ this._wcLive = data; this._db = null; this.saveCachedLive(data); }
         settleFirstLoad();
         this.setState(s=>({tick:s.tick+1}));
       }).catch(()=>settleFirstLoad());
@@ -1757,20 +1767,23 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   // solid — reloads landed on the identical number because nothing moved.
   //
   // This is the correct shape: a PURE function of (player, wall-clock time).
-  // No stored state, no RNG advanced per tick — just f(id, now). All clients
-  // share one wall clock, so they all compute the same value at the same
-  // moment (sub-second clock skew only shifts the phase imperceptibly), and
-  // re-evaluating it on the 9s render tick makes the price visibly drift.
-  // Three incommensurate sine components (periods ~37/89/211s), each
-  // phase-offset per player by the id hash, give each stock its own organic
-  // path instead of a uniform sawtooth.
+  // No stored state, no RNG advanced per tick — just f(id, now). It must be
+  // identical on every device, but a *continuous* clock made two phones sample
+  // it a moment apart and show slightly different headline prices. So we QUANTIZE
+  // the clock into 30s buckets: every device in the same 30s window computes the
+  // exact same multiplier (they only differ at all if compared across a bucket
+  // boundary, and then only by one small step). Periods are long relative to the
+  // bucket (10/25/55 min) so those between-bucket steps stay tiny while the price
+  // still gently drifts. Three incommensurate sines, phase-offset per player by
+  // the id hash, give each stock its own organic path rather than a uniform one.
   intradayMult(p){
-    const t=Date.now()/1000, h=this.hash(p.id);
+    const BUCKET=60; // seconds — all clients in the same minute agree exactly
+    const t=Math.floor(Date.now()/1000/BUCKET)*BUCKET, h=this.hash(p.id);
     const ph=(n)=>((h>>>(n*7))&1023)/1024*Math.PI*2;
-    const w=Math.sin(t*(2*Math.PI/37 )+ph(0))*0.50
-           +Math.sin(t*(2*Math.PI/89 )+ph(1))*0.35
-           +Math.sin(t*(2*Math.PI/211)+ph(2))*0.15; // w in [-1,1]
-    return 1+w*0.012; // +-1.2% band, comparable to the chart's own noise
+    const w=Math.sin(t*(2*Math.PI/1800)+ph(0))*0.50
+           +Math.sin(t*(2*Math.PI/4500)+ph(1))*0.35
+           +Math.sin(t*(2*Math.PI/9000)+ph(2))*0.15; // w in [-1,1]
+    return 1+w*0.008; // +-0.8% band; periods >> bucket so between-minute steps are tiny
   }
   curPrice(p){ return p.price*this.intradayMult(p); }
 
