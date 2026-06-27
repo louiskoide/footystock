@@ -1779,12 +1779,20 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   intradayMult(p, atSec){
     const BUCKET=60; // seconds — all clients in the same minute agree exactly
     const nowSec = (atSec!=null) ? atSec : Date.now()/1000; // explicit time lets the chart reconstruct past points
-    const t=Math.floor(nowSec/BUCKET)*BUCKET, h=this.hash(p.id);
-    const ph=(n)=>((h>>>(n*7))&1023)/1024*Math.PI*2;
-    const w=Math.sin(t*(2*Math.PI/1200)+ph(0))*0.50
-           +Math.sin(t*(2*Math.PI/3000)+ph(1))*0.35
-           +Math.sin(t*(2*Math.PI/6000)+ph(2))*0.15; // w in [-1,1]
-    return 1+w*0.008; // +-0.8% band; periods (20/50/100 min) still >> bucket so between-minute steps stay small
+    const t=Math.floor(nowSec/BUCKET)*BUCKET, h=this.hash(p.id), h2=this.hash(p.id+'#');
+    // Each player gets its OWN periods (not just its own phase), so charts are
+    // distinct organic shapes rather than phase-shifted copies of one shared
+    // wave. Crucially, every period is long relative to the 24h chart's 15-min
+    // sampling (fastest >= ~75 min => 5+ samples per cycle), so the line is
+    // smooth instead of an aliased sawtooth comb. Bucketed to 60s so all devices
+    // agree. (The old shared 20-min component aliased at 15-min sampling, which
+    // is why every graph looked like the same dense zigzag.)
+    const per=(n,lo,hi)=>lo+(((h>>>(n*9))&511)/511)*(hi-lo);   // per-player period
+    const ph =(n)=>(((h2>>>(n*9))&511)/511)*Math.PI*2;          // per-player phase
+    const w=Math.sin(t*(2*Math.PI/per(0, 4500, 7500))+ph(0))*0.50    // ~75-125 min
+           +Math.sin(t*(2*Math.PI/per(1, 9000,14000))+ph(1))*0.32    // ~150-235 min
+           +Math.sin(t*(2*Math.PI/per(2,19000,30000))+ph(2))*0.18;   // ~315-500 min
+    return 1+w*0.008; // +-0.8% band
   }
   curPrice(p){ return p.price*this.intradayMult(p); }
 
