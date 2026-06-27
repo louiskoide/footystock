@@ -3,22 +3,20 @@
 //
 // CLAUDE.md: the VAL() table in FootyStock_dc.html is the price anchor
 // (Transfermarkt-style €M market value) and is hand-typed/static. This
-// script rewrites it using *real* last-completed-season (2024/25) domestic-
-// league stats from API-Football for the top-5-league clubs, so a player's
-// anchor reflects actual club output from a full season rather than a
-// reputation guess — last season rather than the in-progress 2025/26 one
-// because a full season is a far more reliable signal than a fraction of
-// one, and it's what naturally builds in "injury status" / "memory" below.
+// script rewrites it using *real* 2025/26 domestic-league season stats from
+// API-Football for the top-5-league clubs, so a player's anchor reflects
+// this season's actual club output instead of going stale (e.g. a big-money
+// transfer anchored high regardless of how the move is actually going).
 //
 // Per CLAUDE.md rule 4, this uses only raw counting stats (goals, assists,
 // tackles, etc.) — never API-Football's own aggregate "rating" field, which
 // is the same kind of third-party pundit number rating.mjs deliberately
 // avoids for match-level ratings.
 //
-// Injury handling (e.g. Musiala's torn ACL wiping out most of 2024/25):
+// Injury handling (e.g. Musiala's ACL recovery limiting his 2025/26 minutes):
 // productionIndex()'s existing sampleWeight (minutes/900) already shrinks a
-// low-minutes season toward 0 contribution, so a player who barely played
-// last season gets ~no delta and keeps their prior anchor value — "memory
+// low-minutes season toward 0 contribution, so a player who's barely played
+// this season gets ~no delta and keeps their prior anchor value — "memory
 // from the previous season" carried forward rather than crashing their
 // price for an injury that isn't a form/quality signal.
 //
@@ -37,7 +35,7 @@ const KEY = process.env.API_FOOTBALL_KEY;
 if (!KEY) { console.error('API_FOOTBALL_KEY not set'); process.exit(1); }
 
 const BASE = 'https://v3.football.api-sports.io';
-const SEASON = 2024; // 2024/25 season — last fully-completed season (API-Football keys a season by its start year)
+const SEASON = 2025; // 2025/26 season (API-Football keys a season by its start year)
 const HTML_PATH = new URL('../FootyStock_dc.html', import.meta.url);
 
 // Modest, capped age nudge — not subject to CAP below since it's a separate,
