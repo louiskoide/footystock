@@ -14,7 +14,7 @@
 // avoids for match-level ratings.
 //
 // Injury handling (e.g. Musiala's ACL recovery limiting his 2025/26 minutes):
-// productionIndex()'s existing sampleWeight (minutes/900) already shrinks a
+// playerComponents()'s sampleWeight (minutes/900) already shrinks a
 // low-minutes season toward 0 contribution, so a player who's barely played
 // this season gets ~no delta and keeps their prior anchor value — "memory
 // from the previous season" carried forward rather than crashing their
@@ -92,30 +92,57 @@ function posBucket(pos) {
 // assists dominate, defensive actions a small add-on) but at a season level —
 // no rating field, no match-bonus nonlinearities (those belong to in-match
 // rating, not a season-long market-value anchor).
-function productionIndex(stat, bucket) {
+//
+// A single goals/assists-weighted sum systematically crashes elite players
+// whose value is defensive or progression-based (Bernardo Silva, Saliba,
+// Rodri) while inflating anyone who scores at all. Instead this computes
+// three separate per-90 signals — attack, defense, buildup/progression —
+// and a player is credited for whichever one he's actually elite at (via a
+// max-of-three blend below), so a deep ball-retainer like Pedri/Vitinha who
+// neither scores nor tackles much still gets full credit through buildup.
+function playerComponents(stat) {
   const minutes = stat.games?.minutes || 0;
   if (minutes < 1) return null;
-  const goals = stat.goals?.total || 0;
-  const assists = stat.goals?.assists || 0;
-  const conceded = stat.goals?.conceded || 0;
-  const saves = stat.goals?.saves || 0;
-  const tackles = stat.tackles?.total || 0;
-  const interceptions = stat.tackles?.interceptions || 0;
-  const duelsWon = stat.duels?.won || 0;
-  const keyPasses = stat.passes?.key || 0;
   const per90 = 90 / minutes;
 
-  let raw;
-  if (bucket === 'GK') raw = (saves * 0.06 - conceded * 0.10) * per90;
-  else if (bucket === 'DEF') raw = (goals * 0.9 + assists * 0.6 - conceded * 0.05
-    + 0.02 * (tackles + interceptions + duelsWon)) * per90;
-  else raw = (goals * 0.9 + assists * 0.6 + 0.015 * (tackles + interceptions + duelsWon + keyPasses)) * per90;
+  const goals = stat.goals?.total || 0;
+  const assists = stat.goals?.assists || 0;
+  const shotsOn = stat.shots?.on || 0;
+  const keyPasses = stat.passes?.key || 0;
+  const tackles = stat.tackles?.total || 0;
+  const interceptions = stat.tackles?.interceptions || 0;
+  const blocks = stat.tackles?.blocks || 0;
+  const duelsWon = stat.duels?.won || 0;
+  const passesTotal = stat.passes?.total || 0;
+  const passAccuracy = stat.passes?.accuracy != null ? +stat.passes.accuracy : null;
+  const dribbleSuccess = stat.dribbles?.success || 0;
+  const conceded = stat.goals?.conceded || 0;
+  const saves = stat.goals?.saves || 0;
+
+  const attack = (goals * 0.9 + assists * 0.6 + shotsOn * 0.05 + keyPasses * 0.03) * per90;
+  const defense = (tackles * 0.04 + interceptions * 0.05 + blocks * 0.05 + duelsWon * 0.02) * per90;
+  // Volume * accuracy so a high-pass-count player only gets credit for
+  // passes that actually go somewhere; accuracy falls back to a neutral
+  // 75% when API-Football doesn't report it for a given player.
+  const passQualityVolume = passesTotal * ((passAccuracy ?? 75) / 100);
+  const buildup = (passQualityVolume * 0.01 + dribbleSuccess * 0.05 + duelsWon * 0.015) * per90;
+  const gk = (saves * 0.06 - conceded * 0.10) * per90;
 
   // Shrink small samples toward 0 (mean) rather than letting a 2-game cameo
-  // swing the anchor as hard as a full season — pricing-model.md's per-90
-  // normalization rule, applied at season scale.
+  // swing the anchor as hard as a full season, and — per CLAUDE.md's
+  // injury-status ask — toward "no change from prior anchor" for a player
+  // who barely played (e.g. recovering from injury) rather than crashing
+  // their price for a partial, unrepresentative season.
   const sampleWeight = Math.min(1, minutes / 900); // full credit at ~10 full matches
-  return { raw: raw * sampleWeight, minutes };
+  return { attack: attack * sampleWeight, defense: defense * sampleWeight,
+    buildup: buildup * sampleWeight, gk: gk * sampleWeight, minutes };
+}
+
+function mean(xs) { return xs.length ? xs.reduce((a, c) => a + c, 0) / xs.length : 0; }
+function std(xs, m) {
+  if (xs.length < 2) return 1;
+  const v = xs.reduce((a, c) => a + (c - m) ** 2, 0) / xs.length;
+  return Math.sqrt(v) || 1;
 }
 
 async function main() {
@@ -168,22 +195,39 @@ async function main() {
       if (!hit) { const sur = norm.split(' ').pop(); hit = statsByName.find(s => normName(s.name).split(' ').pop() === sur); }
       if (!hit) { results.push({ ...ourPlayer, found: false }); continue; }
       const bucket = posBucket(hit.stat.games?.position);
-      const idx = productionIndex(hit.stat, bucket);
-      if (!idx) { results.push({ ...ourPlayer, found: false, reason: 'no minutes' }); continue; }
-      results.push({ ...ourPlayer, found: true, bucket, idx: idx.raw, minutes: idx.minutes,
+      const comp = playerComponents(hit.stat);
+      if (!comp) { results.push({ ...ourPlayer, found: false, reason: 'no minutes' }); continue; }
+      results.push({ ...ourPlayer, found: true, bucket, comp, minutes: comp.minutes,
         goals: hit.stat.goals?.total || 0, assists: hit.stat.goals?.assists || 0, age: ourPlayer.age });
     }
   }
 
-  // Mean-center within each position bucket (pricing-model.md's mean-centering
-  // rule, applied here too — an average top-5-league player at his position
-  // should get ~0 adjustment, not a blanket bonus/penalty).
   const found = results.filter(r => r.found);
-  const bucketAvg = {};
+
+  // Z-score each of attack/defense/buildup within its own position bucket
+  // (pricing-model.md's mean-centering rule, but per-signal so a bucket's
+  // own typical scoring/tackling/passing volume sets the baseline). GK uses
+  // its own single signal. A player's idx is then a max+avg blend across
+  // the signals he's available for — crediting whichever dimension he's
+  // actually elite at, rather than needing to also score or tackle to earn
+  // credit for elite progression play (Pedri/Vitinha/Mainoo's case).
+  const SIGNALS = { GK: ['gk'], DEF: ['attack', 'defense', 'buildup'], MID: ['attack', 'defense', 'buildup'], FWD: ['attack', 'defense', 'buildup'] };
+  const zStats = {};
   for (const b of ['GK', 'DEF', 'MID', 'FWD']) {
-    const vals = found.filter(r => r.bucket === b).map(r => r.idx);
-    bucketAvg[b] = vals.length ? vals.reduce((a, c) => a + c, 0) / vals.length : 0;
+    zStats[b] = {};
+    const peers = found.filter(r => r.bucket === b);
+    for (const sig of SIGNALS[b]) {
+      const vals = peers.map(r => r.comp[sig]);
+      const m = mean(vals);
+      zStats[b][sig] = { mean: m, std: std(vals, m) };
+    }
   }
+  for (const r of found) {
+    const sigs = SIGNALS[r.bucket];
+    const zs = sigs.map(sig => (r.comp[sig] - zStats[r.bucket][sig].mean) / zStats[r.bucket][sig].std);
+    r.idx = sigs.length > 1 ? 0.6 * Math.max(...zs) + 0.4 * mean(zs) : zs[0];
+  }
+  const bucketAvg = { GK: 0, DEF: 0, MID: 0, FWD: 0 }; // idx is already z-scored (mean 0) within its bucket
 
   const html = readFileSync(HTML_PATH, 'utf8');
   const valMap = {};
@@ -196,15 +240,12 @@ async function main() {
     }
   }
 
-  const K = 18; // log-space adjustment strength: tuned so a clearly standout
-  // season (idx ~0.5 above bucket average) yields roughly +50% anchor, and a
-  // clearly poor one (-0.5) yields roughly -35% — large enough to matter,
-  // capped below so one hot/cold patch can't 5x or zero out a market value.
-  const CAP = Math.log(2.5); // max |log-adjustment|, i.e. 0.4x-2.5x bounds —
-  // widened from the original 0.6 (0.55x-1.8x) because a strictly capped pass
-  // left genuinely elite-but-previously-underrated seasons (e.g. a 36-goal
-  // striker anchored low pre-season) unable to fully close the gap to
-  // already-high-anchored stars in one pass.
+  // idx is now a z-score blend (typically -2..+2, occasional outliers to ~3),
+  // not the old raw-stat scale, so K is recalibrated against z rather than
+  // raw production units: a ~1-std-above-average season (idx=1) yields
+  // roughly +80%, a ~2-std elite season clips close to the cap.
+  const K = 0.6;
+  const CAP = Math.log(2.5); // max |log-adjustment|, i.e. 0.4x-2.5x bounds.
 
   const out = [];
   for (const r of found) {
