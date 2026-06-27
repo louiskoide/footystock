@@ -620,22 +620,33 @@ class Component extends DCLogic {
       if(firstLoadSettled) return; firstLoadSettled = true;
       this.setState({ready:true});
     };
+    // SINGLE SOURCE OF TRUTH for prices: the live worker snapshot. The bug was
+    // that each stock effectively had two prices — one computed from the
+    // hand-typed DATA() fallback, one from the live worker — and which one you
+    // got depended on whether that load's fetch beat the timeout, so the price
+    // alternated every refresh. Fix: cache the last successful live snapshot in
+    // localStorage and ALWAYS boot from it. The hand-typed fallback is now only
+    // ever used on the very first visit ever, before any live fetch has
+    // succeeded even once. A returning visitor always builds from live data
+    // (fresh if the fetch returns, last-known-live otherwise), so there's one
+    // price, not two racing each other.
+    const cachedLive = this.loadCachedLive();
+    if(cachedLive){ this._wcLive = cachedLive; }
     const LIVE_WORKER_URL = 'https://footystock.fly.dev/prices.json';
     const pollLive = ()=>{
       fetch(LIVE_WORKER_URL).then(r=>r.ok?r.json():null).then(data=>{
-        if(data){ this._wcLive = data; this._db = null; }
+        if(data){ this._wcLive = data; this._db = null; this.saveCachedLive(data); }
         settleFirstLoad();
         this.setState(s=>({tick:s.tick+1}));
       }).catch(()=>settleFirstLoad());
     };
     pollLive();
-    // Fallback-after-timeout only fires if the worker is genuinely slow/down.
-    // Keep it generous: the always-on Fly worker can cold-start a few seconds,
-    // and painting the stale hand-typed fallback price first only to swap it
-    // for the live price a moment later is exactly the jarring "price jumped
-    // on its own" flip we're trying to kill. Better to wait a touch longer and
-    // build once off real data than to flash a number we're about to replace.
-    setTimeout(settleFirstLoad, 6000);
+    // If we already have a cached live snapshot we can paint immediately from
+    // it (the fetch refreshes it in the background) — no race, no flash. Only a
+    // brand-new visitor with no cache waits for the worker, and only falls back
+    // to the hand-typed DATA() if it's genuinely slow/down past the timeout.
+    if(cachedLive) settleFirstLoad();
+    else setTimeout(settleFirstLoad, 6000);
     this.liveTimer = setInterval(pollLive, 30000);
     this.timer = setInterval(()=>{
       const DB = this.getDB();
@@ -1773,6 +1784,11 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   // nudges the right edge, exactly like a real ticker. Stored per-device in
   // localStorage (prices themselves are global, so different devices record
   // near-identical values — only the seed era and first-seen day can differ).
+  // last successful live worker snapshot, so every reload boots from live data
+  // instead of racing the fetch against the hand-typed fallback (one price, not
+  // two). Best-effort: if storage is full/blocked we just skip the cache.
+  loadCachedLive(){ try{ return JSON.parse(localStorage.getItem('footystock_wclive_v1'))||null; }catch(e){ return null; } }
+  saveCachedLive(data){ try{ localStorage.setItem('footystock_wclive_v1',JSON.stringify(data)); }catch(e){} }
   loadHist(){ try{ return JSON.parse(localStorage.getItem('footystock_pricehist_v1'))||{}; }catch(e){ return {}; } }
   saveHist(){ if(!this._histDirty||!this._histStore) return; try{ localStorage.setItem('footystock_pricehist_v1',JSON.stringify(this._histStore)); this._histDirty=false; }catch(e){} }
   priceHistory(id, seed, todayClose, dayKey){
