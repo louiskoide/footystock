@@ -629,7 +629,13 @@ class Component extends DCLogic {
       }).catch(()=>settleFirstLoad());
     };
     pollLive();
-    setTimeout(settleFirstLoad, 2500);
+    // Fallback-after-timeout only fires if the worker is genuinely slow/down.
+    // Keep it generous: the always-on Fly worker can cold-start a few seconds,
+    // and painting the stale hand-typed fallback price first only to swap it
+    // for the live price a moment later is exactly the jarring "price jumped
+    // on its own" flip we're trying to kill. Better to wait a touch longer and
+    // build once off real data than to flash a number we're about to replace.
+    setTimeout(settleFirstLoad, 6000);
     this.liveTimer = setInterval(pollLive, 30000);
     this.timer = setInterval(()=>{
       const DB = this.getDB();
@@ -1715,7 +1721,32 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     return db;
   }
 
-  curPrice(p){ return p.price; }
+  // Intraday wobble around the fundamental (pricing-model.md: "noise = small
+  // intraday wobble ... a mean-reverting version of this"). The whole point
+  // is that it MOVES over time yet is GLOBAL — every browser must show the
+  // same price at the same instant (CLAUDE.md rule 2). The old version failed
+  // that: it was a per-client random walk advanced by each tab's own
+  // setInterval and seeded from that tab's Date.now(), so no two clients (or
+  // even two reloads) ever agreed. Removing it entirely then froze prices
+  // solid — reloads landed on the identical number because nothing moved.
+  //
+  // This is the correct shape: a PURE function of (player, wall-clock time).
+  // No stored state, no RNG advanced per tick — just f(id, now). All clients
+  // share one wall clock, so they all compute the same value at the same
+  // moment (sub-second clock skew only shifts the phase imperceptibly), and
+  // re-evaluating it on the 9s render tick makes the price visibly drift.
+  // Three incommensurate sine components (periods ~37/89/211s), each
+  // phase-offset per player by the id hash, give each stock its own organic
+  // path instead of a uniform sawtooth.
+  intradayMult(p){
+    const t=Date.now()/1000, h=this.hash(p.id);
+    const ph=(n)=>((h>>>(n*7))&1023)/1024*Math.PI*2;
+    const w=Math.sin(t*(2*Math.PI/37 )+ph(0))*0.50
+           +Math.sin(t*(2*Math.PI/89 )+ph(1))*0.35
+           +Math.sin(t*(2*Math.PI/211)+ph(2))*0.15; // w in [-1,1]
+    return 1+w*0.012; // +-1.2% band, comparable to the chart's own noise
+  }
+  curPrice(p){ return p.price*this.intradayMult(p); }
   byId(id){ return this.getDB().find(p=>p.id===id); }
 
   // ---------- formatting ----------
