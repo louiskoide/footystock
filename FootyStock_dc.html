@@ -1515,7 +1515,11 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       for(const rt of ratingsByRecency.slice(0,6)){ ewmaR+=rt*wgt; ewmaW+=wgt; wgt*=0.75; }
       ewmaR = ewmaW ? ewmaR/ewmaW : 0;
       const formDelta = (ewmaW && avgR) ? (ewmaR-avgR) : 0;
-      const formSig=atWC?Math.max(6,Math.min(99,46+formDelta*22+streakLen*2)):8;
+      // Streak kicker bumped 2->4: a player who's elite every match (not just
+      // improving on their own baseline) should still earn some extra credit
+      // for sustained excellence, capped well below formDelta's own swing so
+      // it stays the "small bonus" the spec calls for, not the main term.
+      const formSig=atWC?Math.max(6,Math.min(99,46+formDelta*22+streakLen*4)):8;
       // Real hype (Google Trends search-interest delta, see scripts/live-worker/hype.mjs)
       // — independent of performance by construction, since it never reads
       // change7d/change30d/events. 0 = no live signal yet (cold-start neutral,
