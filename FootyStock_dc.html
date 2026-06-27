@@ -1780,10 +1780,10 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     const BUCKET=60; // seconds — all clients in the same minute agree exactly
     const t=Math.floor(Date.now()/1000/BUCKET)*BUCKET, h=this.hash(p.id);
     const ph=(n)=>((h>>>(n*7))&1023)/1024*Math.PI*2;
-    const w=Math.sin(t*(2*Math.PI/1800)+ph(0))*0.50
-           +Math.sin(t*(2*Math.PI/4500)+ph(1))*0.35
-           +Math.sin(t*(2*Math.PI/9000)+ph(2))*0.15; // w in [-1,1]
-    return 1+w*0.008; // +-0.8% band; periods >> bucket so between-minute steps are tiny
+    const w=Math.sin(t*(2*Math.PI/1200)+ph(0))*0.50
+           +Math.sin(t*(2*Math.PI/3000)+ph(1))*0.35
+           +Math.sin(t*(2*Math.PI/6000)+ph(2))*0.15; // w in [-1,1]
+    return 1+w*0.008; // +-0.8% band; periods (20/50/100 min) still >> bucket so between-minute steps stay small
   }
   curPrice(p){ return p.price*this.intradayMult(p); }
 
