@@ -1,0 +1,29 @@
+name: Rebalance player anchors (one-off)
+
+# Manual-only tool: fetches 2025/26 top-5-league season stats from
+# API-Football and writes a rebalance report. Does NOT touch FootyStock_dc.html
+# itself — a human/Claude reviews anchor-rebalance-report.json and applies the
+# VAL() edits deliberately, since these are hand-curated market-value anchors
+# (see CLAUDE.md / pricing-model.md), not something to auto-overwrite.
+on:
+  workflow_dispatch:
+
+jobs:
+  rebalance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run rebalance script
+        run: node scripts/rebalance-anchors.mjs > anchor-rebalance-report.json
+        env:
+          API_FOOTBALL_KEY: ${{ secrets.API_FOOTBALL_KEY }}
+      - name: Commit report
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add anchor-rebalance-report.json
+          git diff --cached --quiet || git commit -m "Anchor rebalance report (automated, one-off)"
+          git push
