@@ -1794,20 +1794,26 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   // real days accumulate the synthetic part shrinks to nothing.
   loadHist(){ try{ localStorage.removeItem('footystock_pricehist_v1'); return JSON.parse(localStorage.getItem('footystock_pricehist_v2'))||{}; }catch(e){ return {}; } }
   saveHist(){ if(!this._histDirty||!this._histStore) return; try{ localStorage.setItem('footystock_pricehist_v2',JSON.stringify(this._histStore)); this._histDirty=false; }catch(e){} }
-  // smooth, deterministic pre-history filler of `count` points ending at
-  // `anchor` (the oldest real close), so it joins onto the recorded data with
-  // no cliff. Seeded by id so it's stable per player across loads.
+  // smooth, deterministic pre-history filler of `count` points for the days
+  // BEFORE the oldest real close. It leads smoothly UP TO `anchor` but its last
+  // point is the natural "day before" value, NOT anchor exactly — otherwise the
+  // most recent day shows a flat segment and 1D reads 0% even while the rest of
+  // the curve (and the chart) is clearly moving. We build count+1 nodes ending
+  // exactly at anchor, then drop that final node so the kept tail is yesterday.
+  // Seeded by id so it's stable per player across loads.
   histBackfill(id, anchor, count){
     if(count<=0) return [];
+    const M=count+1;
     const r=this.mulberry(this.hash(id+':bf'));
     const trend=(r()-0.5)*0.18; const start=anchor/(1+trend);
-    const steps=[]; let acc=0; for(let i=0;i<count;i++){ acc+=(r()-0.5); steps.push(acc); }
-    const s0=steps[0], s1=steps[count-1];
-    const bridge=steps.map((v,i)=>v-(s0+(s1-s0)*(count>1?i/(count-1):0)));
+    const steps=[]; let acc=0; for(let i=0;i<M;i++){ acc+=(r()-0.5); steps.push(acc); }
+    const s0=steps[0], s1=steps[M-1];
+    const bridge=steps.map((v,i)=>v-(s0+(s1-s0)*(M>1?i/(M-1):0)));
     const bmax=Math.max(...bridge.map(Math.abs))||1; const amp=anchor*0.02;
-    const out=[]; for(let i=0;i<count;i++){ const t=count>1?i/(count-1):1;
+    const out=[]; for(let i=0;i<M;i++){ const t=M>1?i/(M-1):1;
       const base=start+(anchor-start)*Math.pow(t,1.1); out.push(Math.max(2,base+(bridge[i]/bmax)*amp)); }
-    out[count-1]=anchor; return out; // exact join onto real[0]
+    out[M-1]=anchor; // node M-1 is "today" (exact) — drop it, keep days before
+    return out.slice(0,count);
   }
   priceHistory(id, todayClose, dayKey){
     const store=this._histStore||(this._histStore=this.loadHist());
