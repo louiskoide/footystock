@@ -590,7 +590,7 @@ class Component extends DCLogic {
       sortKey:'rank', sortDir:'asc',
       chartHoverIdx:null, chartDragStart:null,
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
-      showReward:false, tick:0, pendingOrders:[],
+      showReward:false, tick:0, pendingOrders:[], ready:false,
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
       streak: saved.streak, lastClaim: saved.lastClaim,
     };
@@ -601,15 +601,35 @@ class Component extends DCLogic {
     // never fetched from the browser to a third-party API (see CLAUDE.md
     // rule 1). Missing/unreachable worker degrades silently to the hand-typed
     // STARS/WC fallback already in DATA().
+    //
+    // The very first render happens synchronously right after this method
+    // returns (the framework doesn't await anything), so if buildDB() ran
+    // on that pass it would always do so with whatever live data happened
+    // to already be in memory — which on a cold load is none. The fetch
+    // below typically resolves while that first (DB-less) render is still
+    // being painted, which used to cause a visible flip moments later: the
+    // first paint showed prices computed from the offline STARS/NEWS
+    // fallback, then almost immediately a second render replaced them with
+    // prices computed from live data, looking like the price had randomly
+    // changed. Gating "ready" on this first fetch settling (success,
+    // failure, or a timeout if the worker is slow/unreachable) means
+    // getDB() is never called until we already know which data to build
+    // from, so the real numbers only ever get computed and painted once.
+    let firstLoadSettled = false;
+    const settleFirstLoad = ()=>{
+      if(firstLoadSettled) return; firstLoadSettled = true;
+      this.setState({ready:true});
+    };
     const LIVE_WORKER_URL = 'https://footystock.fly.dev/prices.json';
     const pollLive = ()=>{
       fetch(LIVE_WORKER_URL).then(r=>r.ok?r.json():null).then(data=>{
-        if(!data) return;
-        this._wcLive = data; this._db = null;
+        if(data){ this._wcLive = data; this._db = null; }
+        settleFirstLoad();
         this.setState(s=>({tick:s.tick+1}));
-      }).catch(()=>{});
+      }).catch(()=>settleFirstLoad());
     };
     pollLive();
+    setTimeout(settleFirstLoad, 2500);
     this.liveTimer = setInterval(pollLive, 30000);
     this.timer = setInterval(()=>{
       const DB = this.getDB();
@@ -1809,7 +1829,11 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
 
   // ============ RENDER ============
   renderVals(){
-    const DB=this.getDB(); const S=this.state;
+    const S=this.state;
+    // Don't build the (expensive, 500+ player) DB until we know whether
+    // live worker data is available — see the comment in componentDidMount.
+    // This first, near-instant render just shows an empty/blank state.
+    const DB=S.ready?this.getDB():[];
     const GREEN='#16a85f',RED='#d23b2c',GBG='#e7f6ec',RBG='#fbe9e7';
     const cd=(n)=>n>=0?'#3ddc8a':'#ff5d5d';
     // stdev of daily returns (annualized) + high/low over all available history,
@@ -2120,10 +2144,11 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       bg:S.range===v?'#16201a':'#eef1ec',color:S.range===v?'#fff':'#46504a'}));
 
     // ---- holdings list ----
-    const holdingsList=Object.keys(S.holdings).map(id=>{ const p=this.byId(id); const h=S.holdings[id]; const price=this.curPrice(p);
+    const holdingsList=Object.keys(S.holdings).map(id=>{ const p=this.byId(id); if(!p) return null; const h=S.holdings[id]; const price=this.curPrice(p);
       const val=price*h.qty; const plv=val-h.avg*h.qty; const up=plv>=0; const plpct=(plv/(h.avg*h.qty))*100;
       return { name:p.name,lg:p.abbr,pos:p.pos,price:this.money(price),qty:h.qty,avg:this.money(h.avg),value:this.money(val),
         pl:(up?'+':'−')+this.money(Math.abs(plv)).slice(1),plPct:this.pct(plpct),plColor:up?GREEN:RED,onClick:()=>this.openPlayer(id) }; })
+      .filter(Boolean)
       .sort((a,b)=>0);
 
     // ---- txns ----
