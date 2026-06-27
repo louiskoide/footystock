@@ -21,6 +21,11 @@
   @keyframes fs-fade{from{opacity:0}to{opacity:1}}
   @keyframes fs-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
   .fs-tape:hover{animation-play-state:paused}
+  /* the reward modal's sc-if tag is raw, un-interpolated markup in the DOM
+     until the heavy initial DB-build script finishes and the framework's
+     first render replaces it — hide it for that window so the user never
+     sees literal {{ rw.title }} placeholder text flash on load */
+  sc-if[value="{{ showReward }}"]{display:none}
 
   @media (max-width:760px){
     .fs-header-top{padding:10px 12px!important;gap:8px!important}
