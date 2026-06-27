@@ -1482,6 +1482,9 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     // same-day price-bump/90' mechanism silently breaks once the real date
     // drifts past whatever was hardcoded here).
     const today=new Date();
+    // Calendar day key for the persisted price history (see priceHistory):
+    // a new dayKey means roll the recorded series forward by one real day.
+    const dayKey=today.toISOString().slice(0,10);
     const db=[];
     const seen={};
     for(const line of lines){
@@ -1700,24 +1703,36 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       // the spike right at the chart's last point.
       const tradedPrice = hist[N-1];
 
-      // The displayed 7d/30d change must be read off this exact hist array,
-      // never recomputed from raw event deltas — otherwise the badge and the
-      // chart can show different numbers for the same player.
-      change7d=parseFloat((((hist[N-1]-hist[N-8])/hist[N-8])*100).toFixed(1));
-      change30d=parseFloat((((hist[N-1]-hist[N-31])/hist[N-31])*100).toFixed(1));
+      // REAL recorded history. The synthetic `hist` above is now only a
+      // one-time seed: priceHistory freezes it the first time we ever see
+      // this player on this device, then from then on it leaves the past
+      // untouched and only records today's actual close. So when the live
+      // price moves, the past no longer rescales/jumps with it — only the
+      // right edge ticks, the way a real chart behaves. The chart, sparkline,
+      // volatility and high/low range all read p.hist, so they all become
+      // real history for free.
+      const rHist = this.priceHistory(id, hist, tradedPrice, dayKey);
+      const RN = rHist.length;
+
+      // The displayed 7d/30d change must be read off the SAME (now real) hist
+      // array the chart draws, never recomputed from raw event deltas —
+      // otherwise the badge and the chart can show different numbers.
+      change7d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-8)])/rHist[Math.max(0,RN-8)])*100).toFixed(1));
+      change30d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-31)])/rHist[Math.max(0,RN-31)])*100).toFixed(1));
 
       // Articles mentioning this player — only elite/notable performances get
       // a writeup (see DATA().ARTICLES), shown under the player page when
       // recent rather than duplicated for every routine match.
       const playerArticles = D.ARTICLES.filter(a=>a.refs.includes(id));
-      db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price:tradedPrice,
-        change7d,change30d,hist,events,streakLen,atWC,wcStatus,nation,news,mood,
+      db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price:rHist[RN-1],
+        change7d,change30d,hist:rHist,events,streakLen,atWC,wcStatus,nation,news,mood,
         signals:{fotmob,form:formSig,twitter:moodSig,transfermarkt:transferSig}, avgR,
         tmVal,tmTrendUp,articles:playerArticles });
     }
     // assign ranks by price desc
     db.sort((a,b)=>b.price-a.price);
     db.forEach((p,i)=>p.rank=i+1);
+    this.saveHist(); // flush any newly seeded / updated history in one write
     return db;
   }
 
@@ -1747,6 +1762,38 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     return 1+w*0.012; // +-1.2% band, comparable to the chart's own noise
   }
   curPrice(p){ return p.price*this.intradayMult(p); }
+
+  // ----- persisted real price history -----
+  // The chart used to be fully re-simulated on every build and scaled to end
+  // at the *current* price, so any move in the live price rewrote the entire
+  // past and the axis bounds jumped with it. Instead we now RECORD the actual
+  // price over time. buildDB's synthetic 90d curve is only a one-time seed so
+  // a brand-new device isn't staring at an empty chart; after that the past is
+  // frozen and only today's close is updated. A live-price move therefore just
+  // nudges the right edge, exactly like a real ticker. Stored per-device in
+  // localStorage (prices themselves are global, so different devices record
+  // near-identical values — only the seed era and first-seen day can differ).
+  loadHist(){ try{ return JSON.parse(localStorage.getItem('footystock_pricehist_v1'))||{}; }catch(e){ return {}; } }
+  saveHist(){ if(!this._histDirty||!this._histStore) return; try{ localStorage.setItem('footystock_pricehist_v1',JSON.stringify(this._histStore)); this._histDirty=false; }catch(e){} }
+  priceHistory(id, seed, todayClose, dayKey){
+    const store=this._histStore||(this._histStore=this.loadHist());
+    const close=Math.round(todayClose*100)/100;
+    let rec=store[id];
+    if(!rec || !Array.isArray(rec.h) || rec.h.length<2){
+      // first sight of this player on this device — freeze the synthetic
+      // backfill as the starting past, today's slot = the real live close.
+      const h=seed.map(v=>Math.round(v*100)/100); h[h.length-1]=close;
+      rec={d:dayKey,h}; store[id]=rec; this._histDirty=true;
+    } else if(rec.d!==dayKey){
+      // a real calendar day rolled over — append today's close as a new point,
+      // keep a 90-day window, and never touch the frozen past.
+      rec.h.push(close); while(rec.h.length>90) rec.h.shift(); rec.d=dayKey; this._histDirty=true;
+    } else if(rec.h[rec.h.length-1]!==close){
+      // same day, the fundamental moved — update only today's point.
+      rec.h[rec.h.length-1]=close; this._histDirty=true;
+    }
+    return rec.h;
+  }
   byId(id){ return this.getDB().find(p=>p.id===id); }
 
   // ---------- formatting ----------
