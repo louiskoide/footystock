@@ -594,7 +594,6 @@ class Component extends DCLogic {
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
       streak: saved.streak, lastClaim: saved.lastClaim,
     };
-    this.live = {}; // id -> live multiplier
   }
   componentDidMount(){
     // Live data comes from the always-on Fly.io worker (scripts/live-worker/),
@@ -614,13 +613,6 @@ class Component extends DCLogic {
     this.liveTimer = setInterval(pollLive, 30000);
     this.timer = setInterval(()=>{
       const DB = this.getDB();
-      for(const p of DB){
-        const cur = this.live[p.id] || 1;
-        const drift = (this.rand01(p.id + ':' + Date.now()) - 0.5) * 0.0016; // tiny intraday tick around the real-data price
-        let next = cur * (1 + drift) + (1 - cur) * 0.04; // mean-reverts to the modelled price
-        next = Math.max(0.985, Math.min(1.015, next));
-        this.live[p.id] = next;
-      }
       // orders fill at the next price tick, not the price shown when confirmed —
       // closes the "watch it happen on TV, buy before the price reacts" window.
       this.fillPendingOrders(DB);
@@ -1703,7 +1695,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     return db;
   }
 
-  curPrice(p){ const m=this.live[p.id]||1; return p.price*m; }
+  curPrice(p){ return p.price; }
   byId(id){ return this.getDB().find(p=>p.id===id); }
 
   // ---------- formatting ----------
