@@ -111,7 +111,12 @@ async function main() {
     for (const [ourName, code2] of Object.entries(TEAM_LEAGUE)) {
       if (code2 !== code) continue;
       const wanted = normName(TEAM_ALIASES[ourName]);
-      const hit = apiTeams.find(t => normName(t.name) === wanted);
+      // Exact match first; fall back to substring containment on our own
+      // (unaliased) team key — covers cases the hardcoded English alias
+      // gets wrong, e.g. API returning "Bayern München" (accent-stripped to
+      // "munchen", not the alias's "munich") or "AS Roma" instead of "Roma".
+      let hit = apiTeams.find(t => normName(t.name) === wanted);
+      if (!hit) hit = apiTeams.find(t => normName(t.name).includes(normName(ourName)));
       if (hit) teamIdByOurName[ourName] = hit.id;
       else console.error(`WARN: no API team match for ${ourName} (${TEAM_ALIASES[ourName]}) in ${code}`);
     }
