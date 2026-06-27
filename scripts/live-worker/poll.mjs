@@ -124,7 +124,8 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
         continue;
       }
 
-      const rating = computeRating(stats, { knockout, result });
+      const ownGoals = (marksByPlayer[id] || []).filter(m => m.kind === 'owngoal').length;
+      const rating = computeRating(stats, { knockout, result, cleanSheet: oppGoals === 0, ownGoals });
       if (rating == null) continue;
 
       const goals = stats.goals?.total || 0;
