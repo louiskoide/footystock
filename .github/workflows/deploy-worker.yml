@@ -18,6 +18,14 @@ jobs:
       - uses: actions/checkout@v4
       - uses: superfly/flyctl-actions/setup-flyctl@master
       - name: Deploy
-        run: flyctl deploy --remote-only
+        # --ha=false: keep the worker to a SINGLE machine. It holds all its
+        # state (teams/players/fixture history) in memory with zero
+        # persistence (makeInitialState in poll.mjs), so a second machine would
+        # accumulate its OWN divergent state — the load balancer would then
+        # round-robin requests between them and serve two different prices.json,
+        # making each stock appear to have two alternating prices. A single
+        # instance is also what the API-Football budget assumes (a second one
+        # silently doubles the request rate). See data-sources.md.
+        run: flyctl deploy --remote-only --ha=false
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
