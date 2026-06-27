@@ -1522,7 +1522,17 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           // baseline dropped from 6.85 to 6.0 but this stayed at the old 6.9,
           // making every average match compute a steady negative delta that
           // compounded across change7d/change30d and the 90d history chart.
-          const g=s.g||0,a=s.a||0; const delta=bench?0:parseFloat(((s.rating-6.0)*1.3+g*1.0+a*0.6).toFixed(2));
+          const g=s.g||0,a=s.a||0;
+          // Linear credit for an average good game, plus a convex kicker for
+          // genuinely historic ones (braces+, statement ratings) — a real
+          // hat-trick or a 9.5-rated masterclass should move the price far
+          // more than three merely-decent games combined, the way a real
+          // stock reacts disproportionately to a true outlier catalyst.
+          const goalPart = g*1.0 + (g>=2 ? Math.pow(g-1,1.6)*0.9 : 0);
+          const assistPart = a*0.6 + (a>=2 ? Math.pow(a-1,1.4)*0.4 : 0);
+          const ratingExcess = Math.max(0, s.rating-8.0);
+          const ratingPart = (s.rating-6.0)*1.3 + Math.pow(ratingExcess,1.8)*1.5;
+          const delta=bench?0:parseFloat((ratingPart+goalPart+assistPart).toFixed(2));
           const st=[]; if(g)st.push(g+'G'); if(a)st.push(a+'A'); if(!g&&!a)st.push('—');
           events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,goals:g,assists:a,yellow:!!s.yellow,red:!!s.red,min:(s.min==null?null:s.min),bench,delta,statLine:st.join(' '),note:s.note,marks:s.marks||[],live:!!s.live,elapsed:(s.elapsed==null?null:s.elapsed)}); } }
       else if(inSquad){
