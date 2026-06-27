@@ -1859,10 +1859,17 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       bg:on?'#16201a':'#fff',border:on?'#16201a':'#e3e6e0',color:on?'#fff':'#46504a'}; });
 
     // market list (filtered + searched)
-    const q=S.search.trim().toLowerCase();
+    // Fold accented/special letters to their plain ASCII equivalent so a
+    // search like "odegaard" matches a DB name stored as "Ødegaard" — NFD
+    // alone only strips combining-mark accents (é->e), it doesn't decompose
+    // letters like ø/đ/ß that are their own distinct code points.
+    const foldMap={'ø':'o','đ':'d','ð':'d','ł':'l','þ':'th','æ':'ae','œ':'oe','ß':'ss'};
+    const fold=(s)=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()
+      .replace(/[øđðłþæœß]/g,c=>foldMap[c]||c);
+    const q=fold(S.search.trim());
     let list=DB.filter(p=>{
       if(S.league!=='ALL' && p.lg!==S.league) return false;
-      if(q && !(p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q))) return false;
+      if(q && !(fold(p.name).includes(q)||fold(p.team).includes(q))) return false;
       return true;
     });
     const marketList=list.map(decorate);
