@@ -1776,9 +1776,10 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   // bucket (10/25/55 min) so those between-bucket steps stay tiny while the price
   // still gently drifts. Three incommensurate sines, phase-offset per player by
   // the id hash, give each stock its own organic path rather than a uniform one.
-  intradayMult(p){
+  intradayMult(p, atSec){
     const BUCKET=60; // seconds — all clients in the same minute agree exactly
-    const t=Math.floor(Date.now()/1000/BUCKET)*BUCKET, h=this.hash(p.id);
+    const nowSec = (atSec!=null) ? atSec : Date.now()/1000; // explicit time lets the chart reconstruct past points
+    const t=Math.floor(nowSec/BUCKET)*BUCKET, h=this.hash(p.id);
     const ph=(n)=>((h>>>(n*7))&1023)/1024*Math.PI*2;
     const w=Math.sin(t*(2*Math.PI/1200)+ph(0))*0.50
            +Math.sin(t*(2*Math.PI/3000)+ph(1))*0.35
@@ -2115,16 +2116,27 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
               s.push(prevClose+fullSwing*t+noise); }
           }
           return s; })()
-          : is24h?(()=>{ const prevClose=p.hist[N-2]??p.hist[N-1]; const HOURS=24; const s=[];
-          // a live match's whole price reaction should sit in the hours since
-          // it actually kicked off — smearing the day's full move evenly
-          // across all 24 hours (the old behavior) buries "since kickoff" in
-          // noise even when the match is the entire reason the price moved.
-          const kickoffH=liveNow?Math.max(0,HOURS-matchMinute/60):0;
-          for(let h=0;h<=HOURS;h++){ const noise=(this.rand01(p.id+':24h:'+h)-0.5)*(price*0.01);
-            if(h<=kickoffH){ s.push(prevClose+noise); }
-            else{ const t=(h-kickoffH)/(HOURS-kickoffH); s.push(prevClose+(price-prevClose)*t+noise); } }
-          s[HOURS]=price; return s; })() : p.hist.slice(N-range);
+          : is24h?(()=>{
+          // REAL intraday path at 5-minute resolution — NOT a curve re-scaled to
+          // the current price (the old behavior, which reshaped the whole chart
+          // every time the price ticked, so the same timestamp showed different
+          // values on each refresh). The displayed price at any instant is
+          // base*intradayMult(t), a deterministic function of wall-clock time, so
+          // we reconstruct the exact path the stock actually took: each timestamp's
+          // value is fixed (it no longer moves when the live price updates) and is
+          // identical on every device. base = recorded daily close (no wobble);
+          // the right edge is base*intradayMult(now) = the headline price.
+          const base=p.hist[N-1], prevClose=p.hist[N-2]??base;
+          const STEP_MIN=5, STEPS=288, nowSec=Math.floor(Date.now()/1000); // 288*5min = 24h
+          // for a live match, ramp the price reaction in since kickoff on top of
+          // the normal intraday wobble; otherwise it's just the wobble around close.
+          const koSteps=liveNow?Math.min(STEPS,Math.max(1,Math.round(matchMinute/STEP_MIN))):0;
+          const s=[];
+          for(let i=0;i<=STEPS;i++){ const fromEnd=STEPS-i; const tSec=nowSec-fromEnd*STEP_MIN*60;
+            let lvl=base;
+            if(liveNow){ lvl = (fromEnd>=koSteps) ? prevClose : prevClose+(base-prevClose)*(1-fromEnd/koSteps); }
+            s.push(lvl*this.intradayMult(p,tSec)); }
+          return s; })() : p.hist.slice(N-range);
         const W=760,H=240,top=6;
         let min=Math.min(...slice),max=Math.max(...slice);
         if(is24h||range===7){
@@ -2165,7 +2177,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         // for the multi-day tabs.
         const pointLabel=(k)=>{
           if(is90m) return k===0?'KO':(k===matchMinute?'now':k+"'");
-          if(is24h){ const HOURS=24; if(k===HOURS) return 'now'; const dt=new Date(today.getTime()-(HOURS-k)*3600000); return this.timeShort(dt); }
+          if(is24h){ const STEP_MIN=5, STEPS=288; if(k===STEPS) return 'now'; const dt=new Date(today.getTime()-(STEPS-k)*STEP_MIN*60000); return this.timeShort(dt); }
           const daysAgo=(slice.length-1)-k; if(daysAgo===0) return 'Today'; return this.dateShort(new Date(today.getTime()-daysAgo*86400000));
         };
         const idxFromClientX=(clientX,rect)=>{
