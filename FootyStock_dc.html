@@ -1552,12 +1552,20 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       // matching what the live 90-minute ticker already shows by full time
       // (same 0.6 multiplier) instead of quietly burying ~75% of it in a
       // multi-day ease-in the live chart never reflected.
-      for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N) continue;
+      for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N){ e._impactPct=0; continue; }
         const bump=(e.delta/100)*price*0.6, ramp=1, halfLife=6;
         for(let j=idx;j<N;j++){ const daysIn=j-idx+1; // +1: the match day itself is already day 1, not day 0 — otherwise a same-day event (idx===N-1) eases in at 0 and never visibly moves today's price.
           const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
           const decay=Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);
-          hist[j]+=bump*eased*decay; } }
+          const contribution=bump*eased*decay;
+          hist[j]+=contribution;
+          // The "what's driving the price" list must show what this match
+          // actually did to the price *today*, not the raw rating-based
+          // formula score (e.delta) — those are two different numbers and
+          // showing the raw one reads as a broken promise ("should've gone
+          // up 5.66%") when the model only ever applies a damped fraction.
+          if(j===N-1) e._impactPct=(contribution/price)*100;
+        } }
       // Getting knocked out is its own one-time shock to the chart — distinct
       // from the moodSig floor above (which lowers where the price *settles*
       // going forward), this is the visible "plummet" on the day it happens.
@@ -1923,14 +1931,17 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         const signals=sigDefs.map(([label,val,display])=>({label,pct:Math.round(val)+'%',display,
           barColor:val>=66?GREEN:val>=42?'#e2a32b':RED, valColor:'#46504a'}));
 
-        const evDisp=p.events.slice().sort((a,b)=>a.offset-b.offset).map(e=>{ const up=e.delta>=0; const dt=new Date(today.getTime()-e.offset*86400000);
+        const evDisp=p.events.slice().sort((a,b)=>a.offset-b.offset).map(e=>{ const impact=e._impactPct||0; const up=impact>=0; const dt=new Date(today.getTime()-e.offset*86400000);
           const isBench = e.bench || e.min===0;
           return { date:this.dateShort(dt), fixture:'vs '+e.oppTeam,
             balls:'⚽'.repeat(e.goals||0), boots:'👟'.repeat(e.assists||0),
             card: e.red?'🟥':(e.yellow?'🟨':''),
             isBench, notBench:!isBench, minsLabel: isBench?'':(e.min!=null?(e.min+"'"):''),
             ratingLabel: (e.rating!=null && e.rating>0) ? e.rating.toFixed(1) : '—',
-            delta:Math.abs(e.delta).toFixed(2)+'%', deltaArrow:up?'▲':'▼', deltaColor:up?GREEN:RED }; });
+            // What this match actually did to the stock price (today's
+            // damped/decayed contribution to hist), not the raw per-match
+            // performance formula score — see the bump loop above.
+            delta:Math.abs(impact).toFixed(2)+'%', deltaArrow:up?'▲':'▼', deltaColor:up?GREEN:RED }; });
 
         const held=S.holdings[p.id]; const hasPos=!!held&&held.qty>0;
         const posValue=hasPos?this.curPrice(p)*held.qty:0; const posCost=hasPos?held.avg*held.qty:0; const posPl=posValue-posCost; const posUp=posPl>=0;
