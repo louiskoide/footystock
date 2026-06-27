@@ -125,7 +125,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
       }
 
       const ownGoals = (marksByPlayer[id] || []).filter(m => m.kind === 'owngoal').length;
-      const rating = computeRating(stats, { knockout, result, cleanSheet: oppGoals === 0, ownGoals });
+      const rating = computeRating(stats, { knockout, result, cleanSheet: oppGoals === 0, ownGoals, goalsConceded: oppGoals });
       if (rating == null) continue;
 
       const goals = stats.goals?.total || 0;

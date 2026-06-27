@@ -17,7 +17,7 @@
 // cleanSheet/ownGoals are computed by the caller (poll.mjs) from data already
 // in scope there: cleanSheet from the fixture's goals-against, ownGoals from
 // the real fixtureEvents feed (detail matching /own/i) — never invented here.
-export function computeRating(stats, { knockout = false, result = 'draw', cleanSheet = false, ownGoals = 0 } = {}) {
+export function computeRating(stats, { knockout = false, result = 'draw', cleanSheet = false, ownGoals = 0, goalsConceded = 0 } = {}) {
   const minutes = stats.games?.minutes || 0;
   if (minutes <= 0) return null; // did not play — no event to record
 
@@ -54,6 +54,14 @@ export function computeRating(stats, { knockout = false, result = 'draw', cleanS
   // fields (goals.saved; goals-against == 0), not fabricated.
   if (isKeeper) rating += minuteScale * 0.18 * saves;
   if (cleanSheet && (isKeeper || isDefender)) rating += minuteScale * 0.5;
+
+  // Defenders also wear conceded goals: first couple cost a bit, every
+  // goal from the 3rd onward (a backline that's been cut open) costs more.
+  if (isDefender && goalsConceded > 0) {
+    let concededPenalty = 0;
+    for (let i = 1; i <= goalsConceded; i++) concededPenalty += i <= 2 ? 0.25 : 0.4;
+    rating -= minuteScale * concededPenalty;
+  }
 
   rating -= 0.3 * yellow;
   rating -= 1.0 * red;
