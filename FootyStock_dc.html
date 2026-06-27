@@ -1491,8 +1491,13 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       let streakLen=0; for(const rt of ratingsByRecency){ if(rt>=7.4) streakLen++; else break; }
       const ratingVals=events.map(e=>e.rating).filter(x=>x>0);
       const avgR=ratingVals.length?sum(ratingVals)/ratingVals.length:0;
-      // signals (0-100, ~46 = average player)
-      const fotmob=avgR?Math.max(8,Math.min(99,(avgR-5.7)/2.6*100)):0;
+      // signals (0-100, ~46 = average player). Recentered so the anonymous
+      // rating baseline (6.0, see rating.mjs) maps to fotmob=38 — the exact
+      // neutral point perfScore subtracts below — so an average performance
+      // scores 0 on perf per pricing-model.md's mean-centering rule, instead
+      // of reading as a below-average game and dragging price down for doing
+      // nothing wrong.
+      const fotmob=avgR?Math.max(8,Math.min(99,(avgR-3.5)/6.4*100)):0;
       // Form = EWMA of recent per-match ratings (λ=0.75, last ~6 rated
       // matches) minus the player's own season-long baseline (avgR), per
       // pricing-model.md — smooth recency weighting instead of a hard
