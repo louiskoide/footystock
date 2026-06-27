@@ -212,7 +212,7 @@
               <div style="display:inline-flex;align-items:center;gap:6px;margin-top:5px;background: {{ d.wkBg }};color: {{ d.wkColor }};font:700 13px 'Hanken Grotesk';padding:4px 10px;border-radius:999px">{{ d.wkArrow }} {{ d.wkAbs }} · 7d</div>
               <div style="display:flex;gap:6px;margin-top:7px;justify-content:flex-end;flex-wrap:wrap">
                 <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;padding:3px 9px;border-radius:999px;white-space:nowrap">Vol {{ d.volDisplay }}</span>
-                <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;padding:3px 9px;border-radius:999px;white-space:nowrap">52d {{ d.rangeDisplay }}</span>
+                <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;padding:3px 9px;border-radius:999px;white-space:nowrap">90d {{ d.rangeDisplay }}</span>
               </div>
             </div>
           </div>
@@ -1803,24 +1803,25 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     const DB=this.getDB(); const S=this.state;
     const GREEN='#16a85f',RED='#d23b2c',GBG='#e7f6ec',RBG='#fbe9e7';
     const cd=(n)=>n>=0?'#3ddc8a':'#ff5d5d';
-    // stdev of daily returns (annualized) + 52-day high/low, off the same p.hist
-    // every other stat already reads from — keeps "volatility" consistent with
-    // the chart instead of inventing a second source of truth.
+    // stdev of daily returns (annualized) + high/low over all available history,
+    // off the same p.hist every other stat already reads from — keeps "volatility"
+    // consistent with the chart instead of inventing a second source of truth.
+    // p.hist only holds 90 days, so there's no real "52-week" range to compute;
+    // this is the full window we have, not a calendar-accurate 52-week high/low.
     const riskStats=(p)=>{
       const hist=p.hist, hN=hist.length;
       let sum=0,sumSq=0,n=0;
       for(let i=1;i<hN;i++){ const r=(hist[i]-hist[i-1])/hist[i-1]; sum+=r; sumSq+=r*r; n++; }
       const mean=n?sum/n:0; const variance=n?Math.max(sumSq/n-mean*mean,0):0;
       const volPct=Math.sqrt(variance)*Math.sqrt(252)*100;
-      const win=hist.slice(Math.max(0,hN-52));
-      return { volPct, hi52:Math.max(...win), lo52:Math.min(...win) };
+      return { volPct, hiAll:Math.max(...hist), loAll:Math.min(...hist) };
     };
     const decorate=(p)=>{
       const price=this.curPrice(p); const up7=p.change7d>=0;
       const hN=p.hist.length; const prevClose=p.hist[hN-2]??p.hist[hN-1];
       const dayChg=prevClose?((price-prevClose)/prevClose)*100:0;
       const upDay=dayChg>=0;
-      const {volPct,hi52,lo52}=riskStats(p);
+      const {volPct,hiAll,loAll}=riskStats(p);
       return {
         id:p.id,name:p.name,last:p.name.split(' ').slice(-1)[0],team:p.team,abbr:p.abbr,lg:p.abbr,
         league:p.lgName,pos:p.pos,rank:p.rank,price:this.money(price),
@@ -1828,8 +1829,8 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',
         wkColor:up7?GREEN:RED,wkBg:up7?GBG:RBG,
         dayAbs:Math.abs(dayChg).toFixed(1)+'%',dayArrow:upDay?'▲':'▼',dayColor:upDay?GREEN:RED,
-        volDisplay:volPct.toFixed(1)+'%',rangeDisplay:this.money(lo52)+' – '+this.money(hi52),
-        priceNum:price,dayChgNum:dayChg,wkChgNum:p.change7d,volNum:volPct,hi52Num:hi52,lo52Num:lo52,
+        volDisplay:volPct.toFixed(1)+'%',rangeDisplay:this.money(loAll)+' – '+this.money(hiAll),
+        priceNum:price,dayChgNum:dayChg,wkChgNum:p.change7d,volNum:volPct,hiAllNum:hiAll,loAllNum:loAll,
         spark:this.sparkPts(p.hist,120,26),
         onClick:()=>this.openPlayer(p.id),
       };
@@ -1855,7 +1856,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       return true;
     });
     const marketList=list.map(decorate);
-    const sortFieldMap={name:'name',price:'priceNum',day:'dayChgNum',week:'wkChgNum',vol:'volNum',range:'hi52Num',rank:'rank'};
+    const sortFieldMap={name:'name',price:'priceNum',day:'dayChgNum',week:'wkChgNum',vol:'volNum',range:'hiAllNum',rank:'rank'};
     const sortField=sortFieldMap[S.sortKey]||'rank';
     const sortDir=S.sortDir==='desc'?-1:1;
     marketList.sort((a,b)=>{
@@ -1872,7 +1873,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       {label:'1d'+sortArrow('day'),align:'right',cursor:'pointer',onClick:()=>this.setSort('day')},
       {label:'7d'+sortArrow('week'),align:'right',cursor:'pointer',onClick:()=>this.setSort('week')},
       {label:'Vol'+sortArrow('vol'),align:'right',cursor:'pointer',onClick:()=>this.setSort('vol')},
-      {label:'52d Range'+sortArrow('range'),align:'right',cursor:'pointer',onClick:()=>this.setSort('range')},
+      {label:'90d Range'+sortArrow('range'),align:'right',cursor:'pointer',onClick:()=>this.setSort('range')},
     ];
 
     // nav tabs
@@ -2061,7 +2062,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
             // performance formula score — see the bump loop above.
             delta:Math.abs(impact).toFixed(2)+'%', deltaArrow:up?'▲':'▼', deltaColor:up?GREEN:RED }; });
 
-        const {volPct:dVolPct,hi52:dHi52,lo52:dLo52}=riskStats(p);
+        const {volPct:dVolPct,hiAll:dHiAll,loAll:dLoAll}=riskStats(p);
         const held=S.holdings[p.id]; const hasPos=!!held&&held.qty>0;
         const posValue=hasPos?this.curPrice(p)*held.qty:0; const posCost=hasPos?held.avg*held.qty:0; const posPl=posValue-posCost; const posUp=posPl>=0;
         const watched=S.watch.includes(p.id);
