@@ -46,7 +46,13 @@ export function computeRating(stats, { knockout = false, result = 'draw', cleanS
   rating += 0.9 * goals;
   if (goals >= 2) rating += 0.3 * (goals - 1);
   if (goals >= 3) rating += 0.5;
-  rating += 0.35 * assists;
+  // Multi-assist bonus mirrors the goal one: a playmaker setting up two or
+  // three goals is a genuine standout game, not a fraction of a scorer's —
+  // previously a flat 0.35/assist meant a 2-assist game (+0.7) couldn't even
+  // clear the World Cup form streak's 7.4 threshold, breaking the streak
+  // counter on a clearly good performance.
+  rating += 0.5 * assists;
+  if (assists >= 2) rating += 0.2 * (assists - 1);
   rating += minuteScale * (0.05 * tackles + 0.05 * interceptions + 0.03 * duelsWon
     + 0.04 * dribblesSuccess + 0.03 * keyPasses + 0.03 * shotsOn);
 
