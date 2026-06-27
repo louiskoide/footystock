@@ -3,15 +3,29 @@
 //
 // CLAUDE.md: the VAL() table in FootyStock_dc.html is the price anchor
 // (Transfermarkt-style €M market value) and is hand-typed/static. This
-// script corrects it using *real* 2025/26 domestic-league season stats from
-// API-Football for the top-5-league clubs, so a player's anchor reflects
-// this season's actual club output instead of going stale (e.g. a big-money
-// transfer anchored high regardless of how the move is actually going).
+// script rewrites it using *real* last-completed-season (2024/25) domestic-
+// league stats from API-Football for the top-5-league clubs, so a player's
+// anchor reflects actual club output from a full season rather than a
+// reputation guess — last season rather than the in-progress 2025/26 one
+// because a full season is a far more reliable signal than a fraction of
+// one, and it's what naturally builds in "injury status" / "memory" below.
 //
 // Per CLAUDE.md rule 4, this uses only raw counting stats (goals, assists,
 // tackles, etc.) — never API-Football's own aggregate "rating" field, which
 // is the same kind of third-party pundit number rating.mjs deliberately
 // avoids for match-level ratings.
+//
+// Injury handling (e.g. Musiala's torn ACL wiping out most of 2024/25):
+// productionIndex()'s existing sampleWeight (minutes/900) already shrinks a
+// low-minutes season toward 0 contribution, so a player who barely played
+// last season gets ~no delta and keeps their prior anchor value — "memory
+// from the previous season" carried forward rather than crashing their
+// price for an injury that isn't a form/quality signal.
+//
+// Age handling: a small, separate multiplicative nudge (ageMultiplier below)
+// — deliberately modest so it can't let a promising kid outprice an
+// in-prime superstar on reputation alone; it only tilts otherwise-similar
+// performances toward upside-for-young / decline-risk-for-aging.
 //
 // Run: API_FOOTBALL_KEY=xxx node scripts/rebalance-anchors.mjs > report.json
 // Network access required — run from CI (see .github/workflows/rebalance-anchors.yml),
@@ -23,8 +37,19 @@ const KEY = process.env.API_FOOTBALL_KEY;
 if (!KEY) { console.error('API_FOOTBALL_KEY not set'); process.exit(1); }
 
 const BASE = 'https://v3.football.api-sports.io';
-const SEASON = 2025; // 2025/26 season (API-Football keys a season by its start year)
+const SEASON = 2024; // 2024/25 season — last fully-completed season (API-Football keys a season by its start year)
 const HTML_PATH = new URL('../FootyStock_dc.html', import.meta.url);
+
+// Modest, capped age nudge — not subject to CAP below since it's a separate,
+// deliberately small factor (max ±15%), not a performance signal.
+function ageMultiplier(age) {
+  if (age == null) return 1;
+  if (age <= 21) return 1.10;
+  if (age <= 24) return 1.05;
+  if (age <= 29) return 1.00;
+  if (age <= 32) return 0.92;
+  return 0.85;
+}
 
 const LEAGUES = { EPL: 39, LAL: 140, SEA: 135, BUN: 78, LI1: 61 };
 
@@ -148,7 +173,7 @@ async function main() {
       const idx = productionIndex(hit.stat, bucket);
       if (!idx) { results.push({ ...ourPlayer, found: false, reason: 'no minutes' }); continue; }
       results.push({ ...ourPlayer, found: true, bucket, idx: idx.raw, minutes: idx.minutes,
-        goals: hit.stat.goals?.total || 0, assists: hit.stat.goals?.assists || 0 });
+        goals: hit.stat.goals?.total || 0, assists: hit.stat.goals?.assists || 0, age: ourPlayer.age });
     }
   }
 
@@ -188,10 +213,11 @@ async function main() {
     const oldVal = valMap[r.name];
     if (oldVal == null) continue;
     const delta = Math.max(-CAP, Math.min(CAP, K * (r.idx - bucketAvg[r.bucket])));
-    const newVal = Math.max(4, Math.round(oldVal * Math.exp(delta) / 5) * 5);
-    out.push({ name: r.name, team: r.team, bucket: r.bucket, minutes: r.minutes,
+    const ageMult = ageMultiplier(r.age);
+    const newVal = Math.max(4, Math.round(oldVal * Math.exp(delta) * ageMult / 5) * 5);
+    out.push({ name: r.name, team: r.team, bucket: r.bucket, minutes: r.minutes, age: r.age,
       goals: r.goals, assists: r.assists, idx: +r.idx.toFixed(3), bucketAvg: +bucketAvg[r.bucket].toFixed(3),
-      oldVal, newVal, pctChange: +((newVal / oldVal - 1) * 100).toFixed(1) });
+      ageMult, oldVal, newVal, pctChange: +((newVal / oldVal - 1) * 100).toFixed(1) });
   }
   out.sort((a, b) => b.pctChange - a.pctChange);
   console.log(JSON.stringify({ generatedAt: new Date().toISOString(), season: SEASON, players: out,

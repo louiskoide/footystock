@@ -35,12 +35,17 @@ export function loadCrosswalk(htmlPath) {
 
   const rosterBlock = html.match(/ROSTER\(\)\{ return `([\s\S]*?)`; \}/);
   if (!rosterBlock) throw new Error('Could not find ROSTER() block in FootyStock_dc.html');
+  // Format: Name|Team|Position|Age|Tier
   const rosterByName = {};
+  const ageByName = {};
+  const positionByName = {};
   for (const line of rosterBlock[1].trim().split('\n')) {
     const parts = line.split('|');
     if (parts.length < 5) continue;
     const name = parts[0].replace(/ dummy$/, '');
     rosterByName[name] = parts[1]; // club team
+    positionByName[name] = parts[2];
+    ageByName[name] = +parts[3] || null;
   }
 
   const natBlock = html.match(/const nat=\{\};([\s\S]*?)this\._data=/);
@@ -62,7 +67,8 @@ export function loadCrosswalk(htmlPath) {
   const players = [];
   for (const name of Object.keys(rosterByName)) {
     const team = rosterByName[name];
-    players.push({ name, team, nation: nationByName[name] || null, id: slug(name + '-' + team) });
+    players.push({ name, team, nation: nationByName[name] || null, id: slug(name + '-' + team),
+      position: positionByName[name] || null, age: ageByName[name] });
   }
   return players;
 }
