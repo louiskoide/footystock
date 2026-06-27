@@ -177,7 +177,11 @@ async function main() {
   // season (idx ~0.5 above bucket average) yields roughly +50% anchor, and a
   // clearly poor one (-0.5) yields roughly -35% — large enough to matter,
   // capped below so one hot/cold patch can't 5x or zero out a market value.
-  const CAP = 0.6; // max |log-adjustment|, i.e. roughly 0.55x-1.8x bounds
+  const CAP = Math.log(2.5); // max |log-adjustment|, i.e. 0.4x-2.5x bounds —
+  // widened from the original 0.6 (0.55x-1.8x) because a strictly capped pass
+  // left genuinely elite-but-previously-underrated seasons (e.g. a 36-goal
+  // striker anchored low pre-season) unable to fully close the gap to
+  // already-high-anchored stars in one pass.
 
   const out = [];
   for (const r of found) {
