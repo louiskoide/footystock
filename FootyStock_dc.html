@@ -1484,14 +1484,27 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         change30d=sum(events.map(e=>e.delta))+newsDelta; }
       else { change7d=(r()-0.5)*1.4; change30d=(r()-0.5)*3; }
       change7d=parseFloat(change7d.toFixed(1)); change30d=parseFloat(change30d.toFixed(1));
-      // WC form streak (consecutive most-recent matches rating >= 7.4)
+      // WC form streak (consecutive most-recent matches rating >= 7.4) — kept
+      // purely as a display fact ("🔥 3-match streak"), no longer the main
+      // driver of formSig (see below).
       const ratingsByRecency=events.slice().sort((a,b)=>a.offset-b.offset).map(e=>e.rating).filter(x=>x>0);
       let streakLen=0; for(const rt of ratingsByRecency){ if(rt>=7.4) streakLen++; else break; }
       const ratingVals=events.map(e=>e.rating).filter(x=>x>0);
       const avgR=ratingVals.length?sum(ratingVals)/ratingVals.length:0;
       // signals (0-100, ~46 = average player)
       const fotmob=avgR?Math.max(8,Math.min(99,(avgR-5.7)/2.6*100)):0;
-      const formSig=atWC?Math.max(6,Math.min(99,46+change7d*2.4+streakLen*9)):8;
+      // Form = EWMA of recent per-match ratings (λ=0.75, last ~6 rated
+      // matches) minus the player's own season-long baseline (avgR), per
+      // pricing-model.md — smooth recency weighting instead of a hard
+      // 8-day cutoff, so one average game in the middle of a hot run dents
+      // the signal proportionally instead of resetting a streak counter to
+      // zero. The streak is now what the spec actually calls for: a small
+      // kicker on top, not the main term.
+      let ewmaR=0, ewmaW=0, wgt=1;
+      for(const rt of ratingsByRecency.slice(0,6)){ ewmaR+=rt*wgt; ewmaW+=wgt; wgt*=0.75; }
+      ewmaR = ewmaW ? ewmaR/ewmaW : 0;
+      const formDelta = (ewmaW && avgR) ? (ewmaR-avgR) : 0;
+      const formSig=atWC?Math.max(6,Math.min(99,46+formDelta*22+streakLen*2)):8;
       // Real hype (Google Trends search-interest delta, see scripts/live-worker/hype.mjs)
       // — independent of performance by construction, since it never reads
       // change7d/change30d/events. 0 = no live signal yet (cold-start neutral,
