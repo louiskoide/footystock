@@ -11,6 +11,7 @@ import { makeClient } from './api-football.mjs';
 import { pollOnce, makeInitialState, publicSnapshot } from './poll.mjs';
 import { refreshHype } from './hype.mjs';
 import { tickDemand, recordTrade } from './demand.mjs';
+import { submitScore, getLeaderboard } from './leaderboard.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -112,6 +113,30 @@ const server = createServer((req, res) => {
       }
     });
     return;
+  }
+
+  if (url.pathname === '/leaderboard') {
+    if (req.method === 'GET') {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(getLeaderboard(state)));
+      return;
+    }
+    if (req.method === 'POST') {
+      let body = '';
+      req.on('data', chunk => { body += chunk; });
+      req.on('end', () => {
+        try {
+          const { token, name, netWorth } = JSON.parse(body);
+          if (!token || !name) { res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request'); return; }
+          submitScore(state, token, name, netWorth);
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ ok: true }));
+        } catch (e) {
+          res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request');
+        }
+      });
+      return;
+    }
   }
 
   res.writeHead(404, { 'Content-Type': 'text/plain' });
