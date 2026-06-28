@@ -682,11 +682,14 @@ class Component extends DCLogic {
       this.fillPendingOrders(DB);
       this.setState(s=>({tick:s.tick+1}));
     }, 9000);
-    // Leaderboard: fetch once on load, refresh every 60s when the view is open,
-    // and submit score on init (after a short delay so netWorth is settled).
+    // Leaderboard: read/write Supabase directly from the browser — no worker
+    // hop needed since the anon key is public and RLS handles access control.
+    const SB_URL='https://pwlszzrvwhflijbjwnnf.supabase.co/rest/v1/leaderboard';
+    const SB_HDR={'apikey':'sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_','Authorization':'Bearer sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_'};
+    this._sbUrl=SB_URL; this._sbHdr=SB_HDR;
     const pollLeaderboard = ()=>{
-      fetch(this._liveWorkerBase+'/leaderboard').then(r=>r.ok?r.json():null).then(data=>{
-        if(data){ this._liveLeaderboard=data; this.setState(s=>({tick:s.tick+1})); }
+      fetch(SB_URL+'?order=net_worth.desc&limit=100',{headers:SB_HDR}).then(r=>r.ok?r.json():null).then(data=>{
+        if(data){ this._liveLeaderboard=data.map(r=>({name:r.name,netWorth:r.net_worth})); this.setState(s=>({tick:s.tick+1})); }
       }).catch(()=>{});
     };
     pollLeaderboard();
@@ -2015,9 +2018,10 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
 
   // ---------- leaderboard ----------
   submitScore(){
-    const name=this.loadUsername(); if(!name||!this._liveWorkerBase) return;
+    const name=this.loadUsername(); if(!name||!this._sbUrl) return;
     const nw=Math.round(this.netWorth());
-    fetch(this._liveWorkerBase+'/leaderboard',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({token:this.loadToken(),name,netWorth:nw})}).catch(()=>{});
+    fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({token:this.loadToken(),name,net_worth:nw,updated_at:new Date().toISOString()})}).catch(()=>{});
   }
   leaderboardData(){
     const myName=this.loadUsername()||'You';
