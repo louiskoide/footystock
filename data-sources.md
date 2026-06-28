@@ -21,8 +21,8 @@ labor:
 | **football-data.org**, free | Skeleton: fixtures, schedules, final scores, lineups | Free forever, ~10 req/min, professional-grade. Thin on per-player stats on free (goals via scorers endpoint; assists/minutes/shots behind a paid add-on). Use as the reliable backbone + fallback. |
 | **StatsBomb Open Data** (GitHub) | Offline model building/validation; xG depth | Free, rich event data incl. xG, but **static & historical, not live**. Attribution to StatsBomb required. Use to tune the rating before paying for anything. |
 | **TheSportsDB**, free | Media layer: club badges, player photos | Crowd-sourced; image accuracy doesn't matter. Commercial use needs the ~$9/mo tier — fine while non-commercial. Do NOT trust it for performance stats. |
-| **Google Trends** (`trendspyg` / `pytrends-modern`) | Hype: search interest | Free, ~real-time. Values are *relative* — include a stable anchor keyword in every pull to compare across players. Throttle / cache; it 429s under load. |
-| **GDELT** | Hype: news / transfer-rumor volume + tone | Free. Weight by recency so rumors decay. |
+| ~~**Google Trends**~~ | ~~Hype: search interest~~ | **Dropped.** The unofficial scraped endpoint IP-blocked the always-on Fly worker (HTML challenge instead of JSON), so hype sat at the cold-start 0 for everyone. Replaced by GDELT below. |
+| **GDELT** (DOC 2.0 ToneChart) | **Hype (live):** news volume + automated tone | Free, no key. Per player: article volume (buzz) + count-weighted tone (praise vs criticism), combined and mean-centered across the pool; decay is the sliding window. The implemented hype signal — see `scripts/live-worker/hype.mjs`. Tone is GDELT's lexicon score, not a licensed rating. |
 
 ### Deliberately NOT used
 
@@ -95,8 +95,7 @@ Never average conflicting feeds. Assign each field an owner:
 | player events (goals/assists/minutes/cards) | API-Football |
 | xG / advanced metrics | StatsBomb (where covered) |
 | images (badges/photos) | TheSportsDB |
-| search-interest hype | Google Trends |
-| news/rumor hype | GDELT |
+| news-tone hype | GDELT (DOC 2.0 ToneChart) |
 
 When two sources disagree on, say, assists, the **designated owner wins**. No
 ambiguity, no blending.

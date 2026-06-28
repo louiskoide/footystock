@@ -12,9 +12,10 @@ Entertainment only — **no real money is involved**.
   result as `prices.json`-shaped JSON over HTTP. We're on a **paid
   API-Football tier (7,500 req/day)**, which is what makes this live-polling
   model affordable; see `data-sources.md` for the budget math.
-- **Hype** (Google Trends search interest) refreshes separately, every ~30 min,
-  with its own exponential backoff if Trends starts rate-limiting/blocking the
-  worker's IP — see `scripts/live-worker/hype.mjs`.
+- **Hype** (GDELT news volume + tone) refreshes separately, every ~2h, with its
+  own exponential backoff if GDELT starts throttling the worker — see
+  `scripts/live-worker/hype.mjs`. (Replaced Google Trends, whose scraped
+  endpoint IP-blocked the worker so hype was stuck at 0.)
 - The static frontend polls the worker's `/prices.json` every 30s and merges
   it live. If the worker is unreachable, it degrades silently to the
   hand-typed `STARS`/`NEWS` fallback already baked into `DATA()`.

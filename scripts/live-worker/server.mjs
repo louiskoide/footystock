@@ -20,7 +20,7 @@ const SEASON = process.env.WC_SEASON || '2026';
 const PORT = process.env.PORT || 8080;
 const LIVE_POLL_MS = 30_000;   // while a tracked match is in play
 const IDLE_POLL_MS = 300_000;  // nothing live — just watching for kickoffs/results
-const HYPE_POLL_MS = 30 * 60_000; // pricing-model.md: hype refreshes every ~15-60 min, independent of match polling
+const HYPE_POLL_MS = 2 * 60 * 60_000; // every 2h: news-tone hype (GDELT) moves slower than search trends, and this keeps us well under GDELT's soft request limits (~470 players/cycle)
 
 if (!API_KEY) {
   console.error('API_FOOTBALL_KEY not set — refusing to start.');
@@ -46,11 +46,11 @@ async function tick() {
 }
 tick();
 
-// Google Trends (unofficial, scraped endpoint) periodically blocks an IP
-// outright once hit too hard — every request comes back as an HTML
-// challenge page instead of JSON. Hammering it every HYPE_POLL_MS while
-// blocked just prolongs the block, so back off exponentially on a cycle
-// that's almost entirely failures, and reset once it recovers.
+// GDELT can soft-throttle bursts (returns empty/HTML instead of JSON) if hit
+// too hard. Hammering it every HYPE_POLL_MS while throttled just prolongs it,
+// so back off exponentially on a cycle that's almost entirely failures, and
+// reset once it recovers. (This is the same guard the old Google Trends path
+// needed when its scraped endpoint IP-blocked us — kept, retargeted at GDELT.)
 const HYPE_BACKOFF_MAX_MS = 4 * 60 * 60_000; // 4h cap
 let hypeBackoffMs = HYPE_POLL_MS;
 async function hypeTick() {
