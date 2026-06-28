@@ -285,7 +285,7 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
 }
 
 export function makeInitialState(season) {
-  return { generatedAt: null, season, teams: {}, players: {}, _finalPolls: new Map() };
+  return { generatedAt: null, season, teams: {}, players: {}, demand: {}, _finalPolls: new Map() };
 }
 
 // Public snapshot strips the internal bookkeeping (_fid, _processedFinal)
@@ -300,5 +300,5 @@ export function publicSnapshot(state) {
   for (const [id, p] of Object.entries(state.players)) {
     players[id] = { nation: (state._nationOf && state._nationOf[id]) || null, events: p.events.map(({ _fid, ...rest }) => rest) };
   }
-  return { generatedAt: state.generatedAt, season: state.season, teams, players, hype: state.hype || {} };
+  return { generatedAt: state.generatedAt, season: state.season, teams, players, hype: state.hype || {}, demand: state.demand || {} };
 }

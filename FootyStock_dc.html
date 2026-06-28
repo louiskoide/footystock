@@ -632,7 +632,8 @@ class Component extends DCLogic {
     // price, not two racing each other.
     const cachedLive = this.loadCachedLive();
     if(cachedLive){ this._wcLive = cachedLive; }
-    const LIVE_WORKER_URL = 'https://footystock.fly.dev/prices.json';
+    this._liveWorkerBase = 'https://footystock.fly.dev';
+    const LIVE_WORKER_URL = this._liveWorkerBase + '/prices.json';
     // Only adopt a fetched snapshot if it isn't OLDER than the one we already
     // have. If the worker is (transiently) still answering from more than one
     // machine with divergent in-memory state, this stops the price from
@@ -1666,7 +1667,12 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       const hypeScore = clamp(((moodSig-46)+(transferSig-46))/2/30, -1, 1);
       const fairValueBase = anchor * Math.exp(wPerf*perfScore + wForm*formScore);
       const fairValue = fairValueBase * Math.exp(wHype*hypeScore);
-      const price = fairValue;
+      // Demand pressure from virtual agents + real user trades (server-side
+      // state.demand[id], included in prices.json). ±1 → roughly ±15% from
+      // fair value, so genuine hype bubbles and sell-offs are visible but
+      // fundamentals still anchor the price.
+      const demandScore = (live && live.demand) ? (live.demand[id] || 0) : 0;
+      const price = fairValue * Math.exp(0.15 * demandScore);
 
       // history 90d ending at current price. A player with a real signal
       // (WC performance or curated news) actually drifted to get here, so
@@ -1957,6 +1963,10 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
         txns.unshift({side:'SELL',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
         cash+=total;
       }
+      // Tell the worker about this trade so real user demand moves the shared
+      // market price (same signal as virtual agents). Fire-and-forget: if the
+      // worker is down, the trade still executes locally.
+      if(this._liveWorkerBase){ fetch(this._liveWorkerBase+'/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:order.id,side:order.side})}).catch(()=>{}); }
     }
     this.setState({holdings,txns,cash,pendingOrders:[]},()=>this.persist());
   }

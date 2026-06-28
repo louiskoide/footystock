@@ -10,6 +10,7 @@ import { loadCrosswalk } from '../lib/crosswalk.mjs';
 import { makeClient } from './api-football.mjs';
 import { pollOnce, makeInitialState, publicSnapshot } from './poll.mjs';
 import { refreshHype } from './hype.mjs';
+import { tickDemand, recordTrade } from './demand.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -34,9 +35,14 @@ console.log(`Loaded crosswalk: ${crosswalk.length} players across ${new Set(cros
 const state = makeInitialState(SEASON);
 
 let nextDelay = IDLE_POLL_MS;
+let lastTickAt = Date.now();
 async function tick() {
+  const now = Date.now();
+  const elapsed = now - lastTickAt;
+  lastTickAt = now;
   try {
     const { liveCount } = await pollOnce(client, crosswalk, state);
+    tickDemand(state, crosswalk, elapsed);
     nextDelay = liveCount > 0 ? LIVE_POLL_MS : IDLE_POLL_MS;
   } catch (e) {
     console.error('poll failed:', e.message);
@@ -86,6 +92,25 @@ const server = createServer((req, res) => {
   if (url.pathname === '/prices.json' || url.pathname === '/') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(publicSnapshot(state)));
+    return;
+  }
+
+  if (url.pathname === '/trade' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { id, side } = JSON.parse(body);
+        if (typeof id !== 'string' || !['buy', 'sell'].includes(side)) {
+          res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request'); return;
+        }
+        recordTrade(state, id, side);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request');
+      }
+    });
     return;
   }
 
