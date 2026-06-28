@@ -1649,10 +1649,18 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       // the anchor; real output and real news move it, not raw market value.
       const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
       const wPerf=0.5, wForm=0.3, wHype=0.2;
-      // perf/form only apply when we actually have real match data (atWC) —
-      // "no data" must stay neutral (0), never read as "bad".
-      const perfScore = atWC ? clamp((fotmob-46)/30, -1, 1) : 0;
-      const formScore = atWC ? clamp((formSig-46)/30, -1, 1) : 0;
+      // perf/form only apply when we actually have a RATED appearance —
+      // "no data" must stay neutral (0), never read as "bad". Note `atWC` is
+      // also true for squad-confirmed players with no minutes yet (the inSquad
+      // branch above), for whom avgR/fotmob are 0. Gating on bare `atWC` made
+      // those players compute perfScore = clamp((0-46)/30) = -1 ("terrible"),
+      // pinning their price at ~0.61*anchor the whole time they sat out — then
+      // the instant they finally played, perf snapped from -1 to its true value
+      // and the 1D change exploded. Gate on avgR>0 (an actual rated match) so
+      // no-minutes-yet is a real neutral and a debut is a normal-sized move.
+      const hasMatchData = atWC && avgR>0;
+      const perfScore = hasMatchData ? clamp((fotmob-46)/30, -1, 1) : 0;
+      const formScore = hasMatchData ? clamp((formSig-46)/30, -1, 1) : 0;
       // hype basket = mood + transfer/news signal, capped so buzz alone can
       // never dwarf fundamentals.
       const hypeScore = clamp(((moodSig-46)+(transferSig-46))/2/30, -1, 1);
