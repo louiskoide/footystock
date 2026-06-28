@@ -315,8 +315,11 @@ async function main() {
       oldVal, newVal, pctChange: +((newVal / oldVal - 1) * 100).toFixed(1), raw: r.comp.raw });
   }
   out.sort((a, b) => b.pctChange - a.pctChange);
+  // Compact (single-line) JSON: the per-player raw-stat dump makes a
+  // pretty-printed report overflow the log-retrieval size cap; compact keeps
+  // the whole report fetchable from the run logs in one piece.
   console.log(JSON.stringify({ generatedAt: new Date().toISOString(), season: SEASON, players: out,
-    notFound: results.filter(r => !r.found).map(r => r.name) }, null, 2));
+    notFound: results.filter(r => !r.found).map(r => r.name) }));
 }
 
 main().catch(e => { console.error(e); process.exit(1); });
