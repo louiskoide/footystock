@@ -487,7 +487,7 @@
         </div>
         <div style="font:700 28px 'Space Grotesk';letter-spacing:-.015em;color:#16201a;margin-bottom:10px">{{ selectedArticle.headline }}</div>
         <div style="font:600 15px 'Hanken Grotesk';color:#586159;line-height:1.55;margin-bottom:18px">{{ selectedArticle.dek }}</div>
-        <div style="font:500 14.5px 'Hanken Grotesk';color:#2a332d;line-height:1.7;white-space:pre-line">{{ selectedArticle.body }}</div>
+        <div style="font:500 14.5px 'Hanken Grotesk';color:#2a332d;line-height:1.7;white-space:pre-line"><sc-for list="{{ selectedArticle.bodySegs }}" as="bs" hint-placeholder-count="6"><sc-if value="{{ bs.isText }}"><span>{{ bs.v }}</span></sc-if><sc-if value="{{ bs.isLink }}"><button onClick="{{ bs.onClick }}" style="font:600 14.5px 'Hanken Grotesk';background:none;border:none;color:#16a85f;cursor:pointer;padding:0;font-family:inherit;text-decoration:underline;text-underline-offset:2px">{{ bs.v }}</button></sc-if></sc-for></div>
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:22px;padding-top:18px;border-top:1px solid #f1f3ef">
           <sc-for list="{{ selectedArticle.refs }}" as="r" hint-placeholder-count="3">
             <button onClick="{{ r.onClick }}" style="font:600 12px 'Hanken Grotesk';background:#eef1ec;border:none;color:#16a85f;padding:6px 11px;border-radius:999px;cursor:pointer">{{ r.name }}</button>
@@ -1421,7 +1421,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       'erling-haaland-man-city':NW('MATCH RECAP','Haaland’s brace against Senegal finally delivers his first World Cup goals, ending years of tournament frustration with a bang',5.0,'06-17'),
       'matheus-cunha-man-utd':NW('MATCH RECAP','Cunha’s first-half brace against Haiti has reporters noting his third goal of the tournament and his growing influence for Brazil',4.0,'06-20'),
       'jamal-musiala-bayern':NW('MATCH RECAP','Germany’s 7-1 demolition of Curaçao was one of the tournament’s most one-sided scorelines, with Musiala among the standout performers',4.0,'06-16'),
-      'mohammed-kudus-tottenham':NW('MATCH RECAP','Ghana’s goalless draw with England was enough to send them through, with Kudus praised for marshalling the midfield in a backs-to-the-wall display',3.0,'06-24')
+      ‘mohammed-kudus-tottenham’:NW(‘MATCH RECAP’,’Kudus was an unused substitute as Ghana ground out a 0-0 draw with England to advance, with Lawrence Ati-Zigi the standout performer pulling off a series of sharp saves’,2.0,’06-24’)
     };
     const MOOD={
       'kylian-mbappe-real-madrid':'\u201cMr World Cup\u201d trending after the Iraq brace',
@@ -1441,30 +1441,34 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     // back here (CLAUDE.md: our own writeup, never a scraped third-party article).
     const AT=(d,tag,headline,dek,body,refs)=>({d,tag,headline,dek,body,refs});
     const ARTICLES=[
-      AT('06-15','MATCH DAY','Germany run riot in a 7-1 demolition of Curaçao',
-        'One of the most one-sided scorelines of the group stage.',
-        'Germany put seven past Curaçao without reply at the other end bar one consolation goal. Jamal Musiala and Florian Wirtz combined for two goal involvements apiece, while Kai Havertz was also on the scoresheet as Germany made an emphatic start to Group E.',
-        ['jamal-musiala-bayern','florian-wirtz-liverpool','kai-havertz-arsenal']),
-      AT('06-16','MATCH DAY','Brace day in Group I as France and Norway both win',
-        'Mbappé and Haaland both scored twice on a rough day for Senegal.',
-        'France brushed Senegal aside 3-1 with Kylian Mbappé scoring twice, all four of his shots on target. The same day, Erling Haaland finally announced himself at a World Cup with a brace as Norway won 3-2 — his first goals at the tournament after years of near-misses.',
-        ['kylian-mbappe-real-madrid','erling-haaland-man-city']),
-      AT('06-17','MATCH DAY','Ronaldo blanked as DR Congo hold Portugal; Bellingham and Kane fire England past Croatia',
-        'A shock draw for the five-time Ballon d’Or winner contrasted with goals at the other end of Group L.',
-        'Cristiano Ronaldo was a peripheral figure as Portugal could only draw 1-1 with DR Congo, prompting pointed questions from pundits about his influence at this stage of his career. Bruno Fernandes also went close but couldn’t break the deadlock. Elsewhere, Jude Bellingham and a Harry Kane brace — including a penalty — fired England to a 4-2 win over Croatia.',
-        ['cristiano-ronaldo-al-nassr','bruno-fernandes-man-utd','jude-bellingham-real-madrid','harry-kane-bayern']),
-      AT('06-19','MATCH DAY','Cunha brace sends Brazil through as Scotland’s World Cup ends in Group C',
-        'Brazil’s in-form forward continues to make a compelling case for a starting role.',
-        'Matheus Cunha scored twice in the first half to seal a 3-0 win over Haiti, taking his tournament tally to two goals and underlining his growing influence for Brazil ahead of the knockouts, on a day Scotland’s own World Cup came to an end in Group C.',
-        ['matheus-cunha-man-utd']),
-      AT('06-22','MATCH DAY','Messi and Mbappé both strike again as the group stage winds down',
-        'Two of the tournament’s outstanding individual performers added to their tallies.',
-        'Lionel Messi scored twice as Argentina beat Austria 2-0 to top Group J, taking his tournament tally to five goals in two games. Kylian Mbappé matched him goal-for-goal, netting a brace against Iraq on his 100th France cap as Les Bleus eased into the round of 32.',
-        ['lionel-messi-inter-miami','kylian-mbappe-real-madrid']),
-      AT('06-23','MATCH DAY','Portugal rout Uzbekistan as Ghana scrape through on a flat night with England',
-        'Ronaldo and Bruno Fernandes combine in a statement win, while Ghana’s defense earns a tournament-defining point.',
-        'Cristiano Ronaldo answered his DR Congo critics with a goal from a Bruno Fernandes assist as Portugal thrashed Uzbekistan 5-0. The same night, Ghana’s goalless draw with England was enough to send them through, with Mohammed Kudus praised for marshalling the midfield in a backs-to-the-wall display.',
-        ['cristiano-ronaldo-al-nassr','bruno-fernandes-man-utd','mohammed-kudus-tottenham'])
+      AT(‘06-15’,’MATCH DAY’,’Germany run riot in a 7-1 demolition of Curaçao’,
+        ‘One of the most one-sided scorelines of the group stage.’,
+        ‘Germany dismantled Curaçao 7-1 in one of the most ruthless performances the World Cup group stage has ever seen. <<jamal-musiala-bayern|Jamal Musiala>> was electric throughout, registering two goal involvements with his instinctive movement constantly carving open space. <<florian-wirtz-liverpool|Florian Wirtz>> was equally destructive, combining with Musiala to produce a series of combinations that Curaçao simply had no answer to, and <<kai-havertz-arsenal|Kai Havertz>> capped a dominant evening by getting on the scoresheet himself.\n\nThe scoreline leaves Germany as early favourites in Group E, and their stock — collectively and individually — is rising sharply. The question now is whether they can maintain this intensity against more competitive opposition.’,
+        [‘jamal-musiala-bayern’,’florian-wirtz-liverpool’,’kai-havertz-arsenal’]),
+      AT(‘06-16’,’MATCH DAY’,’Brace day in Group I as Mbappé and Haaland both strike twice’,
+        ‘A landmark day for two of the tournament’s biggest names, on a rough afternoon for Senegal.’,
+        ‘Two of world football’s elite strikers reminded everyone of their quality on the same afternoon. <<kylian-mbappe-real-madrid|Kylian Mbappé>> was relentless against Senegal, converting twice with all four of his shots finding the target as France cruised to a 3-1 win. His movement in behind the Senegalese defence was unplayable at times, and a fifth goal of the tournament already looks well within reach.\n\nSimultaneously, <<erling-haaland-man-city|Erling Haaland>> finally silenced years of World Cup frustration with a brace as Norway edged a 3-2 thriller — his first goals at the tournament after multiple near-miss tournaments. The reaction from the Norwegian squad told its own story; this felt like a weight lifted.’,
+        [‘kylian-mbappe-real-madrid’,’erling-haaland-man-city’]),
+      AT(‘06-17’,’MATCH DAY’,’Ronaldo blanked as DR Congo hold Portugal; Bellingham fires England past Croatia’,
+        ‘A shock draw for the five-time Ballon d’Or winner contrasted with goals at the other end of Group L.’,
+        ‘<<cristiano-ronaldo-al-nassr|Cristiano Ronaldo>> was a peripheral figure as Portugal could only draw 1-1 with DR Congo, prompting pointed questions from pundits about his influence at this stage of his career. <<bruno-fernandes-man-utd|Bruno Fernandes>> also failed to impose himself and Portugal left the pitch to a chorus of jeers from their own supporters. For Ronaldo, the narrative around his relevance at 41 is not going away.\n\nElsewhere in the same group, <<jude-bellingham-real-madrid|Jude Bellingham>> put in a commanding display and <<harry-kane-bayern|Harry Kane>> netted twice — including a penalty — as England beat Croatia 4-2. Kane looks sharp and confident going into the business end of the group stage.’,
+        [‘cristiano-ronaldo-al-nassr’,’bruno-fernandes-man-utd’,’jude-bellingham-real-madrid’,’harry-kane-bayern’]),
+      AT(‘06-19’,’MATCH DAY’,’Cunha hat-trick sends Brazil through as Scotland’s World Cup ends’,
+        ‘Brazil’s in-form forward produces a stunning individual display to end Scotland’s tournament hopes.’,
+        ‘<<matheus-cunha-man-utd|Matheus Cunha>> was unstoppable as Brazil crushed Scotland 3-0, scoring all three goals in what was arguably the individual performance of the group stage so far. His first came from a driven run from midfield, the second from a precise header, and the third — a sweeping finish in the final minutes — sent the Brazilian end of the stadium into raptures.\n\n<<scott-mctominay-napoli|Scott McTominay>> and <<andy-robertson-liverpool|Andy Robertson>> both looked crestfallen at the final whistle as Scotland were eliminated. The Scots gave everything but were simply outclassed, and Brazil march on as serious contenders with their stock rising by the hour.’,
+        [‘matheus-cunha-man-utd’,’scott-mctominay-napoli’,’andy-robertson-liverpool’]),
+      AT(‘06-22’,’MATCH DAY’,’Messi and Mbappé both strike again as the group stage winds down’,
+        ‘Two of the tournament’s outstanding individual performers added to their tallies.’,
+        ‘<<lionel-messi-inter-miami|Lionel Messi>> turned back the clock with a stunning brace as Argentina beat Austria 2-0 to top Group J, taking his tournament tally to five goals across two matches. At 38, he continues to defy expectations and the consensus among analysts is that he will be the decisive player if Argentina reach the knockout stages.\n\n<<kylian-mbappe-real-madrid|Kylian Mbappé>> matched him goal-for-goal on the same evening, netting a brace against Iraq on his 100th France cap as Les Bleus eased into the round of 32. The two players are running away with the Golden Boot conversation, and the markets have responded accordingly.’,
+        [‘lionel-messi-inter-miami’,’kylian-mbappe-real-madrid’]),
+      AT(‘06-23’,’MATCH DAY’,’Portugal rout Uzbekistan as Ghana grind out a vital point against England’,
+        ‘Ronaldo and Fernandes answer critics in style, while Ghana’s defence steals the headlines.’,
+        ‘<<cristiano-ronaldo-al-nassr|Cristiano Ronaldo>> answered his DR Congo critics emphatically, scoring from a <<bruno-fernandes-man-utd|Bruno Fernandes>> assist as Portugal thrashed Uzbekistan 5-0. It was a statement performance that silenced — at least temporarily — the noise around his place in the team, and Fernandes was outstanding throughout, creating three clear chances in the first half alone.\n\nIn the same evening’s other fixture, Ghana’s 0-0 draw with England was just enough to send them through. <<lawrence-ati-zigi-st-gallen|Lawrence Ati-Zigi>> was the standout performer in goal, pulling off a series of sharp saves to deny England on multiple occasions. <<alexander-djiku-eintracht-frankfurt|Alexander Djiku>> was immense at the back alongside him. Notably, <<mohammed-kudus-tottenham|Mohammed Kudus>> was an unused substitute throughout — his influence will be needed in the knockouts.’,
+        [‘cristiano-ronaldo-al-nassr’,’bruno-fernandes-man-utd’,’lawrence-ati-zigi-st-gallen’,’alexander-djiku-eintracht-frankfurt’,’mohammed-kudus-tottenham’]),
+      AT(‘06-27’,’MATCH DAY’,’Portugal face heavy criticism after low-intensity draw with Colombia’,
+        ‘A second-place finish in Group L raises serious questions heading into the knockouts.’,
+        ‘Many fans are criticizing Portugal’s midfield after a deeply underwhelming 0-0 draw with Colombia sealed a second-place group finish. <<bruno-fernandes-man-utd|Bruno Fernandes>> and <<vitinha-paris-sg|Vitinha>> both failed to run the game, and were outclassed by 34-year-old veteran James Rodríguez, who bossed proceedings for Colombia with a display that had no right to be so commanding at his age.\n\n<<cristiano-ronaldo-al-nassr|Cristiano Ronaldo>> again failed to make an impact, cutting a frustrated figure throughout. Portugal must now face Croatia in the round of 32 rather than the weaker side that finishing top would have offered. Colombia dominated the game with 24 shots to Portugal’s 13, and it was only a string of saves from <<diogo-costa-porto|Diogo Costa>> — six in total — that kept the scoreline level.\n\nVery late in added time, Colombia thought they had found a winner through <<davinson-sanchez-galatasaray|Davinson Sánchez>>, heading home from a corner — but VAR correctly ruled it out for offside, denying what would have been a dramatic conclusion to a flat evening.’,
+        [‘bruno-fernandes-man-utd’,’vitinha-paris-sg’,’cristiano-ronaldo-al-nassr’,’diogo-costa-porto’,’davinson-sanchez-galatasaray’])
     ];
     const nat={};
     const add=(country,names)=>names.split(',').forEach(n=>nat[n.trim()]=country);
@@ -2389,8 +2393,13 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     const offOf0=(d)=>Math.round((today0-new Date('2026-'+d+'T18:00:00Z'))/86400000);
     const articleVM=(a)=>{
       const refsResolved=a.refs.map(rid=>this.byId(rid)).filter(Boolean).map(p=>({name:p.name,onClick:()=>this.openPlayer(p.id)}));
+      const bodySegs=a.body.split(/(<<[^>]+>>)/).filter(Boolean).map(seg=>{
+        const m=seg.match(/^<<([^|]+)\|([^>]+)>>$/);
+        if(m){ const pid=m[1]; return {isText:false,isLink:true,v:m[2],onClick:()=>this.openPlayer(pid)}; }
+        return {isText:true,isLink:false,v:seg};
+      });
       return { id:a.d+'|'+a.headline, date:this.dateShort(new Date(today0.getTime()-offOf0(a.d)*86400000)),
-        tag:a.tag, headline:a.headline, dek:a.dek, body:a.body, refs:refsResolved,
+        tag:a.tag, headline:a.headline, dek:a.dek, body:a.body, bodySegs, refs:refsResolved,
         open:()=>this.openArticle(a.d+'|'+a.headline) };
     };
     const articlesSorted=D.ARTICLES.slice().sort((a,b)=>offOf0(a.d)-offOf0(b.d));
