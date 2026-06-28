@@ -50,6 +50,43 @@ function ageMultiplier(age) {
 }
 
 const LEAGUES = { EPL: 39, LAL: 140, SEA: 135, BUN: 78, LI1: 61 };
+// UEFA Champions League. A player's /players?team= response already carries one
+// statistics entry per competition, so we fold UCL output into the season total
+// for free (no extra requests) — a deep European run is real market-value signal
+// (CLAUDE.md ask: "league stats and ucl if applicable"). Only the UCL itself
+// (id 2), not domestic cups or the Europa League.
+const UCL_LEAGUE = 2;
+
+// Combine a player's domestic-league and UCL statistics into one season total:
+// sum the raw counting stats, add the minutes, and pass-weight the accuracy %
+// (it's a per-competition percentage, not a count). Either side may be missing.
+function mergeStats(domestic, ucl) {
+  if (!domestic) return ucl;
+  if (!ucl) return domestic;
+  const n = (a, b) => (a || 0) + (b || 0);
+  const dPass = domestic.passes?.total || 0, uPass = ucl.passes?.total || 0;
+  const dAcc = domestic.passes?.accuracy != null ? +domestic.passes.accuracy : null;
+  const uAcc = ucl.passes?.accuracy != null ? +ucl.passes.accuracy : null;
+  let accuracy = dAcc ?? uAcc;
+  if (dAcc != null && uAcc != null && dPass + uPass > 0) {
+    accuracy = Math.round((dAcc * dPass + uAcc * uPass) / (dPass + uPass));
+  }
+  return {
+    games: { minutes: n(domestic.games?.minutes, ucl.games?.minutes),
+             position: domestic.games?.position || ucl.games?.position },
+    goals: { total: n(domestic.goals?.total, ucl.goals?.total),
+             assists: n(domestic.goals?.assists, ucl.goals?.assists),
+             conceded: n(domestic.goals?.conceded, ucl.goals?.conceded),
+             saves: n(domestic.goals?.saves, ucl.goals?.saves) },
+    shots: { on: n(domestic.shots?.on, ucl.shots?.on) },
+    passes: { total: dPass + uPass, key: n(domestic.passes?.key, ucl.passes?.key), accuracy },
+    tackles: { total: n(domestic.tackles?.total, ucl.tackles?.total),
+               interceptions: n(domestic.tackles?.interceptions, ucl.tackles?.interceptions),
+               blocks: n(domestic.tackles?.blocks, ucl.tackles?.blocks) },
+    duels: { won: n(domestic.duels?.won, ucl.duels?.won) },
+    dribbles: { success: n(domestic.dribbles?.success, ucl.dribbles?.success) },
+  };
+}
 
 // Our TEAMS() name -> API-Football's official team name, for the clubs we
 // actually track (top-5-league entries only; PROS/OTH clubs are skipped).
@@ -181,7 +218,9 @@ async function main() {
     while (true) {
       const resp = await get(`/players?team=${teamId}&season=${SEASON}&page=${page}`);
       for (const pl of resp.response || []) {
-        const stat = (pl.statistics || []).find(s => s.league?.id === leagueId);
+        const domestic = (pl.statistics || []).find(s => s.league?.id === leagueId);
+        const ucl = (pl.statistics || []).find(s => s.league?.id === UCL_LEAGUE);
+        const stat = mergeStats(domestic, ucl);
         if (stat) statsByName.push({ name: pl.player.name, stat });
       }
       const totalPages = resp.paging?.total || 1;
@@ -252,9 +291,11 @@ async function main() {
     const oldVal = valMap[r.name];
     if (oldVal == null) continue;
     const delta = Math.max(-CAP, Math.min(CAP, K * (r.idx - bucketAvg[r.bucket])));
-    // Age multiplier deliberately not applied yet — pending a fix to the
-    // underlying production-index saturation issue first (see ageMultiplier()).
-    const newVal = Math.max(4, Math.round(oldVal * Math.exp(delta) / 5) * 5);
+    // Performance first, then a modest age tilt (±15%, see ageMultiplier).
+    // It's intentionally dominated by the performance delta so a historic
+    // season at 31/32 (Kane, Bruno) still clips near the top — age only
+    // separates otherwise-similar seasons (upside-young / decline-risk-old).
+    const newVal = Math.max(4, Math.round(oldVal * Math.exp(delta) * ageMultiplier(r.age) / 5) * 5);
     out.push({ name: r.name, team: r.team, bucket: r.bucket, minutes: r.minutes, age: r.age,
       goals: r.goals, assists: r.assists, idx: +r.idx.toFixed(3), bucketAvg: +bucketAvg[r.bucket].toFixed(3),
       oldVal, newVal, pctChange: +((newVal / oldVal - 1) * 100).toFixed(1) });
