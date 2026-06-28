@@ -42,11 +42,13 @@ const HTML_PATH = new URL('../FootyStock_dc.html', import.meta.url);
 // deliberately small factor (max ±15%), not a performance signal.
 function ageMultiplier(age) {
   if (age == null) return 1;
-  if (age <= 21) return 1.10;
-  if (age <= 24) return 1.05;
+  // Deliberately tiny (±~3%): age is a soft tiebreaker between otherwise-similar
+  // seasons, never a real driver — a historic season at 31/32 must not be docked.
+  if (age <= 21) return 1.03;
+  if (age <= 24) return 1.015;
   if (age <= 29) return 1.00;
-  if (age <= 32) return 0.92;
-  return 0.85;
+  if (age <= 32) return 0.98;
+  return 0.95;
 }
 
 const LEAGUES = { EPL: 39, LAL: 140, SEA: 135, BUN: 78, LI1: 61 };
@@ -156,7 +158,10 @@ function playerComponents(stat) {
   const conceded = stat.goals?.conceded || 0;
   const saves = stat.goals?.saves || 0;
 
-  const attack = (goals * 0.9 + assists * 0.6 + shotsOn * 0.05 + keyPasses * 0.03) * per90;
+  // Assists weighted ABOVE goals: creation is the rarer, more valuable skill and
+  // the old goals-led weighting buried elite playmakers (Bruno's 21-assist
+  // season, Olise's 25). Key passes also up — chance creation is the signal.
+  const attack = (goals * 0.9 + assists * 1.0 + shotsOn * 0.05 + keyPasses * 0.06) * per90;
   const defense = (tackles * 0.04 + interceptions * 0.05 + blocks * 0.05 + duelsWon * 0.02) * per90;
   // Volume * accuracy so a high-pass-count player only gets credit for
   // passes that actually go somewhere; accuracy falls back to a neutral
@@ -172,7 +177,11 @@ function playerComponents(stat) {
   // their price for a partial, unrepresentative season.
   const sampleWeight = Math.min(1, minutes / 900); // full credit at ~10 full matches
   return { attack: attack * sampleWeight, defense: defense * sampleWeight,
-    buildup: buildup * sampleWeight, gk: gk * sampleWeight, minutes };
+    buildup: buildup * sampleWeight, gk: gk * sampleWeight, minutes,
+    // Raw season totals carried through to the report so weights/cap/age can be
+    // re-tuned offline from the JSON without re-hitting the API.
+    raw: { goals, assists, shotsOn, keyPasses, tackles, interceptions, blocks,
+      duelsWon, passesTotal, passAccuracy, dribbleSuccess, conceded, saves } };
 }
 
 function mean(xs) { return xs.length ? xs.reduce((a, c) => a + c, 0) / xs.length : 0; }
@@ -284,7 +293,12 @@ async function main() {
   // raw production units: a ~1-std-above-average season (idx=1) yields
   // roughly +80%, a ~2-std elite season clips close to the cap.
   const K = 0.6;
-  const CAP = Math.log(2.5); // max |log-adjustment|, i.e. 0.4x-2.5x bounds.
+  // Cap widened 2.5x -> 4x: at 2.5x too many elite seasons clipped the SAME
+  // ceiling and collapsed to one value (Raphinha/Kvara/Dembélé all landing
+  // identical), so the cap — not the season — set the price and age broke the
+  // ties. 4x lets a genuinely elite season (idx~2.3) pull clear of a merely
+  // good one (idx~1.5). Bounds: 0.25x–4x.
+  const CAP = Math.log(4);
 
   const out = [];
   for (const r of found) {
@@ -298,7 +312,7 @@ async function main() {
     const newVal = Math.max(4, Math.round(oldVal * Math.exp(delta) * ageMultiplier(r.age) / 5) * 5);
     out.push({ name: r.name, team: r.team, bucket: r.bucket, minutes: r.minutes, age: r.age,
       goals: r.goals, assists: r.assists, idx: +r.idx.toFixed(3), bucketAvg: +bucketAvg[r.bucket].toFixed(3),
-      oldVal, newVal, pctChange: +((newVal / oldVal - 1) * 100).toFixed(1) });
+      oldVal, newVal, pctChange: +((newVal / oldVal - 1) * 100).toFixed(1), raw: r.comp.raw });
   }
   out.sort((a, b) => b.pctChange - a.pctChange);
   console.log(JSON.stringify({ generatedAt: new Date().toISOString(), season: SEASON, players: out,
