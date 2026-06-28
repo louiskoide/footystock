@@ -161,11 +161,53 @@
       </sc-for>
     </div>
 
-    <!-- league filter -->
-    <div style="display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap">
-      <sc-for list="{{ leagueChips }}" as="c" hint-placeholder-count="7">
-        <button onClick="{{ c.onClick }}" style="font:600 13px 'Hanken Grotesk';background: {{ c.bg }};border:1px solid {{ c.border }};color: {{ c.color }};padding:8px 15px;border-radius:999px;cursor:pointer">{{ c.name }}</button>
-      </sc-for>
+    <!-- filters bar -->
+    <div style="margin:0 0 16px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <sc-for list="{{ leagueChips }}" as="c" hint-placeholder-count="7">
+          <button onClick="{{ c.onClick }}" style="font:600 13px 'Hanken Grotesk';background: {{ c.bg }};border:1px solid {{ c.border }};color: {{ c.color }};padding:8px 15px;border-radius:999px;cursor:pointer">{{ c.name }}</button>
+        </sc-for>
+        <button onClick="{{ toggleFilters }}" style="font:600 13px 'Hanken Grotesk';background: {{ filterOpen ? '#16201a' : '#fff' }};border:1px solid {{ filterOpen ? '#16201a' : '#e3e6e0' }};color: {{ filterOpen ? '#fff' : '#46504a' }};padding:8px 15px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:6px"><span>⊞</span><span>Filters{{ activeFilterCount > 0 ? ' (' + activeFilterCount + ')' : '' }}</span></button>
+      </div>
+      <sc-if value="{{ filterOpen }}">
+      <div style="margin-top:12px;padding:16px 20px;background:#fff;border:1px solid #e8eae4;border-radius:14px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Country</label>
+          <select onChange="{{ onFilterNationChange }}" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;background:#fff;color:#16201a;outline:none;cursor:pointer;min-width:160px">
+            <sc-for list="{{ nationOptions }}" as="o" hint-placeholder-count="10">
+              <option value="{{ o.val }}" selected="{{ o.selected }}">{{ o.label }}</option>
+            </sc-for>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Club</label>
+          <select onChange="{{ onFilterTeamChange }}" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;background:#fff;color:#16201a;outline:none;cursor:pointer;min-width:180px">
+            <sc-for list="{{ teamOptions }}" as="o" hint-placeholder-count="5">
+              <option value="{{ o.val }}" selected="{{ o.selected }}">{{ o.label }}</option>
+            </sc-for>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Age</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filterAgeMin }}" onInput="{{ onFilterAgeMin }}" placeholder="Min" min="15" max="50" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filterAgeMax }}" onInput="{{ onFilterAgeMax }}" placeholder="Max" min="15" max="50" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Price (§)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filterPriceMin }}" onInput="{{ onFilterPriceMin }}" placeholder="Min" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:82px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filterPriceMax }}" onInput="{{ onFilterPriceMax }}" placeholder="Max" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:82px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
+        <sc-if value="{{ hasActiveFilters }}">
+          <button onClick="{{ clearFilters }}" style="font:600 13px 'Hanken Grotesk';background:none;border:1px solid #e1e4dd;color:#8a938c;padding:8px 14px;border-radius:8px;cursor:pointer;align-self:flex-end">Clear all</button>
+        </sc-if>
+      </div>
+      </sc-if>
     </div>
 
     <!-- market table -->
@@ -604,6 +646,7 @@ class Component extends DCLogic {
     this.state = {
       view:'market', selectedId:null, selectedArticleId:null, league:'ALL', search:'', range:90,
       sortKey:'rank', sortDir:'asc',
+      filterOpen:false, filterNation:'ALL', filterTeam:'ALL', filterAgeMin:'', filterAgeMax:'', filterPriceMin:'', filterPriceMax:'',
       chartHoverIdx:null, chartDragStart:null,
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
       showReward:false, tick:0, pendingOrders:[], ready:false,
@@ -2105,6 +2148,14 @@ Grant Kekana|Mamelodi Sundowns|CB|30|6
   goBack(){ this.setState({view:'market'}); }
   openArticle(id){ this.setState({view:'articles',selectedArticleId:id}); }
   setLeague(lg){ this.setState({league:lg}); }
+  toggleFilters(){ this.setState(s=>({filterOpen:!s.filterOpen})); }
+  onFilterNationChange(e){ this.setState({filterNation:e.target.value,filterTeam:'ALL'}); }
+  onFilterTeamChange(e){ this.setState({filterTeam:e.target.value}); }
+  onFilterAgeMin(e){ this.setState({filterAgeMin:e.target.value}); }
+  onFilterAgeMax(e){ this.setState({filterAgeMax:e.target.value}); }
+  onFilterPriceMin(e){ this.setState({filterPriceMin:e.target.value}); }
+  onFilterPriceMax(e){ this.setState({filterPriceMax:e.target.value}); }
+  clearFilters(){ this.setState({filterNation:'ALL',filterTeam:'ALL',filterAgeMin:'',filterAgeMax:'',filterPriceMin:'',filterPriceMax:'',league:'ALL'}); }
   setSort(key){
     const S=this.state;
     if(S.sortKey===key){ this.setState({sortDir:S.sortDir==='asc'?'desc':'asc'}); return; }
@@ -2258,11 +2309,28 @@ Grant Kekana|Mamelodi Sundowns|CB|30|6
     const fold=(s)=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()
       .replace(/[øđðłþæœß]/g,c=>foldMap[c]||c);
     const q=fold(S.search.trim());
+    const fAgeMin=S.filterAgeMin!==''?parseInt(S.filterAgeMin):null;
+    const fAgeMax=S.filterAgeMax!==''?parseInt(S.filterAgeMax):null;
+    const fPrMin=S.filterPriceMin!==''?parseFloat(S.filterPriceMin):null;
+    const fPrMax=S.filterPriceMax!==''?parseFloat(S.filterPriceMax):null;
     let list=DB.filter(p=>{
       if(S.league!=='ALL' && p.lg!==S.league) return false;
+      if(S.filterNation!=='ALL' && p.nation!==S.filterNation) return false;
+      if(S.filterTeam!=='ALL' && p.team!==S.filterTeam) return false;
+      if(fAgeMin!==null && p.age<fAgeMin) return false;
+      if(fAgeMax!==null && p.age>fAgeMax) return false;
+      if(fPrMin!==null || fPrMax!==null){ const pr=this.curPrice(p); if(fPrMin!==null && pr<fPrMin) return false; if(fPrMax!==null && pr>fPrMax) return false; }
       if(q && !(fold(p.name).includes(q)||fold(p.team).includes(q))) return false;
       return true;
     });
+    // nation + team dropdown options
+    const allNations=[...new Set(DB.map(p=>p.nation).filter(Boolean))].sort();
+    const nationOptions=[{val:'ALL',label:'All Countries',selected:S.filterNation==='ALL'},...allNations.map(n=>({val:n,label:n,selected:S.filterNation===n}))];
+    const teamSrcDB=S.filterNation==='ALL'?DB:DB.filter(p=>p.nation===S.filterNation);
+    const allTeams=[...new Set(teamSrcDB.map(p=>p.team))].sort();
+    const teamOptions=[{val:'ALL',label:'All Clubs',selected:S.filterTeam==='ALL'},...allTeams.map(t=>({val:t,label:t,selected:S.filterTeam===t}))];
+    const activeFilterCount=[S.filterNation!=='ALL',S.filterTeam!=='ALL',S.league!=='ALL',S.filterAgeMin!=='',S.filterAgeMax!=='',S.filterPriceMin!=='',S.filterPriceMax!==''].filter(Boolean).length;
+    const hasActiveFilters=activeFilterCount>0;
     const marketList=list.map(decorate);
     const sortFieldMap={name:'name',price:'priceNum',day:'dayChgNum',week:'wkChgNum',vol:'volNum',range:'hiAllNum',rank:'rank'};
     const sortField=sortFieldMap[S.sortKey]||'rank';
@@ -2611,6 +2679,16 @@ Grant Kekana|Mamelodi Sundowns|CB|30|6
     return {
       // shell
       navTabs, ticker, leagueChips, marketCols, search:S.search, onSearch:(e)=>this.onSearch(e),
+      filterOpen:S.filterOpen, toggleFilters:()=>this.toggleFilters(),
+      nationOptions, teamOptions, activeFilterCount, hasActiveFilters,
+      filterNation:S.filterNation, filterTeam:S.filterTeam,
+      filterAgeMin:S.filterAgeMin, filterAgeMax:S.filterAgeMax,
+      filterPriceMin:S.filterPriceMin, filterPriceMax:S.filterPriceMax,
+      onFilterNationChange:(e)=>this.onFilterNationChange(e),
+      onFilterTeamChange:(e)=>this.onFilterTeamChange(e),
+      onFilterAgeMin:(e)=>this.onFilterAgeMin(e), onFilterAgeMax:(e)=>this.onFilterAgeMax(e),
+      onFilterPriceMin:(e)=>this.onFilterPriceMin(e), onFilterPriceMax:(e)=>this.onFilterPriceMax(e),
+      clearFilters:()=>this.clearFilters(),
       goHome:()=>this.goHome(), goLeaders:()=>this.nav('leaders'),
       cashFmt:this.money(this.state.cash),
       rewardBtnLabel,rewardBtnColor,rewardBtnBg, openReward:()=>this.openReward(),
