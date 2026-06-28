@@ -2325,10 +2325,14 @@ Grant Kekana|Mamelodi Sundowns|CB|30|6
     });
     // nation + team dropdown options
     const allNations=[...new Set(DB.map(p=>p.nation).filter(Boolean))].sort();
-    const nationOptions=[{val:'ALL',label:'All Countries',selected:S.filterNation==='ALL'},...allNations.map(n=>({val:n,label:n,selected:S.filterNation===n}))];
+    // Use null (not false) for unselected — the framework calls removeAttribute
+    // when value is null, but setAttribute('selected','false') when it's boolean
+    // false, and any presence of the selected attribute selects the option.
+    const sel=(v)=>v||null;
+    const nationOptions=[{val:'ALL',label:'All Countries',selected:sel(S.filterNation==='ALL')},...allNations.map(n=>({val:n,label:n,selected:sel(S.filterNation===n)}))];
     const teamSrcDB=S.filterNation==='ALL'?DB:DB.filter(p=>p.nation===S.filterNation);
     const allTeams=[...new Set(teamSrcDB.map(p=>p.team))].sort();
-    const teamOptions=[{val:'ALL',label:'All Clubs',selected:S.filterTeam==='ALL'},...allTeams.map(t=>({val:t,label:t,selected:S.filterTeam===t}))];
+    const teamOptions=[{val:'ALL',label:'All Clubs',selected:sel(S.filterTeam==='ALL')},...allTeams.map(t=>({val:t,label:t,selected:sel(S.filterTeam===t)}))];
     const activeFilterCount=[S.filterNation!=='ALL',S.filterTeam!=='ALL',S.league!=='ALL',S.filterAgeMin!=='',S.filterAgeMax!=='',S.filterPriceMin!=='',S.filterPriceMax!==''].filter(Boolean).length;
     const hasActiveFilters=activeFilterCount>0;
     const marketList=list.map(decorate);
