@@ -1820,8 +1820,17 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   // wild. This version never has that seam: the backfill is generated to MEET
   // the oldest real close, so synthetic and real always join smoothly, and as
   // real days accumulate the synthetic part shrinks to nothing.
-  loadHist(){ try{ localStorage.removeItem('footystock_pricehist_v1'); return JSON.parse(localStorage.getItem('footystock_pricehist_v2'))||{}; }catch(e){ return {}; } }
-  saveHist(){ if(!this._histDirty||!this._histStore) return; try{ localStorage.setItem('footystock_pricehist_v2',JSON.stringify(this._histStore)); this._histDirty=false; }catch(e){} }
+  // v3: the v2 series was recorded while the perfScore-on-no-minutes bug (see
+  // buildDB: hasMatchData) was live, so its frozen daily closes sit at the wrong
+  // price LEVEL. Once the formula was corrected, today's recomputed close no
+  // longer matched yesterday's frozen (wrong) close, leaving a one-day CLIFF
+  // that read as a huge fake 1D/7D move. There's no way to repair individual
+  // mis-recorded closes after the fact, so we discard the contaminated series
+  // and re-seed cleanly: the backfill joins smoothly onto today's correct close,
+  // so 1D starts near 0 and real daily movement re-accumulates under the fixed
+  // formula instead of inheriting a phantom step.
+  loadHist(){ try{ localStorage.removeItem('footystock_pricehist_v1'); localStorage.removeItem('footystock_pricehist_v2'); return JSON.parse(localStorage.getItem('footystock_pricehist_v3'))||{}; }catch(e){ return {}; } }
+  saveHist(){ if(!this._histDirty||!this._histStore) return; try{ localStorage.setItem('footystock_pricehist_v3',JSON.stringify(this._histStore)); this._histDirty=false; }catch(e){} }
   // smooth, deterministic pre-history filler of `count` points for the days
   // BEFORE the oldest real close. It leads smoothly UP TO `anchor` but its last
   // point is the natural "day before" value, NOT anchor exactly — otherwise the
