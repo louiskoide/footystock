@@ -1,32 +1,32 @@
-// In-memory real leaderboard. Keyed by anonymous client token so one
-// user can't overwrite another's entry. Resets on worker redeploy —
-// acceptable while user counts are low. When persistence is needed,
-// swap this out for Supabase per CLAUDE.md.
+// Supabase-backed leaderboard — persists across worker redeploys and
+// syncs globally across all devices. The anon key is intentionally
+// public (Supabase's security model uses RLS policies, not key secrecy).
 
-const MAX_ENTRIES = 200;
-const STARTING_CAPITAL = 10000;
+const SUPABASE_URL = 'https://pwlszzrvwhflijbjwnnf.supabase.co';
+const SUPABASE_KEY = 'sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_';
+const HEADERS = {
+  'Content-Type': 'application/json',
+  'apikey': SUPABASE_KEY,
+  'Authorization': `Bearer ${SUPABASE_KEY}`,
+};
 
-export function submitScore(state, token, name, netWorth) {
-  if (!state.leaderboard) state.leaderboard = {};
-  const k = String(token).slice(0, 64);
+export async function submitScore(token, name, netWorth) {
   const n = String(name).trim().slice(0, 32) || 'Anonymous';
-  // Clamp net worth to a sane range — the game starts at $10k and even
-  // aggressive compounding won't realistically clear $10M in a tournament.
-  const nw = Math.max(0, Math.min(10_000_000, Math.round(Number(netWorth) || STARTING_CAPITAL)));
-  state.leaderboard[k] = { name: n, netWorth: nw, updatedAt: Date.now() };
-
-  // Prune the long tail if we've grown past the cap
-  const entries = Object.entries(state.leaderboard);
-  if (entries.length > MAX_ENTRIES) {
-    entries.sort((a, b) => b[1].netWorth - a[1].netWorth);
-    state.leaderboard = Object.fromEntries(entries.slice(0, MAX_ENTRIES));
-  }
+  const nw = Math.max(0, Math.min(10_000_000, Math.round(Number(netWorth) || 10000)));
+  try {
+    await fetch(`${SUPABASE_URL}/rest/v1/leaderboard`, {
+      method: 'POST',
+      headers: { ...HEADERS, 'Prefer': 'resolution=merge-duplicates' },
+      body: JSON.stringify({ token: String(token).slice(0, 64), name: n, net_worth: nw, updated_at: new Date().toISOString() }),
+    });
+  } catch (e) { /* degrade silently — trade still executes locally */ }
 }
 
-export function getLeaderboard(state) {
-  if (!state.leaderboard) return [];
-  return Object.values(state.leaderboard)
-    .sort((a, b) => b.netWorth - a.netWorth)
-    .slice(0, 100)
-    .map(({ name, netWorth }) => ({ name, netWorth }));
+export async function getLeaderboard() {
+  try {
+    const resp = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?order=net_worth.desc&limit=100`, { headers: HEADERS });
+    if (!resp.ok) return [];
+    const rows = await resp.json();
+    return rows.map(r => ({ name: r.name, netWorth: r.net_worth }));
+  } catch (e) { return []; }
 }

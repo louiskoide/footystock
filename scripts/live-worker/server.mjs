@@ -117,8 +117,10 @@ const server = createServer((req, res) => {
 
   if (url.pathname === '/leaderboard') {
     if (req.method === 'GET') {
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      res.end(JSON.stringify(getLeaderboard(state)));
+      getLeaderboard().then(rows => {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify(rows));
+      }).catch(() => { res.writeHead(500); res.end('error'); });
       return;
     }
     if (req.method === 'POST') {
@@ -128,9 +130,10 @@ const server = createServer((req, res) => {
         try {
           const { token, name, netWorth } = JSON.parse(body);
           if (!token || !name) { res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request'); return; }
-          submitScore(state, token, name, netWorth);
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ ok: true }));
+          submitScore(token, name, netWorth).then(() => {
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: true }));
+          }).catch(() => { res.writeHead(500); res.end('error'); });
         } catch (e) {
           res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request');
         }
