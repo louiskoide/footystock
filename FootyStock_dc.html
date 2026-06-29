@@ -168,28 +168,8 @@
       </div>
     </div>
 
-    <!-- top movers -->
-    <div style="display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 13px">
-      <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Today's movers</span>
-      <span style="font:500 12.5px 'Hanken Grotesk';color:#8a938c">7-day change</span>
-    </div>
-    <div class="fs-movers-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px">
-      <sc-for list="{{ movers }}" as="p" hint-placeholder-count="4">
-        <div onClick="{{ p.onClick }}" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:16px 17px;cursor:pointer;transition:transform .12s,box-shadow .12s" style-hover="background:#fff;border:1px solid #d6dccf;border-radius:16px;padding:16px 17px;cursor:pointer;transform:translateY(-2px);box-shadow:0 10px 26px rgba(20,40,28,.09)">
-          <div style="display:flex;align-items:center;justify-content:space-between">
-            <span style="display:inline-flex;align-items:center;justify-content:center;font:700 10px 'Space Grotesk';color:#586159;background:#eef1ec;border-radius:6px;padding:4px 7px;letter-spacing:.04em">{{ p.lg }}</span>
-            <span style="font:700 12px 'Hanken Grotesk';color: {{ p.wkColor }};background: {{ p.wkBg }};padding:3px 9px;border-radius:999px">{{ p.wkArrow }}{{ p.wkAbs }}</span>
-          </div>
-          <div style="font:700 16.5px 'Space Grotesk';margin-top:13px;letter-spacing:-.01em">{{ p.name }}</div>
-          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ p.pos }} · {{ p.team }}</div>
-          <svg viewBox="0 0 120 30" width="100%" height="30" preserveAspectRatio="none" style="margin-top:13px;display:block"><polyline points="{{ p.spark }}" fill="none" stroke="{{ p.wkColor }}" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"></polyline></svg>
-          <div style="font:700 20px 'Space Grotesk';margin-top:11px">{{ p.price }}</div>
-        </div>
-      </sc-for>
-    </div>
-
     <!-- morning market recap -->
-    <sc-if value="{{ showRecap }}" hint-placeholder-val="{{ true }}">
+    <sc-if value="{{ showRecap }}">
     <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:20px 24px;margin-bottom:26px;position:relative">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
         <div style="display:flex;align-items:center;gap:10px">
@@ -264,6 +244,26 @@
       <div style="padding-top:12px;border-top:1px solid #f3f4f0;font:500 13px 'Hanken Grotesk';color:#46504a;line-height:1.5">{{ recap.headline }}</div>
     </div>
     </sc-if>
+
+    <!-- top movers -->
+    <div style="display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 13px">
+      <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Today's movers</span>
+      <span style="font:500 12.5px 'Hanken Grotesk';color:#8a938c">7-day change</span>
+    </div>
+    <div class="fs-movers-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:30px">
+      <sc-for list="{{ movers }}" as="p" hint-placeholder-count="4">
+        <div onClick="{{ p.onClick }}" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:16px 17px;cursor:pointer;transition:transform .12s,box-shadow .12s" style-hover="background:#fff;border:1px solid #d6dccf;border-radius:16px;padding:16px 17px;cursor:pointer;transform:translateY(-2px);box-shadow:0 10px 26px rgba(20,40,28,.09)">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="display:inline-flex;align-items:center;justify-content:center;font:700 10px 'Space Grotesk';color:#586159;background:#eef1ec;border-radius:6px;padding:4px 7px;letter-spacing:.04em">{{ p.lg }}</span>
+            <span style="font:700 12px 'Hanken Grotesk';color: {{ p.wkColor }};background: {{ p.wkBg }};padding:3px 9px;border-radius:999px">{{ p.wkArrow }}{{ p.wkAbs }}</span>
+          </div>
+          <div style="font:700 16.5px 'Space Grotesk';margin-top:13px;letter-spacing:-.01em">{{ p.name }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ p.pos }} · {{ p.team }}</div>
+          <svg viewBox="0 0 120 30" width="100%" height="30" preserveAspectRatio="none" style="margin-top:13px;display:block"><polyline points="{{ p.spark }}" fill="none" stroke="{{ p.wkColor }}" stroke-width="2.3" stroke-linejoin="round" stroke-linecap="round"></polyline></svg>
+          <div style="font:700 20px 'Space Grotesk';margin-top:11px">{{ p.price }}</div>
+        </div>
+      </sc-for>
+    </div>
 
     <!-- filters bar -->
     <div style="margin:0 0 16px">
@@ -3726,6 +3726,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       plArrow:plUp?'▲':'▼', plAbsFmt:this.money(Math.abs(pl)), plPctFmt:this.pct((pl/10000)*100),
       plChipBg:plUp?'rgba(61,220,138,.18)':'rgba(255,93,93,.18)', plChipColor:plUp?'#3ddc8a':'#ff5d5d',
       nwSpark:nwHistPts, movers, marketList, universeNote:DB.length+' players priced — movers ranked by real World Cup form &amp; transfer activity. Players not at the World Cup sit flat until the market moves.',
+      showRecap, recap, dismissRecap,
       // detail
       d, rangeTabs, goBack:()=>this.goBack(),
       // portfolio
