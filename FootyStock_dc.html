@@ -261,6 +261,7 @@
     </sc-if>
 
     <!-- top movers -->
+    <sc-if value="{{ showMovers }}" hint-placeholder-val="{{ true }}">
     <div style="display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 13px">
       <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Today's movers</span>
       <span style="font:500 12.5px 'Hanken Grotesk';color:#8a938c">7-day change</span>
@@ -279,6 +280,7 @@
         </div>
       </sc-for>
     </div>
+    </sc-if>
 
     <!-- filters bar -->
     <div style="margin:0 0 16px">
@@ -3422,7 +3424,8 @@ Yan Diomande|RB Leipzig|CM|21|4
     const movers=[...DB].sort((a,b)=>b.change7d-a.change7d).slice(0,4).map(decorate);
 
     // morning recap
-    const showRecap=DB.length>0&&!S.recapDismissed;
+    const isSearching=S.search.trim().length>0;
+    const showRecap=DB.length>0&&!S.recapDismissed&&!isSearching;
     const recap=(()=>{
       if(!DB.length) return {date:'',sentiment:'',gainers:[],losers:[],mostBought:[],mostSold:[],noBought:true,noSold:true,headline:''};
       const byChg=[...DB].sort((a,b)=>b.change7d-a.change7d);
@@ -3920,7 +3923,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       netWorthFmt:this.money(nw), investedFmt:this.money(hv), holdingCount:holdCount, rankFmt:'#'+rank,
       plArrow:plUp?'▲':'▼', plAbsFmt:this.money(Math.abs(pl)), plPctFmt:this.pct((pl/10000)*100),
       plChipBg:plUp?'rgba(61,220,138,.18)':'rgba(255,93,93,.18)', plChipColor:plUp?'#3ddc8a':'#ff5d5d',
-      nwSpark:nwHistPts, movers, marketList, universeNote:DB.length+' players priced — movers ranked by real World Cup form &amp; transfer activity. Players not at the World Cup sit flat until the market moves.',
+      nwSpark:nwHistPts, movers, showMovers:!isSearching, marketList, universeNote:DB.length+' players priced — movers ranked by real World Cup form &amp; transfer activity. Players not at the World Cup sit flat until the market moves.',
       pricesStale:!this.pricesAreFresh(),
       showRecap, recap, dismissRecap,
       recapNoBought:recap.noBought, recapNoSold:recap.noSold,
