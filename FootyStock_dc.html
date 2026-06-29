@@ -2562,7 +2562,17 @@ Yan Diomande|RB Leipzig|CM|21|4
       if(atWC||news){ change7d=sum(events.filter(e=>e.offset<=8).map(e=>e.delta))+((news&&offOf(news.d)<=8)?newsDelta:0);
         change30d=sum(events.map(e=>e.delta))+newsDelta; }
       else { change7d=(r()-0.5)*1.4; change30d=(r()-0.5)*3; }
-      change7d=parseFloat(change7d.toFixed(1)); change30d=parseFloat(change30d.toFixed(1));
+      // Daily market wobble: add a small date-seeded drift so the change
+      // columns tick each calendar day even between match events. Magnitude
+      // is intentionally small (WC ±1.5%, others ±0.5%) so fundamentals
+      // still dominate — a hat-trick player stays near the top, but quiet
+      // days still show organic movement rather than a frozen leaderboard.
+      const dwR = this.mulberry(this.hash(id + ':dw:' + dayKey));
+      const dw1R = this.mulberry(this.hash(id + ':d1:' + dayKey));
+      const dailyWobble7d = (dwR() - 0.5) * 2 * (atWC ? 1.5 : 0.5);
+      const dailyWobble1d = (dw1R() - 0.5) * 2 * (atWC ? 0.9 : 0.4);
+      change7d = parseFloat((change7d + dailyWobble7d).toFixed(1));
+      change30d=parseFloat(change30d.toFixed(1));
       // WC form streak (consecutive most-recent matches rating >= 7.4) — kept
       // purely as a display fact ("🔥 3-match streak"), no longer the main
       // driver of formSig (see below).
@@ -2748,7 +2758,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // recent rather than duplicated for every routine match.
       const playerArticles = D.ARTICLES.filter(a=>a.refs.includes(id));
       db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price:rHist[RN-1],
-        change7d,change30d,hist:rHist,events,streakLen,atWC,wcStatus,nation,news,mood,
+        change7d,change30d,hist:rHist,events,streakLen,atWC,wcStatus,nation,news,mood,_dw1d:dailyWobble1d,
         signals:{fotmob,form:formSig,twitter:moodSig,transfermarkt:transferSig}, avgR,
         tmVal,tmTrendUp,articles:playerArticles });
     }
@@ -3239,7 +3249,10 @@ Yan Diomande|RB Leipzig|CM|21|4
       // wobbled live price — otherwise it jiggled every render with the
       // intraday noise and disagreed with the chart.
       const hN=p.hist.length; const todayClose=p.hist[hN-1]; const prevClose=p.hist[hN-2]??todayClose;
-      const dayChg=prevClose?((todayClose-prevClose)/prevClose)*100:0;
+      // Add the same per-player-per-day wobble that was baked into change7d at
+      // build time, so 1D ticks each calendar day even when stored history hasn't
+      // rolled over yet. p._dw1d is set on the player object during buildDB.
+      const dayChg=(prevClose?((todayClose-prevClose)/prevClose)*100:0)+(p._dw1d||0);
       const upDay=dayChg>=0;
       const {volPct,hiAll,loAll}=riskStats(p);
       return {
