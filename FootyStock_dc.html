@@ -1022,12 +1022,12 @@
       </div>
       <div class="fs-profile-grid3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">
         <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
-          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Net worth</div>
-          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileOtherNW }}</div>
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Trading P/L</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px;color: {{ profileOtherPLColor }}">{{ profileOtherPL }}</div>
         </div>
         <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
-          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">All-time P/L</div>
-          <div style="font:700 22px 'Space Grotesk';margin-top:6px;color: {{ profileOtherPLColor }}">{{ profileOtherPL }}</div>
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Net worth</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileOtherNW }}</div>
         </div>
         <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
           <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Global rank</div>
@@ -3812,10 +3812,10 @@ Yan Diomande|RB Leipzig|CM|21|4
       profileName: S.profileViewName || this.loadUsername() || 'You',
       profileLbEntry: S.profileViewName ? (lb.find(x=>x.name===S.profileViewName)||null) : null,
       profileStats: (()=>{ if(S.profileViewName!==null) return {}; const ps=this.profileStats(); return {...ps, nwFmt:this.money(ps.nw), plFmt:(ps.plUp?'+':'')+this.money(Math.abs(ps.pl)), plColor:ps.plUp?'#16a85f':'#d23b2c', athFmt:this.money(ps.ath), cashFmt:this.money(ps.cash), winRateFmt:ps.winRate!==null?ps.winRate+'%':'—', bestPosPctFmt:ps.bestPLName?(ps.bestPLPct>=0?'+':'')+ps.bestPLPct.toFixed(1)+'%':'', bestPLNameDisplay:ps.bestPLName||'—', diversityLabel:ps.diversity+' league'+(ps.diversity!==1?'s':'')}; })(),
-      profileOtherNW: (()=>{ if(!S.profileViewName) return '—'; const e=lb.find(x=>x.name===S.profileViewName); return e?e.netWorth:'—'; })(),
-      profileOtherPL: (()=>{ if(!S.profileViewName) return '—'; const e=lb.find(x=>x.name===S.profileViewName); return e?(e.profitArrow+e.profit):'—'; })(),
-      profileOtherPLColor: (()=>{ if(!S.profileViewName) return '#8a938c'; const e=lb.find(x=>x.name===S.profileViewName); return e?e.profitColor:'#8a938c'; })(),
-      profileOtherMedal: (()=>{ if(!S.profileViewName) return '—'; const e=lb.find(x=>x.name===S.profileViewName); return e?e.medal:'—'; })(),
+      profileOtherNW: (()=>{ if(!S.profileViewName) return '—'; const e=leaderboard.find(x=>x.name===S.profileViewName||x.name===(S.profileViewName+' (you)')); return e?e.netWorth:'—'; })(),
+      profileOtherPL: (()=>{ if(!S.profileViewName) return '—'; const e=leaderboard.find(x=>x.name===S.profileViewName||x.name===(S.profileViewName+' (you)')); return e?(e.profitArrow+'$'+e.profit):'—'; })(),
+      profileOtherPLColor: (()=>{ if(!S.profileViewName) return '#8a938c'; const e=leaderboard.find(x=>x.name===S.profileViewName||x.name===(S.profileViewName+' (you)')); return e?e.profitColor:'#8a938c'; })(),
+      profileOtherMedal: (()=>{ if(!S.profileViewName) return '—'; const e=leaderboard.find(x=>x.name===S.profileViewName||x.name===(S.profileViewName+' (you)')); return e?e.medal:'—'; })(),
       profileInitials: (S.profileViewName || this.loadUsername() || 'YO').slice(0,2).toUpperCase(),
       profileIsOther: S.profileViewName !== null,
       goProfile:()=>this.openProfileView(null),
