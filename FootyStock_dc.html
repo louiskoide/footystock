@@ -3046,7 +3046,11 @@ Yan Diomande|RB Leipzig|CM|21|4
       // (same 0.6 multiplier) instead of quietly burying ~75% of it in a
       // multi-day ease-in the live chart never reflected.
       for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N){ e._impactPct=0; continue; }
-        const bump=(e.delta/100)*price*0.4, ramp=1, halfLife=6;
+        // More expensive players face slightly larger downside on bad games
+        // (notoriety already in scope): notoriety∈[0,1], adds up to 25% extra
+        // penalty on negative delta only — subtle, not dramatic.
+        const downScale = e.delta < 0 ? 0.4 * (1 + notoriety * 0.25) : 0.4;
+        const bump=(e.delta/100)*price*downScale, ramp=1, halfLife=6;
         for(let j=idx;j<N;j++){ const daysIn=j-idx+1; // +1: the match day itself is already day 1, not day 0 — otherwise a same-day event (idx===N-1) eases in at 0 and never visibly moves today's price.
           const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
           const decay=Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);
