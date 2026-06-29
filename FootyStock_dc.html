@@ -29,6 +29,14 @@
      rendered fragments), so this rule has no effect afterward. */
   sc-if,sc-for{display:none}
 
+  /* Detail header: single-column flow by default, desktop overrides to side-by-side */
+  @media (min-width:761px){
+    .fs-detail-header{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    .fs-detail-header .fs-detail-name{margin-top:9px}
+    .fs-detail-price-row{justify-content:flex-end}
+    .fs-detail-price-row .fs-detail-price{font-size:36px}
+    .fs-detail-header>div:first-child{min-width:0}
+  }
   @media (max-width:760px){
     .fs-header-top{padding:10px 12px!important;gap:8px!important}
     .fs-logo-badge{width:28px!important;height:28px!important;font-size:14px!important}
@@ -46,6 +54,9 @@
     .fs-card-pad{padding:16px 16px!important}
 
     .fs-banner-grid{grid-template-columns:1fr!important}
+    .fs-recap-grid{grid-template-columns:1fr!important}
+    .fs-profile-grid4{grid-template-columns:repeat(2,1fr)!important}
+    .fs-profile-grid3{grid-template-columns:repeat(2,1fr)!important}
     .fs-movers-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
     .fs-stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
 
@@ -63,13 +74,17 @@
     .fs-row-leader>*:nth-child(3){display:none!important}
     /* Avatar badge: switch to system font to avoid Space Grotesk glyph artifacts */
     .fs-avatar-badge{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif!important}
-    .fs-row-events{min-width:420px!important}
+    /* Events table: hide rating col(4), shrink to fit */
+    .fs-row-events{min-width:0!important;grid-template-columns:66px minmax(0,1fr) 52px 70px!important;gap:8px!important}
+    .fs-row-events>*:nth-child(4){display:none!important}
     .fs-row-txn{padding:10px 12px!important}
 
     .fs-detail-grid{grid-template-columns:minmax(0,1fr)!important}
+    .fs-detail-header{width:100%}
+    .fs-detail-name{font-size:22px!important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .fs-detail-price{font-size:28px!important}
+    .fs-detail-price-row{margin-top:4px!important}
     .fs-trade-panel{position:static!important;top:auto!important;order:-1!important}
-    .fs-detail-name{font-size:22px!important}
-    .fs-detail-price{font-size:24px!important}
     /* Chart: less tall on narrow screens */
     .fs-price-chart{height:200px!important}
     .fs-modal-card{padding:20px!important}
@@ -173,11 +188,154 @@
       </sc-for>
     </div>
 
-    <!-- league filter -->
-    <div style="display:flex;gap:8px;margin:0 0 16px;flex-wrap:wrap">
-      <sc-for list="{{ leagueChips }}" as="c" hint-placeholder-count="7">
-        <button onClick="{{ c.onClick }}" style="font:600 13px 'Hanken Grotesk';background: {{ c.bg }};border:1px solid {{ c.border }};color: {{ c.color }};padding:8px 15px;border-radius:999px;cursor:pointer">{{ c.name }}</button>
-      </sc-for>
+    <!-- morning market recap -->
+    <sc-if value="{{ showRecap }}" hint-placeholder-val="{{ true }}">
+    <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:20px 24px;margin-bottom:26px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font:600 10px 'Hanken Grotesk';letter-spacing:.08em;text-transform:uppercase;color:#16a85f;background:#e8f7ef;padding:4px 9px;border-radius:6px">MORNING RECAP</span>
+          <span style="font:500 12px 'Hanken Grotesk';color:#a7afa7">{{ recap.date }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ recap.sentiment }}</span>
+          <button onClick="{{ dismissRecap }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#aab2ab;padding:2px 4px;line-height:1">✕</button>
+        </div>
+      </div>
+      <div class="fs-recap-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+        <div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#16a85f;text-transform:uppercase;margin-bottom:8px">Top Gainers · 7d</div>
+          <sc-for list="{{ recap.gainers }}" as="g" hint-placeholder-count="3">
+            <div onClick="{{ g.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer;opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ g.team }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:12px">
+                <span style="font:700 14px 'Space Grotesk'">{{ g.price }}</span>
+                <span style="font:600 12px 'Hanken Grotesk';color:#16a85f">▲ {{ g.chg }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#e03e3e;text-transform:uppercase;margin-bottom:8px">Biggest Drops · 7d</div>
+          <sc-for list="{{ recap.losers }}" as="l" hint-placeholder-count="3">
+            <div onClick="{{ l.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer;opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ l.team }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:12px">
+                <span style="font:700 14px 'Space Grotesk'">{{ l.price }}</span>
+                <span style="font:600 12px 'Hanken Grotesk';color:#e03e3e">▼ {{ l.chg }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <sc-if value="{{ recap.mostBought.length > 0 || recap.mostSold.length > 0 }}">
+      <div class="fs-recap-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;padding-top:14px;border-top:1px solid #f3f4f0">
+        <div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#2563eb;text-transform:uppercase;margin-bottom:8px">Most Bought · All time</div>
+          <sc-for list="{{ recap.mostBought }}" as="b" hint-placeholder-count="3">
+            <div onClick="{{ b.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ b.qty }} shares</span>
+              </div>
+              <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ b.price }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#8a938c;text-transform:uppercase;margin-bottom:8px">Most Sold · All time</div>
+          <sc-for list="{{ recap.mostSold }}" as="s" hint-placeholder-count="3">
+            <div onClick="{{ s.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ s.qty }} shares</span>
+              </div>
+              <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ s.price }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
+      <div style="padding-top:12px;border-top:1px solid #f3f4f0;font:500 13px 'Hanken Grotesk';color:#46504a;line-height:1.5">{{ recap.headline }}</div>
+    </div>
+    </sc-if>
+
+    <!-- filters bar -->
+    <div style="margin:0 0 16px">
+      <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <sc-for list="{{ leagueChips }}" as="c" hint-placeholder-count="7">
+          <button onClick="{{ c.onClick }}" style="font:600 13px 'Hanken Grotesk';background: {{ c.bg }};border:1px solid {{ c.border }};color: {{ c.color }};padding:8px 15px;border-radius:999px;cursor:pointer">{{ c.name }}</button>
+        </sc-for>
+        <button onClick="{{ toggleFilters }}" style="font:600 13px 'Hanken Grotesk';background: {{ filterOpen ? '#16201a' : '#fff' }};border:1px solid {{ filterOpen ? '#16201a' : '#e3e6e0' }};color: {{ filterOpen ? '#fff' : '#46504a' }};padding:8px 15px;border-radius:999px;cursor:pointer;display:inline-flex;align-items:center;gap:6px"><span>⊞</span><span>Filters{{ activeFilterCount > 0 ? ' (' + activeFilterCount + ')' : '' }}</span></button>
+      </div>
+      <sc-if value="{{ filterOpen }}">
+      <div style="margin-top:12px;padding:16px 20px;background:#fff;border:1px solid #e8eae4;border-radius:14px;display:flex;flex-wrap:wrap;gap:16px;align-items:flex-end">
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Country</label>
+          <select onChange="{{ onFilterNationChange }}" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;background:#fff;color:#16201a;outline:none;cursor:pointer;min-width:160px">
+            <sc-for list="{{ nationOptions }}" as="o" hint-placeholder-count="10">
+              <option value="{{ o.val }}" selected="{{ o.selected }}">{{ o.label }}</option>
+            </sc-for>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Club</label>
+          <select onChange="{{ onFilterTeamChange }}" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;background:#fff;color:#16201a;outline:none;cursor:pointer;min-width:180px">
+            <sc-for list="{{ teamOptions }}" as="o" hint-placeholder-count="5">
+              <option value="{{ o.val }}" selected="{{ o.selected }}">{{ o.label }}</option>
+            </sc-for>
+          </select>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Age</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filterAgeMin }}" onInput="{{ onFilterAgeMin }}" placeholder="Min" min="15" max="50" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filterAgeMax }}" onInput="{{ onFilterAgeMax }}" placeholder="Max" min="15" max="50" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Price (§)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filterPriceMin }}" onInput="{{ onFilterPriceMin }}" placeholder="Min" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:82px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filterPriceMax }}" onInput="{{ onFilterPriceMax }}" placeholder="Max" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:82px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Volatility (%)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filterVolMin }}" onInput="{{ onFilterVolMin }}" placeholder="Min" min="0" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filterVolMax }}" onInput="{{ onFilterVolMax }}" placeholder="Max" min="0" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">1D change (%)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filter1dMin }}" onInput="{{ onFilter1dMin }}" placeholder="Min" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filter1dMax }}" onInput="{{ onFilter1dMax }}" placeholder="Max" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">7D change (%)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filter7dMin }}" onInput="{{ onFilter7dMin }}" placeholder="Min" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filter7dMax }}" onInput="{{ onFilter7dMax }}" placeholder="Max" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
+        <sc-if value="{{ hasActiveFilters }}">
+          <button onClick="{{ clearFilters }}" style="font:600 13px 'Hanken Grotesk';background:none;border:1px solid #e1e4dd;color:#8a938c;padding:8px 14px;border-radius:8px;cursor:pointer;align-self:flex-end">Clear all</button>
+        </sc-if>
+      </div>
+      </sc-if>
     </div>
 
     <!-- market table -->
@@ -218,21 +376,23 @@
       <!-- left: chart + drivers -->
       <div style="display:flex;flex-direction:column;gap:18px">
         <div class="fs-card-pad" style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:24px 26px">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap">
-            <div style="min-width:0">
-              <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
-                <span style="display:inline-flex;align-items:center;justify-content:center;font:700 11px 'Space Grotesk';color:#586159;background:#eef1ec;border-radius:6px;padding:4px 8px">{{ d.lg }}</span>
-                <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">{{ d.team }} · {{ d.pos }} · Age {{ d.age }}</span>
-              </div>
-              <div class="fs-detail-name" style="font:700 34px 'Space Grotesk';letter-spacing:-.02em;margin-top:9px">{{ d.name }}</div>
+          <div class="fs-detail-header">
+            <!-- meta: league badge + team/pos/age -->
+            <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+              <span style="display:inline-flex;align-items:center;justify-content:center;font:700 11px 'Space Grotesk';color:#586159;background:#eef1ec;border-radius:6px;padding:4px 8px;flex-shrink:0">{{ d.lg }}</span>
+              <span style="font:500 13px 'Hanken Grotesk';color:#8a938c;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ d.team }} · {{ d.pos }} · Age {{ d.age }}</span>
             </div>
-            <div style="text-align:right;min-width:0">
-              <div class="fs-detail-price" style="font:700 36px 'Space Grotesk';letter-spacing:-.02em">{{ d.price }}</div>
-              <div style="display:inline-flex;align-items:center;gap:6px;margin-top:5px;background: {{ d.wkBg }};color: {{ d.wkColor }};font:700 13px 'Hanken Grotesk';padding:4px 10px;border-radius:999px">{{ d.wkArrow }} {{ d.wkAbs }} · 7d</div>
-              <div style="display:flex;gap:6px;margin-top:7px;justify-content:flex-end;flex-wrap:wrap">
-                <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;padding:3px 9px;border-radius:999px;white-space:nowrap">Vol {{ d.volDisplay }}</span>
-                <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;padding:3px 9px;border-radius:999px;white-space:nowrap">90d {{ d.rangeDisplay }}</span>
-              </div>
+            <!-- name row -->
+            <div class="fs-detail-name" style="font:700 34px 'Space Grotesk';letter-spacing:-.02em;margin-top:9px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ d.name }}</div>
+            <!-- price + 7d row -->
+            <div class="fs-detail-price-row" style="display:flex;align-items:baseline;gap:10px;margin-top:6px;flex-wrap:wrap">
+              <span class="fs-detail-price" style="font:700 36px 'Space Grotesk';letter-spacing:-.02em;flex-shrink:0">{{ d.price }}</span>
+              <span style="display:inline-flex;align-items:center;gap:6px;background: {{ d.wkBg }};color: {{ d.wkColor }};font:700 13px 'Hanken Grotesk';padding:4px 10px;border-radius:999px;flex-shrink:0">{{ d.wkArrow }} {{ d.wkAbs }} · 7d</span>
+            </div>
+            <!-- vol + range pills -->
+            <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap">
+              <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;padding:3px 9px;border-radius:999px;white-space:nowrap">Vol {{ d.volDisplay }}</span>
+              <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;padding:3px 9px;border-radius:999px;white-space:nowrap">90d {{ d.rangeDisplay }}</span>
             </div>
           </div>
 
@@ -245,7 +405,7 @@
 
           <!-- chart -->
           <div style="position:relative;margin-top:8px">
-            <svg class="fs-price-chart" viewBox="0 0 760 260" width="100%" height="260" preserveAspectRatio="none" style="display:block;overflow:visible;cursor:crosshair"
+            <svg class="fs-price-chart" viewBox="0 0 760 260" width="100%" height="260" preserveAspectRatio="none" style="display:block;overflow:visible;cursor:crosshair;touch-action:none"
                  onMouseMove="{{ d.onChartMove }}" onMouseDown="{{ d.onChartDown }}" onMouseUp="{{ d.onChartUp }}" onMouseLeave="{{ d.onChartLeave }}"
                  onTouchStart="{{ d.onChartTouchStart }}" onTouchMove="{{ d.onChartTouchMove }}" onTouchEnd="{{ d.onChartTouchEnd }}" onTouchCancel="{{ d.onChartTouchEnd }}">
               <defs><linearGradient id="fsArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="{{ d.chartColor }}" stop-opacity="0.18"></stop><stop offset="100%" stop-color="{{ d.chartColor }}" stop-opacity="0"></stop></linearGradient></defs>
@@ -377,6 +537,17 @@
             <button onClick="{{ d.onSell }}" style="flex:1;font:700 14px 'Hanken Grotesk';background: {{ d.sellBg }};color: {{ d.sellColor }};border:1px solid {{ d.sellBorder }};padding:13px;border-radius:11px;cursor: {{ d.sellCursor }}">Sell</button>
           </div>
           <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;text-align:center;margin-top:12px">Buying power · {{ cashFmt }}</div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid #eef1ec">
+            <sc-if value="{{ d.hasShort }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';margin-bottom:6px"><span style="color:#8a938c">Hatewatching</span><span style="font-family:'Space Grotesk';font-weight:600">{{ d.shortQty }} shares</span></div>
+              <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';margin-bottom:6px"><span style="color:#8a938c">Shorted at</span><span style="font-family:'Space Grotesk';font-weight:600">{{ d.shortAvg }}</span></div>
+              <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';margin-bottom:10px"><span style="color:#8a938c">Unrealised P/L</span><span style="font:700 13px 'Space Grotesk';color: {{ d.shortPlColor }}">{{ d.shortPl }}</span></div>
+            </sc-if>
+            <div style="display:flex;gap:10px">
+              <button onClick="{{ d.onHatewatch }}" style="flex:1;font:700 13px 'Hanken Grotesk';background:#fff;color:#b91c1c;border:1.5px solid #b91c1c;padding:11px;border-radius:11px;cursor:pointer">Hatewatch</button>
+              <button onClick="{{ d.onCover }}" style="flex:1;font:700 13px 'Hanken Grotesk';background: {{ d.hasShort ? '#b91c1c' : '#f5f6f3' }};color: {{ d.hasShort ? '#fff' : '#bfc6be' }};border:1.5px solid {{ d.hasShort ? '#b91c1c' : '#eef1ec' }};padding:11px;border-radius:11px;cursor: {{ d.hasShort ? 'pointer' : 'not-allowed' }}">Cover</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -419,6 +590,24 @@
       </div>
     </sc-if>
 
+    <div style="font:700 18px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 13px">Hatewatch positions</div>
+    <sc-if value="{{ hasShorts }}" hint-placeholder-val="{{ false }}">
+    <div class="fs-scrollx" style="background:#fff;border:1px solid #fcd9d6;border-radius:16px;overflow:hidden;margin-bottom:30px">
+      <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 90px 110px 110px 110px;gap:12px;padding:12px 22px;border-bottom:1px solid #fcd9d6;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Player</span><span style="text-align:right">Shares</span><span style="text-align:right">Shorted at</span><span style="text-align:right">Current</span><span style="text-align:right">P/L</span></div>
+      <sc-for list="{{ shortsList }}" as="h" hint-placeholder-count="2">
+        <div onClick="{{ h.onClick }}" class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 90px 110px 110px 110px;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #fde8e7;cursor:pointer" style-hover="display:grid;grid-template-columns:1fr 90px 110px 110px 110px;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #fde8e7;cursor:pointer;background:#fff8f7">
+          <span style="display:flex;flex-direction:column"><b style="font:600 15px 'Hanken Grotesk'">{{ h.name }}</b><span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ h.lg }} · {{ h.pos }} · {{ h.price }}</span></span>
+          <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ h.qty }}</span>
+          <span style="text-align:right;font:500 13px 'Space Grotesk';color:#46504a">{{ h.avg }}</span>
+          <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ h.value }}</span>
+          <span style="text-align:right;display:flex;flex-direction:column"><b style="font:700 14px 'Space Grotesk';color: {{ h.plColor }}">{{ h.pl }}</b><span style="font:600 11px 'Hanken Grotesk';color: {{ h.plColor }}">{{ h.plPct }}</span></span>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{ noShorts }}" hint-placeholder-val="{{ true }}">
+      <div style="background:#fff;border:1px dashed #fcd9d6;border-radius:16px;padding:30px;text-align:center;margin-bottom:30px;font:500 13px 'Hanken Grotesk';color:#b91c1c">No hatewatch positions. Find a player you think is overvalued and bet against them.</div>
+    </sc-if>
     <div style="font:700 18px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 13px">Transaction history</div>
     <sc-if value="{{ hasTxns }}" hint-placeholder-val="{{ false }}">
     <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
@@ -457,6 +646,256 @@
     <sc-if value="{{ noWatch }}" hint-placeholder-val="{{ false }}">
       <div style="background:#fff;border:1px dashed #d6dccf;border-radius:16px;padding:46px;text-align:center"><div style="font:700 17px 'Space Grotesk'">Your watchlist is empty</div><div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-top:6px">Tap ☆ on any player to track them here.</div></div>
     </sc-if>
+  </div>
+  </sc-if>
+
+  <!-- ============ CLUBS VIEW ============ -->
+  <sc-if value="{{ isClubs }}" hint-placeholder-val="{{ false }}">
+  <div class="fs-page-pad" style="padding:24px 26px 0">
+
+    <!-- error/success banner -->
+    <sc-if value="{{ clubError }}">
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;padding:12px 16px;margin-bottom:16px;font:500 13px 'Hanken Grotesk';color:#b91c1c">{{ clubError }}</div>
+    </sc-if>
+    <sc-if value="{{ clubSuccess }}">
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:12px 16px;margin-bottom:16px;font:500 13px 'Hanken Grotesk';color:#166534">{{ clubSuccess }}</div>
+    </sc-if>
+
+    <!-- loading -->
+    <sc-if value="{{ clubLoading }}">
+      <div style="text-align:center;padding:60px;font:500 14px 'Hanken Grotesk';color:#8a938c">Loading clubs...</div>
+    </sc-if>
+
+    <!-- NO CLUB: home chooser -->
+    <sc-if value="{{ noClub && isClubHome }}">
+      <div style="font:700 24px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 6px">Clubs</div>
+      <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 28px">Create or join a club to compete with friends in weekly competitions.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
+        <div onClick="{{ goClubCreate }}" style="background:#0c1f15;border-radius:18px;padding:28px 24px;cursor:pointer">
+          <div style="font:700 28px 'Space Grotesk';color:#3ddc8a;margin-bottom:6px">+</div>
+          <div style="font:700 16px 'Space Grotesk';color:#eaf3ed;margin-bottom:6px">Create a club</div>
+          <div style="font:500 12.5px 'Hanken Grotesk';color:#7fb89a">Start your own. Set the rules, invite your crew.</div>
+        </div>
+        <div onClick="{{ goClubJoin }}" style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:28px 24px;cursor:pointer">
+          <div style="font:700 28px 'Space Grotesk';color:#16a85f;margin-bottom:6px">&#x2192;</div>
+          <div style="font:700 16px 'Space Grotesk';margin-bottom:6px">Join a club</div>
+          <div style="font:500 12.5px 'Hanken Grotesk';color:#8a938c">Use an invite code or browse public clubs.</div>
+        </div>
+      </div>
+
+      <!-- public clubs list -->
+      <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Public clubs</div>
+      <sc-if value="{{ clubPublicList.length > 0 }}">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
+        <sc-for list="{{ clubPublicList }}" as="c" hint-placeholder-count="3">
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="min-width:0">
+              <div style="font:700 15px 'Space Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</div>
+              <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">by {{ c.leader_name }}</div>
+            </div>
+            <button onClick="{{ c.onJoin }}" style="flex-shrink:0;font:700 13px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:8px 16px;border-radius:999px;cursor:pointer">Join</button>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <sc-if value="{{ clubPublicList.length === 0 }}">
+        <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No public clubs yet. Be the first to create one.</div>
+      </sc-if>
+    </sc-if>
+
+    <!-- CREATE CLUB FORM -->
+    <sc-if value="{{ isClubCreate }}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
+        <button onClick="{{ goClubHome }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back</button>
+        <span style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Create a club</span>
+      </div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:26px;max-width:520px">
+        <div style="margin-bottom:16px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Club name *</label>
+          <input value="{{ clubCreateName }}" onInput="{{ onClubCreateName }}" placeholder="e.g. Sunday League FC" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none" />
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Description</label>
+          <input value="{{ clubCreateDesc }}" onInput="{{ onClubCreateDesc }}" placeholder="Optional tagline" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none" />
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px">Visibility</label>
+          <div style="display:flex;gap:10px">
+            <button onClick="{{ () => onClubCreatePublic(true) }}" style="flex:1;padding:10px;border-radius:10px;font:600 13px 'Hanken Grotesk';cursor:pointer;border:2px solid {{ clubCreatePublic ? '#16a85f' : '#e1e4dd' }};background:{{ clubCreatePublic ? '#f0fdf4' : '#fff' }};color:{{ clubCreatePublic ? '#16a85f' : '#46504a' }}">Public</button>
+            <button onClick="{{ () => onClubCreatePublic(false) }}" style="flex:1;padding:10px;border-radius:10px;font:600 13px 'Hanken Grotesk';cursor:pointer;border:2px solid {{ !clubCreatePublic ? '#16a85f' : '#e1e4dd' }};background:{{ !clubCreatePublic ? '#f0fdf4' : '#fff' }};color:{{ !clubCreatePublic ? '#16a85f' : '#46504a' }}">Private</button>
+          </div>
+        </div>
+        <div style="margin-bottom:22px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Min net worth to join (optional)</label>
+          <input value="{{ clubCreateMinNW }}" onInput="{{ onClubCreateMinNW }}" placeholder="e.g. 12000" type="number" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none" />
+        </div>
+        <button onClick="{{ submitCreateClub }}" style="width:100%;padding:13px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 15px 'Hanken Grotesk';cursor:pointer">Create club</button>
+      </div>
+    </sc-if>
+
+    <!-- JOIN CLUB FORM -->
+    <sc-if value="{{ isClubJoin }}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
+        <button onClick="{{ goClubHome }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back</button>
+        <span style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Join a club</span>
+      </div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:26px;max-width:520px;margin-bottom:24px">
+        <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Invite code</label>
+        <div style="display:flex;gap:10px">
+          <input value="{{ clubJoinCode }}" onInput="{{ onClubJoinCode }}" placeholder="e.g. XK7M2P" style="flex:1;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none;text-transform:uppercase;letter-spacing:.12em" />
+          <button onClick="{{ submitJoinClub }}" style="flex-shrink:0;padding:11px 20px;background:#16a85f;color:#fff;border:none;border-radius:10px;font:700 14px 'Hanken Grotesk';cursor:pointer">Join</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- MY CLUB -->
+    <sc-if value="{{ hasClub && isClubHome }}">
+      <!-- club header -->
+      <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:20px;padding:24px 28px;margin-bottom:20px;color:#eaf3ed">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font:700 26px 'Space Grotesk';letter-spacing:-.01em">{{ myClub.name }}</div>
+            <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-top:4px">{{ myClub.description }}</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+              <span style="font:600 11px 'Hanken Grotesk';background:rgba(61,220,138,.18);color:#3ddc8a;padding:4px 10px;border-radius:999px">{{ myClub.is_public ? 'Public' : 'Private' }}</span>
+              <span style="font:600 11px 'Hanken Grotesk';background:rgba(255,255,255,.12);color:#c5d9cc;padding:4px 10px;border-radius:999px">{{ clubMembers.length }} / 11 members</span>
+              <span style="font:600 11px 'Hanken Grotesk';background:rgba(255,255,255,.12);color:#c5d9cc;padding:4px 10px;border-radius:999px">Led by {{ myClub.leader_name }}</span>
+            </div>
+          </div>
+          <button onClick="{{ leaveClub }}" style="flex-shrink:0;background:rgba(255,255,255,.12);border:none;color:#c5d9cc;font:600 12px 'Hanken Grotesk';padding:8px 14px;border-radius:999px;cursor:pointer">Leave</button>
+        </div>
+        <!-- invite code (leader only) -->
+        <sc-if value="{{ isMyClubLeader }}">
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="font:500 12px 'Hanken Grotesk';color:#7fb89a">Invite code:</span>
+          <span style="font:700 18px 'Space Grotesk';letter-spacing:.15em;color:#fff">{{ clubInviteCode }}</span>
+          <button onClick="{{ copyInviteCode }}" style="background:rgba(61,220,138,.2);border:none;color:#3ddc8a;font:600 12px 'Hanken Grotesk';padding:6px 14px;border-radius:999px;cursor:pointer">Copy</button>
+        </div>
+        </sc-if>
+      </div>
+
+      <!-- members -->
+      <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Members</div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:24px">
+        <sc-for list="{{ clubMembers }}" as="m" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid #f3f4f0">
+            <div style="display:flex;align-items:center;gap:11px">
+              <div style="width:34px;height:34px;border-radius:999px;background:#eef1ec;display:flex;align-items:center;justify-content:center;font:700 13px 'Space Grotesk';color:#46504a;flex-shrink:0">{{ m.display_name.slice(0,2).toUpperCase() }}</div>
+              <div>
+                <div style="font:600 14px 'Hanken Grotesk'">{{ m.display_name }}</div>
+                <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ myClub.leader_id === m.user_id ? 'Leader' : 'Member' }}</div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- competitions -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:0 2px 14px">
+        <span style="font:700 17px 'Space Grotesk'">Competitions</span>
+        <sc-if value="{{ isMyClubLeader }}">
+          <button onClick="{{ createComp }}" style="font:700 13px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:8px 16px;border-radius:999px;cursor:pointer">+ New</button>
+        </sc-if>
+      </div>
+      <sc-if value="{{ clubComps.length > 0 }}">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
+        <sc-for list="{{ clubComps }}" as="comp" hint-placeholder-count="2">
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="font:700 15px 'Space Grotesk'">{{ comp.name }}</div>
+              <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:3px">{{ comp.timeLeft }}</div>
+            </div>
+            <button onClick="{{ comp.onEnter }}" style="flex-shrink:0;font:700 13px 'Hanken Grotesk';background:{{ comp.isActive ? '#16a85f' : '#eef1ec' }};color:{{ comp.isActive ? '#fff' : '#8a938c' }};border:none;padding:9px 18px;border-radius:999px;cursor:pointer">{{ comp.isActive ? 'Enter' : 'View results' }}</button>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <sc-if value="{{ clubComps.length === 0 }}">
+        <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No competitions yet.</div>
+      </sc-if>
+    </sc-if>
+
+    <!-- COMPETITION MODE -->
+    <sc-if value="{{ isClubComp }}">
+      <!-- header bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button onClick="{{ exitComp }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back to club</button>
+          <span style="font:700 18px 'Space Grotesk'">{{ activeCompName }}</span>
+          <span style="font:700 10px 'Hanken Grotesk';letter-spacing:.08em;background:#fef3c7;color:#d97706;padding:4px 9px;border-radius:6px;text-transform:uppercase">Competition Mode</span>
+        </div>
+      </div>
+
+      <!-- P&L summary -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+        <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:16px;padding:18px 20px;color:#eaf3ed">
+          <div style="font:600 11px 'Hanken Grotesk';color:#7fb89a;letter-spacing:.08em;text-transform:uppercase">Portfolio value</div>
+          <div style="font:700 26px 'Space Grotesk';margin-top:4px">{{ compValue }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:18px 20px">
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">P&amp;L vs 10k start</div>
+          <div style="font:700 26px 'Space Grotesk';margin-top:4px;color:{{ compProfit.color }}">{{ compProfit.arrow }} {{ compProfit.fmt }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:18px 20px">
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Comp cash</div>
+          <div style="font:700 26px 'Space Grotesk';margin-top:4px">{{ compCash }}</div>
+        </div>
+      </div>
+
+      <!-- leaderboard + holdings side by side -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+        <div>
+          <div style="font:700 14px 'Space Grotesk';margin-bottom:10px">Club leaderboard</div>
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;overflow:hidden">
+            <sc-for list="{{ compLeaderboard }}" as="lb" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f3f4f0">
+                <span style="font:600 14px 'Hanken Grotesk'">{{ lb.display_name }}</span>
+                <span style="font:700 14px 'Space Grotesk';color:{{ lb.profit >= 0 ? '#16a85f' : '#e03e3e' }}">{{ lb.profit >= 0 ? '+' : '' }}{{ lb.profit.toFixed(0) }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <div style="font:700 14px 'Space Grotesk';margin-bottom:10px">My holdings</div>
+          <sc-if value="{{ compHoldings.length > 0 }}">
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;overflow:hidden">
+            <sc-for list="{{ compHoldings }}" as="h" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f3f4f0;cursor:pointer" onClick="{{ h.onClick }}">
+                <div>
+                  <div style="font:600 13px 'Hanken Grotesk'">{{ h.name }}</div>
+                  <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ h.qty }} shares · {{ h.price }}</div>
+                </div>
+                <span style="font:700 13px 'Space Grotesk'">{{ h.value }}</span>
+              </div>
+            </sc-for>
+          </div>
+          </sc-if>
+          <sc-if value="{{ compHoldings.length === 0 }}">
+            <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:24px;text-align:center;font:500 12px 'Hanken Grotesk';color:#8a938c">No holdings yet. Browse the market below to trade.</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- market list in comp mode -->
+      <div style="font:700 16px 'Space Grotesk';margin-bottom:12px">Market &middot; trade with competition funds</div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:30px">
+        <sc-for list="{{ marketList }}" as="p" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 80px 80px 80px;gap:10px;align-items:center;padding:12px 18px;border-bottom:1px solid #f3f4f0">
+            <span onClick="{{ p.onClick }}" style="display:flex;flex-direction:column;cursor:pointer;min-width:0">
+              <b style="font:600 14px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</b>
+              <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ p.pos }} · {{ p.team }}</span>
+            </span>
+            <span style="text-align:right;font:700 14px 'Space Grotesk'">{{ p.price }}</span>
+            <span style="text-align:right;font:600 12px 'Hanken Grotesk';color:{{ p.wkColor }}">{{ p.wkArrow }}{{ p.wkAbs }}</span>
+            <span style="text-align:right;display:flex;gap:5px;justify-content:flex-end">
+              <button onClick="{{ () => compBuyPlayer(p.id, p.rawPrice) }}" style="font:700 11px 'Hanken Grotesk';background:#e8f7ef;color:#16a85f;border:none;padding:5px 9px;border-radius:7px;cursor:pointer">Buy</button>
+              <button onClick="{{ () => compSellPlayer(p.id, p.rawPrice) }}" style="font:700 11px 'Hanken Grotesk';background:#fef2f2;color:#e03e3e;border:none;padding:5px 9px;border-radius:7px;cursor:pointer">Sell</button>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
   </div>
   </sc-if>
 
@@ -499,7 +938,7 @@
         </div>
         <div style="font:700 28px 'Space Grotesk';letter-spacing:-.015em;color:#16201a;margin-bottom:10px">{{ selectedArticle.headline }}</div>
         <div style="font:600 15px 'Hanken Grotesk';color:#586159;line-height:1.55;margin-bottom:18px">{{ selectedArticle.dek }}</div>
-        <div style="font:500 14.5px 'Hanken Grotesk';color:#2a332d;line-height:1.7;white-space:pre-line">{{ selectedArticle.body }}</div>
+        <div style="font:500 14.5px 'Hanken Grotesk';color:#2a332d;line-height:1.7;white-space:pre-line"><sc-for list="{{ selectedArticle.bodySegs }}" as="bs" hint-placeholder-count="6"><sc-if value="{{ bs.isText }}"><span>{{ bs.v }}</span></sc-if><sc-if value="{{ bs.isLink }}"><button onClick="{{ bs.onClick }}" style="font:600 14.5px 'Hanken Grotesk';background:none;border:none;color:#16a85f;cursor:pointer;padding:0;font-family:inherit;text-decoration:underline;text-underline-offset:2px">{{ bs.v }}</button></sc-if></sc-for></div>
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-top:22px;padding-top:18px;border-top:1px solid #f1f3ef">
           <sc-for list="{{ selectedArticle.refs }}" as="r" hint-placeholder-count="3">
             <button onClick="{{ r.onClick }}" style="font:600 12px 'Hanken Grotesk';background:#eef1ec;border:none;color:#16a85f;padding:6px 11px;border-radius:999px;cursor:pointer">{{ r.name }}</button>
@@ -513,12 +952,31 @@
   <!-- ============ LEADERBOARD VIEW ============ -->
   <sc-if value="{{ isLeaders }}" hint-placeholder-val="{{ false }}">
   <div class="fs-page-pad" style="padding:24px 26px 0">
-    <div style="font:700 20px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 4px">Leaderboard</div>
-    <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 18px">Ranked by all-time profit across all traders.</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+      <div style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Leaderboard</div>
+      <button onClick="{{ goProfile }}" style="font:600 13px 'Hanken Grotesk';background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:9px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">👤 My Profile</button>
+    </div>
+    <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 18px">Ranked by net worth — click any row to view a profile.</div>
+    <!-- name prompt: shown when user hasn't set a display name yet -->
+    <sc-if value="{{ lbNameData.showPrompt }}" hint-placeholder-val="{{ false }}">
+    <div style="background:#f0faf4;border:1px solid #b6e8cc;border-radius:14px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+      <span style="font:500 13.5px 'Hanken Grotesk';color:#16201a;flex:1;min-width:180px">Set a display name to appear on the leaderboard</span>
+      <input onInput="{{ lbNameData.onInput }}" onKeyDown="{{ lbNameData.onKeyDown }}" placeholder="Your name" maxlength="32" style="font:500 14px 'Hanken Grotesk';border:1px solid #b6e8cc;border-radius:9px;padding:8px 13px;outline:none;width:160px">
+      <button onClick="{{ lbNameData.onSave }}" style="font:600 13.5px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;border-radius:9px;padding:9px 18px;cursor:pointer">Save</button>
+    </div>
+    </sc-if>
+    <!-- name edit: shown when name is set -->
+    <sc-if value="{{ lbNameData.showEdit }}" hint-placeholder-val="{{ false }}">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+      <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">Your name:</span>
+      <input onInput="{{ lbNameData.onInput }}" onKeyDown="{{ lbNameData.onKeyDown }}" placeholder="{{ lbNameData.current }}" maxlength="32" style="font:500 14px 'Hanken Grotesk';border:1px solid #e3e6e0;border-radius:9px;padding:7px 12px;outline:none;width:160px">
+      <button onClick="{{ lbNameData.onSave }}" style="font:600 13px 'Hanken Grotesk';background:#f0faf4;color:#16a85f;border:1px solid #b6e8cc;border-radius:9px;padding:8px 14px;cursor:pointer">Update</button>
+    </div>
+    </sc-if>
     <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
       <div class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Rank</span><span>Trader</span><span style="text-align:right">Net worth</span><span style="text-align:right">Profit</span></div>
       <sc-for list="{{ leaderboard }}" as="l" hint-placeholder-count="12">
-        <div class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }}">
+        <div onClick="{{ l.onClick }}" class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }};cursor:pointer" style-hover="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background:#fafbf8;cursor:pointer">
           <span style="font:700 15px 'Space Grotesk';color: {{ l.rankColor }}">{{ l.medal }}</span>
           <span style="display:flex;align-items:center;gap:10px"><span class="fs-avatar-badge" style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk'">{{ l.name }}</b></span>
           <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ l.netWorth }}</span>
@@ -526,6 +984,117 @@
         </div>
       </sc-for>
     </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ PROFILE VIEW ============ -->
+  <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+  <div class="fs-page-pad" style="padding:24px 26px 0">
+    <button onClick="{{ closeProfile }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#16a85f;padding:6px 0;margin-bottom:18px">← Back to leaderboard</button>
+
+    <!-- own profile: full stats -->
+    <sc-if value="{{ profileIsMe }}" hint-placeholder-val="{{ true }}">
+      <!-- header card -->
+      <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:20px;padding:26px 28px;color:#eaf3ed;display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+        <div style="width:64px;height:64px;border-radius:999px;background:#16a85f;display:flex;align-items:center;justify-content:center;font:700 22px 'Space Grotesk';color:#fff;flex-shrink:0">{{ profileInitials }}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font:700 24px 'Space Grotesk';letter-spacing:-.01em">{{ profileName }}</div>
+          <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-top:3px">Member since {{ profileStats.joinDate }} · #{{ profileStats.streak }} day streak 🔥</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font:600 11px 'Hanken Grotesk';color:#7fb89a;letter-spacing:.08em;text-transform:uppercase">Net worth</div>
+          <div style="font:700 32px 'Space Grotesk';letter-spacing:-.02em;margin-top:2px">{{ profileStats.nwFmt }}</div>
+        </div>
+      </div>
+
+      <!-- key numbers row -->
+      <div class="fs-profile-grid4" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">All-time P/L</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px;color: {{ profileStats.plColor }}">{{ profileStats.plFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">from §10,000 start</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">All-time peak</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.athFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">highest net worth</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Total trades</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.totalTrades }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ profileStats.totalBuys }} buys · {{ profileStats.totalSells }} sells</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Win rate</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.winRateFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">profitable open positions</div>
+        </div>
+      </div>
+
+      <!-- detail stats row -->
+      <div class="fs-profile-grid3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Stocks bought</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.totalBuyQty }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">shares across all buys</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Players traded</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.playersTraded }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">unique players ever</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Portfolio diversity</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.diversityLabel }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ profileStats.positions }} open positions</div>
+        </div>
+      </div>
+
+      <!-- bottom row: flavor stats -->
+      <div class="fs-profile-grid3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Favourite player</div>
+          <div style="font:700 16px 'Space Grotesk';margin-top:6px;line-height:1.2">{{ profileStats.favPlayer }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">most shares bought</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Best open position</div>
+          <div style="font:700 16px 'Space Grotesk';margin-top:6px;line-height:1.2">{{ profileStats.bestPLNameDisplay }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#16a85f;margin-top:2px">{{ profileStats.bestPosPctFmt }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Cash on hand</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.cashFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">buying power</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- other user's profile: limited public view -->
+    <sc-if value="{{ profileIsOther }}" hint-placeholder-val="{{ false }}">
+      <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:20px;padding:26px 28px;color:#eaf3ed;display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+        <div style="width:64px;height:64px;border-radius:999px;background:#2a6fdb;display:flex;align-items:center;justify-content:center;font:700 22px 'Space Grotesk';color:#fff;flex-shrink:0">{{ profileInitials }}</div>
+        <div style="flex:1">
+          <div style="font:700 24px 'Space Grotesk';letter-spacing:-.01em">{{ profileName }}</div>
+          <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-top:3px">Public profile</div>
+        </div>
+      </div>
+      <div class="fs-profile-grid3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Net worth</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileOtherNW }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">All-time P/L</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px;color: {{ profileOtherPLColor }}">{{ profileOtherPL }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Global rank</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileOtherMedal }}</div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:20px;font:500 13px 'Hanken Grotesk';color:#8a938c">Detailed stats are only visible to the account holder.</div>
+    </sc-if>
   </div>
   </sc-if>
 
@@ -590,8 +1159,104 @@
   </div>
 </div>
 </sc-if>
+
+<!-- ============ FEEDBACK BUTTON ============ -->
+<button onClick="{{ openFeedback }}" style="position:fixed;bottom:28px;right:24px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
+  <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13a2 2 0 0 1-2 2H6l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/></svg>
+  Feedback
+</button>
+
+<!-- ============ FEEDBACK MODAL ============ -->
+<sc-if value="{{ feedbackOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:100;background:rgba(12,20,15,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeFeedback }}">
+  <div onClick="{{ stopFeedback }}" class="fs-modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:440px;padding:28px;box-shadow:0 30px 80px rgba(10,20,14,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Send feedback</span>
+      <button onClick="{{ closeFeedback }}" style="background:none;border:none;cursor:pointer;font:400 22px 'Hanken Grotesk';color:#aab2ab;line-height:1">×</button>
+    </div>
+    <sc-if value="{{ fbSent }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;padding:30px 0">
+        <div style="font:700 28px 'Space Grotesk'">Thanks! 🙏</div>
+        <div style="font:500 13.5px 'Hanken Grotesk';color:#8a938c;margin-top:8px">Your feedback has been received.</div>
+        <button onClick="{{ closeFeedback }}" style="margin-top:20px;font:700 14px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:12px 28px;border-radius:12px;cursor:pointer">Close</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ fbNotSent }}" hint-placeholder-val="{{ true }}">
+      <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:18px">Got a bug, suggestion, or thought? We read everything.</div>
+      <input onInput="{{ fbOnName }}" placeholder="Your name (optional)" maxlength="60" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff;margin-bottom:10px">
+      <textarea onInput="{{ fbOnText }}" placeholder="What's on your mind?" maxlength="1000" rows="5" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff;resize:vertical;line-height:1.5"></textarea>
+      <div style="font:500 12px 'Hanken Grotesk';color:#e03e3e;margin-top:6px;min-height:16px">{{ fbError }}</div>
+      <button onClick="{{ fbSubmit }}" style="width:100%;margin-top:10px;font:700 15px 'Hanken Grotesk';background: {{ fbBtnBg }};color:#fff;border:none;padding:14px;border-radius:13px;cursor: {{ fbBtnCursor }}">{{ fbBtnLabel }}</button>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
 </x-dc>
 <script type="text/x-dc" data-dc-script>
+/*
+-- Run this in Supabase SQL editor before using Clubs:
+create table if not exists clubs (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  description text default '',
+  leader_id text not null,
+  leader_name text not null,
+  is_public boolean default true,
+  invite_code text not null unique,
+  min_net_worth numeric default 0,
+  created_at timestamptz default now()
+);
+create unique index if not exists clubs_name_lower_idx on clubs (lower(name));
+
+create table if not exists club_members (
+  id uuid default gen_random_uuid() primary key,
+  club_id uuid references clubs(id) on delete cascade not null,
+  user_id text not null,
+  display_name text not null,
+  joined_at timestamptz default now(),
+  unique(club_id, user_id)
+);
+
+create table if not exists competitions (
+  id uuid default gen_random_uuid() primary key,
+  club_id uuid references clubs(id) on delete cascade not null,
+  name text not null,
+  ends_at timestamptz not null,
+  status text default 'active',
+  created_at timestamptz default now()
+);
+
+create table if not exists comp_portfolios (
+  id uuid default gen_random_uuid() primary key,
+  competition_id uuid references competitions(id) on delete cascade not null,
+  club_id uuid not null,
+  user_id text not null,
+  display_name text not null,
+  cash numeric default 10000,
+  holdings jsonb default '{}',
+  updated_at timestamptz default now(),
+  unique(competition_id, user_id)
+);
+
+-- Allow public access (entertainment-only app, no real money)
+alter table clubs disable row level security;
+alter table club_members disable row level security;
+alter table competitions disable row level security;
+alter table comp_portfolios disable row level security;
+*/
+
+const SUPABASE_URL='https://pwlszzrvwhflijbjwnnf.supabase.co';
+const SUPABASE_KEY='sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_';
+class Supa{
+  static h(extra={}){return{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation',...extra};}
+  static async get(table,q=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${q}`,{headers:this.h()});if(!r.ok)throw new Error(await r.text());return r.json();}
+  static async post(table,body){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:this.h(),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
+  static async patch(table,q,body){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${q}`,{method:'PATCH',headers:this.h({'Prefer':'return=representation'}),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
+  static async del(table,q){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${q}`,{method:'DELETE',headers:this.h()});return r.ok;}
+  static async upsert(table,body,onConflict=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:this.h({'Prefer':'resolution=merge-duplicates,return=representation'}),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
+}
+
 class Component extends DCLogic {
   // ---------- lifecycle ----------
   constructor(props){
@@ -600,11 +1265,21 @@ class Component extends DCLogic {
     this.state = {
       view:'market', selectedId:null, selectedArticleId:null, league:'ALL', search:'', range:90,
       sortKey:'rank', sortDir:'asc',
+      filterOpen:false, filterNation:'ALL', filterTeam:'ALL', filterAgeMin:'', filterAgeMax:'', filterPriceMin:'', filterPriceMax:'',
+      filterVolMin:'', filterVolMax:'', filter1dMin:'', filter1dMax:'', filter7dMin:'', filter7dMax:'',
       chartHoverIdx:null, chartDragStart:null,
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
-      showReward:false, tick:0, pendingOrders:[], ready:false,
+      showReward:false, tick:0, pendingOrders:[], ready:false, recapDismissed:false,
+      feedbackOpen:false, feedbackText:'', feedbackName:'', feedbackSending:false, feedbackSent:false, feedbackError:'',
+      profileViewName: null,
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
-      streak: saved.streak, lastClaim: saved.lastClaim,
+      streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
+      joinDate: saved.joinDate, allTimeHigh: saved.allTimeHigh,
+      clubLoading: false, myClub: null, clubMembers: [], clubComps: [], clubPublicList: [],
+      compPortfolio: null, compLeaderboard: [], activeCompId: null, clubView: 'home',
+      clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
+      clubJoinCode: '', clubJoinSearch: '',
+      clubError: '', clubSuccess: '',
     };
   }
   componentDidMount(){
@@ -644,6 +1319,9 @@ class Component extends DCLogic {
     // price, not two racing each other.
     const cachedLive = this.loadCachedLive();
     if(cachedLive){ this._wcLive = cachedLive; }
+    // Feedback submissions go here — sign up at formspree.io (free), create a
+    // form targeting your email, then paste the endpoint below.
+    this._feedbackEndpoint = 'https://formspree.io/f/YOUR_FORM_ID';
     this._liveWorkerBase = 'https://footystock.fly.dev';
     const LIVE_WORKER_URL = this._liveWorkerBase + '/prices.json';
     // Only adopt a fetched snapshot if it isn't OLDER than the one we already
@@ -676,21 +1354,36 @@ class Component extends DCLogic {
       // orders fill at the next price tick, not the price shown when confirmed —
       // closes the "watch it happen on TV, buy before the price reacts" window.
       this.fillPendingOrders(DB);
-      this.setState(s=>({tick:s.tick+1}));
+      const nwNow=this.netWorth();
+      this.setState(s=>{ const ath=Math.max(s.allTimeHigh||10000,nwNow); if(ath>s.allTimeHigh) setTimeout(()=>this.persist(),0); return {tick:s.tick+1,allTimeHigh:ath}; });
     }, 9000);
+    // Leaderboard: read/write Supabase directly from the browser — no worker
+    // hop needed since the anon key is public and RLS handles access control.
+    const SB_URL='https://pwlszzrvwhflijbjwnnf.supabase.co/rest/v1/leaderboard';
+    const SB_HDR={'apikey':'sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_','Authorization':'Bearer sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_'};
+    this._sbUrl=SB_URL; this._sbHdr=SB_HDR;
+    const pollLeaderboard = ()=>{
+      fetch(SB_URL+'?order=net_worth.desc&limit=100',{headers:SB_HDR}).then(r=>r.ok?r.json():null).then(data=>{
+        if(data){ this._liveLeaderboard=data.map(r=>({name:r.name,netWorth:r.net_worth})); this.setState(s=>({tick:s.tick+1})); }
+      }).catch(()=>{});
+    };
+    pollLeaderboard();
+    this.leaderboardTimer = setInterval(()=>{ if(this.state.view==='leaders') pollLeaderboard(); }, 60000);
+    setTimeout(()=>this.submitScore(), 3000);
     // auto-open reward if claimable on first load
     if(this.isClaimable()) this.setState({showReward:true});
   }
-  componentWillUnmount(){ clearInterval(this.timer); }
+  componentWillUnmount(){ clearInterval(this.timer); clearInterval(this.liveTimer); clearInterval(this.leaderboardTimer); }
 
   // ---------- persistence ----------
   load(){
     let s=null; try{ s = JSON.parse(localStorage.getItem('footystock_v3')); }catch(e){}
-    if(!s) return { cash:10000, holdings:{}, txns:[], watch:['lamine-yamal','desire-doue','mika-godts','florian-wirtz'], streak:0, lastClaim:null };
-    return { cash:s.cash??10000, holdings:s.holdings||{}, txns:s.txns||[], watch:s.watch||[], streak:s.streak||0, lastClaim:s.lastClaim||null };
+    const today=new Date().toISOString().slice(0,10);
+    if(!s) return { cash:10000, holdings:{}, txns:[], watch:['lamine-yamal','desire-doue','mika-godts','florian-wirtz'], streak:0, lastClaim:null, shorts:{}, joinDate:today, allTimeHigh:10000 };
+    return { cash:s.cash??10000, holdings:s.holdings||{}, txns:s.txns||[], watch:s.watch||[], streak:s.streak||0, lastClaim:s.lastClaim||null, shorts:s.shorts||{}, joinDate:s.joinDate||today, allTimeHigh:s.allTimeHigh||10000 };
   }
   persist(extra){
-    const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim }, extra||{});
+    const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim, shorts:this.state.shorts, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh }, extra||{});
     try{ localStorage.setItem('footystock_v3', JSON.stringify(s)); }catch(e){}
   }
 
@@ -749,7 +1442,7 @@ Bruno Fernandes|Man Utd|AM|31|3
 Bryan Mbeumo|Man Utd|RW|26|3
 Matheus Cunha|Man Utd|AM|26|3
 Benjamin Šeško|Man Utd|ST|23|3
-Alejandro Garnacho|Man Utd|LW|21|4
+Alejandro Garnacho|Chelsea|LW|21|4
 Kobbie Mainoo|Man Utd|CM|21|4
 James Maddison|Tottenham|AM|29|3
 Dejan Kulusevski|Tottenham|AM|26|3
@@ -833,7 +1526,7 @@ Joshua Kimmich|Bayern|CM|31|3
 Luis Díaz|Bayern|LW|29|3
 Dayot Upamecano|Bayern|CB|27|4
 Aleksandar Pavlović|Bayern|CM|21|4
-Nicolas Jackson|Bayern|ST|24|4
+Nicolas Jackson|Chelsea|ST|24|4
 Lennart Karl|Bayern|AM|18|5
 Patrik Schick|Leverkusen|ST|30|4
 Alejandro Grimaldo|Leverkusen|LB|30|4
@@ -844,7 +1537,7 @@ Julian Brandt|Dortmund|AM|29|5
 Nico Schlotterbeck|Dortmund|CB|26|4
 Jobe Bellingham|Dortmund|CM|20|5
 Maximilian Beier|Dortmund|ST|22|5
-Loïs Openda|RB Leipzig|ST|25|4
+Loïs Openda|Juventus|ST|25|4
 Christoph Baumgartner|RB Leipzig|CM|26|5
 Antonio Nusa|RB Leipzig|LW|20|4
 Johan Bakayoko|RB Leipzig|RW|22|5
@@ -883,7 +1576,7 @@ Ricardo Pepi|PSV|ST|23|5
 Sem Steijn|PSV|AM|24|5
 Sergiño Dest|PSV|RB|25|6
 Vangelis Pavlidis|Benfica|ST|27|5
-Kerem Aktürkoğlu|Benfica|LW|27|5
+Kerem Aktürkoğlu|Fenerbahçe|LW|27|5
 Gianluca Prestianni|Benfica|AM|19|6
 Geovany Quenda|Sporting|RW|18|5
 Francisco Trincão|Sporting|RW|26|5
@@ -899,34 +1592,33 @@ Eberechi Eze|Crystal Palace|AM|27|4
 Marc Guéhi|Crystal Palace|CB|25|4
 Alisson|Liverpool|GK|33|4
 Éder Militão|Real Madrid|CB|28|4
-Casemiro|Man Utd|CM|34|4
+Casemiro|Inter Miami|CM|34|4
 Unai Simón|Athletic|GK|29|5
 Mikel Merino|Arsenal|CM|29|4
 Manuel Neuer|Bayern|GK|40|5
 Robert Andrich|Leverkusen|CM|31|5
 Lionel Messi|Inter Miami|RW|38|3
 Alexis Mac Allister|Liverpool|CM|27|4
-Rodrigo De Paul|Atlético|CM|31|5
+Rodrigo De Paul|Inter Miami|CM|31|5
 Cristiano Ronaldo|Al-Nassr|ST|41|3
 Rúben Dias|Man City|CB|28|3
 Diogo Costa|Porto|GK|26|5
 Cody Gakpo|Liverpool|LW|27|3
 Denzel Dumfries|Inter|RB|30|4
-Xavi Simons|RB Leipzig|AM|23|3
+Xavi Simons|Tottenham|AM|23|3
 Nathan Aké|Man City|CB|31|4
 Richard Ríos|Benfica|CM|25|5
 Weston McKennie|Juventus|CM|27|5
 Mateo Kovačić|Man City|CM|32|5
 Brahim Díaz|Real Madrid|AM|26|4
-Takehiro Tomiyasu|Arsenal|CB|27|5
-Darwin Núñez|Liverpool|ST|26|4
+Takehiro Tomiyasu|Ajax|CB|27|5
 Ronald Araújo|Barcelona|CB|27|4
 Rodrigo Bentancur|Tottenham|CM|28|5
 Thibaut Courtois|Real Madrid|GK|33|4
 Youri Tielemans|Aston Villa|CM|28|5
 Yassine Bounou|Sevilla|GK|34|5
 Sofyan Amrabat|Fenerbahçe|CM|28|5
-Hakim Ziyech|Galatasaray|RW|32|5
+Hakim Ziyech|Wydad AC|RW|32|5
 Noussair Mazraoui|Man Utd|RB|27|4
 Andy Robertson|Liverpool|LB|31|4
 Billy Gilmour|Napoli|CM|24|5
@@ -940,7 +1632,7 @@ Son Heung-min|Tottenham|LW|33|3
 Kim Min-jae|Bayern|CB|29|4
 Lee Kang-in|Paris SG|AM|24|4
 Hwang Hee-chan|Wolves|ST|29|5
-Granit Xhaka|Leverkusen|CM|32|4
+Granit Xhaka|Sunderland|CM|32|4
 Manuel Akanji|Man City|CB|30|4
 Yann Sommer|Inter|GK|36|5
 Breel Embolo|Monaco|ST|27|5
@@ -950,28 +1642,28 @@ Piotr Zieliński|Inter|AM|31|5
 Wojciech Szczęsny|Barcelona|GK|35|5
 Jakub Kiwior|Arsenal|CB|25|4
 Pervis Estupiñán|Brighton|LB|27|4
-Piero Hincapié|Leverkusen|CB|23|4
+Piero Hincapié|Arsenal|CB|23|4
 Akram Afif|Al-Sadd|RW|29|5
 Almoez Ali|Al-Duhail|ST|29|6
-Rasmus Højlund|Man Utd|ST|23|4
+Rasmus Højlund|Napoli|ST|23|4
 Pierre-Emile Højbjerg|Marseille|CM|29|4
 Joachim Andersen|Fulham|CB|29|4
-Sardar Azmoun|Leverkusen|ST|30|6
-Mehdi Taremi|Inter|ST|32|5
+Sardar Azmoun|Shabab Al Ahli|ST|30|6
+Mehdi Taremi|Olympiacos|ST|32|5
 Alexis Sánchez|Udinese|AM|36|6
 Victor Osimhen|Napoli|ST|26|3
-Wilfred Ndidi|Leicester|CM|28|6
+Wilfred Ndidi|Beşiktaş|CM|28|6
 Alex Iwobi|Fulham|AM|29|5
 Duckens Nazon|Le Havre|ST|29|6
 Frantzdy Pierrot|Charlotte FC|ST|26|6
 Miguel Almirón|Newcastle|RW|31|5
-Julio Enciso|Brighton|AM|21|5
+Julio Enciso|Strasbourg|AM|21|5
 Gustavo Gómez|Palmeiras|CB|29|6
 Mathew Ryan|Real Sociedad|GK|33|6
 Riley McGree|Charlotte FC|AM|27|6
 Leandro Bacuna|Royal Antwerp|CM|33|6
 Rangelo Janga|Sabah|ST|34|6
-Sébastien Haller|Leverkusen|ST|31|5
+Sébastien Haller|FC Utrecht|ST|31|5
 Franck Kessié|Al-Ahli|CM|28|5
 Wilfried Singo|Monaco|RB|24|5
 Wahbi Khazri|Montpellier|AM|34|6
@@ -993,7 +1685,7 @@ Marcel Sabitzer|Dortmund|CM|31|5
 Konrad Laimer|Bayern|CM|27|5
 Yoane Wissa|Newcastle|ST|28|4
 Chancel Mbemba|Marseille|CB|30|5
-Eldor Shomurodov|Roma|ST|29|5
+Eldor Shomurodov|Başakşehir|ST|29|5
 Abbosbek Fayzullaev|CSKA Moscow|AM|21|6
 Adalberto Carrasquilla|Alianza FC|CM|26|6
 Percy Tau|Al Ahly|RW|31|6
@@ -1010,7 +1702,7 @@ Ezri Konsa|Aston Villa|CB|28|5
 Reece James|Chelsea|RB|26|4
 Jarrad Branthwaite|Everton|CB|23|4
 Curtis Jones|Liverpool|CM|25|5
-Conor Gallagher|Atlético|CM|26|5
+Conor Gallagher|Tottenham|CM|26|5
 Jarrod Bowen|West Ham|RW|29|4
 Morgan Gibbs-White|Nottingham Forest|AM|26|4
 Ivan Toney|Al-Ahli|ST|30|5
@@ -1018,22 +1710,22 @@ Kieran Trippier|Newcastle|RB|35|5
 Ederson|Man City|GK|32|4
 Marquinhos|Paris SG|CB|31|4
 Danilo|Flamengo|RB|34|5
-Wendell|Porto|LB|29|6
+Wendell|São Paulo|LB|29|6
 Andreas Pereira|Fulham|AM|30|5
-Lucas Paquetá|West Ham|AM|28|4
+Lucas Paquetá|Flamengo|AM|28|4
 João Gomes|Wolves|CM|24|4
 Richarlison|Tottenham|ST|29|4
 Wesley|Flamengo|ST|24|6
 David Raya|Arsenal|GK|30|4
 Robin Le Normand|Atlético|CB|29|4
-Aymeric Laporte|Al-Nassr|CB|31|5
+Aymeric Laporte|Athletic|CB|31|5
 Marc Cucurella|Chelsea|LB|27|4
 Fabián Ruiz|Paris SG|CM|29|4
 Ferran Torres|Barcelona|RW|26|4
 Yeremy Pino|Villarreal|RW|22|5
 Marc-André ter Stegen|Barcelona|GK|34|5
 Antonio Rüdiger|Real Madrid|CB|33|4
-Jonathan Tah|Leverkusen|CB|29|4
+Jonathan Tah|Bayern|CB|29|4
 Benjamin Henrichs|RB Leipzig|RB|28|5
 David Raum|RB Leipzig|LB|27|5
 Leon Goretzka|Bayern|CM|31|4
@@ -1043,14 +1735,14 @@ Nahuel Molina|Atlético|RB|27|4
 Nicolás Otamendi|Benfica|CB|37|6
 Lisandro Martínez|Man Utd|CB|27|4
 Marcos Acuña|River Plate|LB|33|6
-Leandro Paredes|Roma|CM|31|5
+Leandro Paredes|Boca Juniors|CM|31|5
 Exequiel Palacios|Leverkusen|CM|27|4
-Nicolás González|Juventus|LW|27|4
+Nicolás González|Atlético|LW|27|4
 José Sá|Wolves|GK|32|5
 António Silva|Benfica|CB|22|4
 Danilo Pereira|Al-Ittihad|CM|33|5
 João Cancelo|Al-Hilal|RB|31|5
-Renato Sanches|Benfica|CM|28|5
+Renato Sanches|Panathinaikos|CM|28|5
 Bart Verbruggen|Brighton|GK|23|5
 Matthijs de Ligt|Man Utd|CB|26|4
 Jurriën Timber|Arsenal|RB|24|4
@@ -1061,8 +1753,8 @@ Camilo Vargas|Atlas|GK|36|6
 Davinson Sánchez|Galatasaray|CB|29|5
 Jhon Lucumí|Bologna|CB|27|5
 Jefferson Lerma|Crystal Palace|CM|31|5
-Jhon Arias|Wolves|RW|28|5
-Rafael Santos Borré|Werder Bremen|ST|29|5
+Jhon Arias|Palmeiras|RW|28|5
+Rafael Santos Borré|River Plate|ST|29|5
 Matt Turner|Crystal Palace|GK|31|5
 Tim Ream|Charlotte FC|CB|38|6
 Chris Richards|Crystal Palace|CB|26|4
@@ -1071,15 +1763,15 @@ Tyler Adams|Bournemouth|CM|27|4
 Yunus Musah|Atalanta|CM|23|5
 Tim Weah|Marseille|RW|26|5
 Dominik Livaković|Fenerbahçe|GK|31|5
-Josip Stanišić|Leverkusen|RB|26|5
-Borna Sosa|Ajax|LB|26|6
+Josip Stanišić|Bayern|RB|26|5
+Borna Sosa|Crystal Palace|LB|26|6
 Lovro Majer|Wolfsburg|AM|28|5
 Andrej Kramarić|Hoffenheim|ST|35|6
 Ante Budimir|Osasuna|ST|34|6
 Ayyoub Bouaddi|Lille|CM|18|5
 Achraf Dari|Stade Brestois|CB|26|5
-Romain Saïss|Beşiktaş|CB|35|6
-Bilal El Khannouss|Leicester|AM|21|4
+Romain Saïss|Al Sadd|CB|35|6
+Bilal El Khannouss|Stuttgart|AM|21|4
 Azzedine Ounahi|Panathinaikos|CM|25|5
 Ilias Akhomach|Villarreal|LW|21|5
 Abdelhamid Sabiri|Fiorentina|AM|28|6
@@ -1099,16 +1791,16 @@ Sergio Rochet|Internacional|GK|29|6
 José María Giménez|Atlético|CB|30|4
 Mathías Olivera|Napoli|LB|27|5
 Manuel Ugarte|Man Utd|CM|24|4
-Facundo Pellistri|Las Palmas|RW|23|5
-Uğurcan Çakır|Trabzonspor|GK|29|5
+Facundo Pellistri|Panathinaikos|RW|23|5
+Uğurcan Çakır|Galatasaray|GK|29|5
 Merih Demiral|Al-Ahli|CB|27|4
 Ferdi Kadıoğlu|Brighton|LB|26|4
-Salih Özcan|Roma|CM|27|5
+Salih Özcan|Dortmund|CM|27|5
 Yunus Akgün|Galatasaray|RW|26|5
 Mohamed El-Shenawy|Al Ahly|GK|34|6
 Ahmed Hegazi|Al-Ittihad|CB|34|6
-Mahmoud Trezeguet|Trabzonspor|LW|31|6
-Mostafa Mohamed|Galatasaray|ST|28|6
+Mahmoud Trezeguet|Al Ahly|LW|31|6
+Mostafa Mohamed|Nantes|ST|28|6
 Koen Casteels|Wolfsburg|GK|33|5
 Wout Faes|Leicester|CB|27|5
 Arthur Theate|Rennes|CB|25|5
@@ -1143,7 +1835,7 @@ Jacob Shaffelburg|Nashville SC|LW|25|6
 Bartosz Bereszyński|Bologna|RB|34|6
 Jan Bednarek|Southampton|CB|29|5
 Przemysław Frankowski|Lens|RB|29|6
-Sebastian Szymański|Fenerbahçe|AM|26|5
+Sebastian Szymański|Rennes|AM|26|5
 Karol Świderski|Charlotte FC|ST|28|6
 Hernán Galíndez|Aucas|GK|36|6
 Félix Torres|FC Cincinnati|CB|28|6
@@ -1156,7 +1848,7 @@ Karim Boudiaf|Al-Sadd|CM|34|6
 Kasper Schmeichel|Anderlecht|GK|39|6
 Andreas Christensen|Barcelona|CB|30|5
 Joakim Mæhle|Genoa|LB|29|6
-Christian Eriksen|Man Utd|AM|34|4
+Christian Eriksen|Wolfsburg|AM|34|4
 Mikkel Damsgaard|Brentford|LW|25|5
 Jonas Wind|Wolfsburg|ST|26|5
 Alireza Beiranvand|Persepolis|GK|33|6
@@ -1170,7 +1862,7 @@ Erick Pulgar|Flamengo|CM|32|6
 Ben Brereton Díaz|Villarreal|ST|27|5
 Eduardo Vargas|Cobreloa|ST|36|6
 Stanley Nwabali|Chippa United|GK|29|6
-William Troost-Ekong|Beşiktaş|CB|31|5
+William Troost-Ekong|Al-Ahli SC|CB|31|5
 Calvin Bassey|Fulham|CB|25|5
 Frank Onyeka|Brentford|CM|27|6
 Samuel Chukwueze|Milan|RW|26|5
@@ -1191,7 +1883,7 @@ Jeremy Antonisse|FC Eindhoven|RW|28|6
 Yahia Fofana|Lens|GK|24|6
 Odilon Kossounou|Atalanta|CB|24|5
 Ghislain Konan|Stade Rennes|LB|29|6
-Seko Fofana|Al-Nassr|CM|30|5
+Seko Fofana|Rennes|CM|30|5
 Simon Adingra|Brighton|LW|23|4
 Aymen Dahmen|CS Sfaxien|GK|28|6
 Montassar Talbi|Lorient|CB|26|6
@@ -1206,11 +1898,11 @@ Mohammed Al-Owais|Al-Hilal|GK|33|6
 Yasser Al-Shahrani|Al-Hilal|LB|33|6
 Abdulelah Al-Malki|Al-Hilal|CM|26|6
 Sami Al-Najei|Al-Hilal|LW|24|6
-Abdou Diallo|Al-Ahli|CB|29|5
+Abdou Diallo|Umm Salal|CB|29|5
 Youssouf Sabaly|Real Betis|RB|33|6
 Pape Gueye|Villarreal|CM|26|5
 Iliman Ndiaye|Everton|LW|25|4
-Habib Diallo|Al-Ahli|ST|30|6
+Habib Diallo|Metz|ST|30|6
 Jalal Hassan|Al-Talaba|GK|34|6
 Ali Adnan|Al-Wasl|LB|30|6
 Amir Al-Ammari|Sandnes Ulf|CM|28|6
@@ -1239,6 +1931,217 @@ Cédric Bakambu|Real Betis|ST|34|6
 Utkir Yusupov|Pakhtakor|GK|26|6
 Abduqodir Khusanov|Man City|CB|21|4
 Jasur Yakhshiboev|Pakhtakor|RW|26|6
+Jules Koundé|Barcelona|RB|27|3
+Mattéo Guendouzi|Fenerbahçe|CM|26|5
+Benoît Badiashile|Chelsea|CB|24|5
+Kingsley Coman|Bayern|LW|29|4
+Benjamin Pavard|Inter|CB|29|4
+Dominic Solanke|Tottenham|ST|28|4
+Ben White|Arsenal|RB|28|4
+Gabriel Magalhães|Arsenal|CB|27|4
+Guilherme Arana|Atalanta|LB|28|5
+Yan Couto|Man City|RB|24|5
+Pedro|Flamengo|ST|28|4
+Álvaro Morata|Atlético|ST|32|4
+Dani Carvajal|Real Madrid|RB|33|4
+Pedro Porro|Tottenham|RB|26|4
+Eric García|Barcelona|CB|24|5
+Valentín Carboni|Inter|AM|21|5
+Marcos Senesi|Bournemouth|CB|28|5
+Gio Lo Celso|Villarreal|CM|28|5
+Nélson Semedo|Fenerbahçe|RB|32|5
+Rúben Neves|Al-Hilal|CM|28|4
+Pedro Gonçalves|Sporting|AM|27|4
+Leroy Sané|Galatasaray|LW|30|3
+Donyell Malen|Roma|LW|26|4
+Brian Brobbey|Sunderland|ST|23|4
+Lutsharel Geertruida|Sunderland|RB|24|5
+Justin Bijlow|Genoa|GK|27|5
+Joshua Zirkzee|Man Utd|ST|24|4
+Sander Berge|Fulham|CM|27|4
+Kristian Thorstvedt|Sassuolo|CM|25|5
+Ørjan Nyland|Sevilla|GK|34|6
+Håkon Evjen|Bodø/Glimt|LW|23|5
+James Rodríguez|Minnesota United|AM|34|4
+Yerry Mina|Cagliari|CB|30|5
+Miguel Ángel Borja|Al-Wasl|ST|31|5
+Óscar Estupiñán|Brighton|ST|26|5
+Hirving Lozano|San Diego FC|RW|30|4
+Raúl Jiménez|Wolves|ST|33|5
+Luis Ángel Malagón|Club América|GK|27|5
+César Montes|Lokomotiv Moscow|CB|28|5
+Jorge Sánchez|PAOK|RB|25|5
+Gerardo Arteaga|Monterrey|LB|24|5
+Johan Vásquez|Genoa|CB|25|5
+Roberto Alvarado|Guadalajara|AM|25|6
+Timothy Castagne|Fulham|RB|29|5
+Zeno Debast|Sporting CP|CB|21|5
+Arthur Vermeeren|RB Leipzig|CM|20|5
+Orel Mangala|Lyon|CM|27|5
+Alexis Saelemaekers|AC Milan|RW|25|5
+Thomas Meunier|Lille|RB|33|6
+Youssef En-Nesyri|Al-Ittihad|ST|27|4
+Nayef Aguerd|Marseille|CB|28|5
+Amine Harit|Marseille|AM|27|5
+Zakaria Aboukhlal|Torino|LW|24|5
+Hidemasa Morita|Sporting|CM|30|5
+Reo Hatate|Celtic|CM|27|5
+Junya Ito|Genk|RW|32|5
+Mao Hosoya|Kashiwa Reysol|ST|26|5
+Tomoki Iwata|Birmingham City|CM|27|5
+Nikola Vlašić|Torino|AM|28|4
+Luka Sučić|Real Sociedad|AM|22|5
+Petar Musa|FC Dallas|ST|26|4
+Marin Pongračić|Fiorentina|CB|27|5
+Mario Pašalić|Atalanta|CM|30|5
+Zeki Çelik|Roma|RB|28|5
+Altay Bayındır|Man Utd|GK|27|5
+Barış Alper Yılmaz|Galatasaray|RW|25|5
+Yusuf Yazıcı|Olympiacos|AM|27|5
+Gio Reyna|Mönchengladbach|AM|22|4
+Brendan Aaronson|Leeds|AM|24|5
+Josh Sargent|Toronto FC|ST|26|5
+Walker Zimmermann|Toronto FC|CB|33|6
+Noah Okafor|Leeds|LW|24|4
+Fabian Rieder|FC Augsburg|AM|23|5
+Zeki Amdouni|Burnley|ST|23|5
+Jonas Omlin|FC Basel|GK|31|5
+Silvan Widmer|Mainz|RB|32|5
+Kendry Páez|Chelsea|AM|17|4
+Jeremy Sarmiento|Middlesbrough|LW|23|5
+Byron Castillo|Barcelona SC|RB|26|5
+Djorkaeff Reasco|Ind. del Valle|RW|26|5
+Giorgian De Arrascaeta|Flamengo|AM|31|5
+Nicolás De La Cruz|Flamengo|AM|27|4
+Sebastián Coates|Nacional|CB|34|6
+Maxi Gómez|Nacional|ST|29|5
+Fernando Muslera|Estudiantes LP|GK|39|6
+Mads Hermansen|West Ham|GK|24|5
+Jesper Lindstrøm|Napoli|AM|25|4
+Viktor Kristiansen|Leicester|LB|22|5
+Alexander Bah|Benfica|RB|26|5
+Mads Roerslev|Southampton|RB|25|5
+Terem Moffi|Nice|ST|25|5
+Ola Aina|Nottm Forest|RB|29|5
+Fisayo Dele-Bashiru|Lazio|CM|24|5
+Cyriel Dessers|Panathinaikos|ST|30|5
+Zaidu Sanusi|Porto|LB|27|5
+Thomas Partey|Villarreal|CM|33|4
+Kamaldeen Sulemana|Atalanta|LW|23|4
+Joseph Aidoo|Celta Vigo|CB|28|5
+Daniel Amartey|Beşiktaş|CB|30|5
+Yang Hyun-jun|Celtic|LW|23|5
+Jeong Woo-yeong|Union Berlin|CM|26|5
+Bae Jun-ho|Stoke|CM|23|5
+Seol Young-woo|Red Star Belgrade|ST|24|6
+Ismael Kone|Sassuolo|CM|22|4
+Cyle Larin|Southampton|ST|30|5
+Luca Koleosho|Burnley|RW|20|5
+Kamal Miller|Portland Timbers|CB|28|5
+Mohamed Elneny|Al Jazira|CM|33|6
+Nasser Maher|Pyramids FC|CM|28|6
+Arkadiusz Milik|Juventus|ST|31|5
+Nicola Zalewski|Atalanta|LW|23|4
+Kamil Piątkowski|Legia Warszawa|CB|24|5
+Jakub Moder|Feyenoord|CM|26|5
+Emil Forsberg|NY Red Bulls|AM|33|5
+Hugo Larsson|Eintracht|CM|20|4
+Carl Starfelt|Celta Vigo|CB|30|5
+Jesper Karlsson|Bologna|LW|27|5
+Mattias Svanberg|Wolfsburg|CM|27|5
+Evidence Makgopa|Orlando Pirates|ST|25|6
+Bongani Zungu|AmaZulu FC|CM|32|6
+Sipho Mbule|Zakho SC|AM|26|6
+Grant Kekana|Mamelodi Sundowns|CB|30|6
+Maxence Lacroix|Crystal Palace|CB|25|5
+Lucas Digne|Aston Villa|LB|33|5
+Nico O'Reilly|Man City|CM|20|5
+Elliot Anderson|Nottm Forest|CM|22|5
+Jarell Quansah|Leverkusen|CB|22|5
+Douglas Santos|Zenit|LB|29|6
+Marcos Llorente|Atlético|CM|32|5
+Felix Nmecha|Dortmund|CM|25|5
+Gonzalo Montiel|Sevilla|RB|28|5
+Facundo Medina|Lens|CB|25|5
+Nicolás Tagliafico|Lyon|LB|32|5
+Nico Paz|Como|AM|21|5
+Gonçalo Inácio|Sporting|CB|24|4
+Renato Veiga|Villarreal|CB|22|5
+João Félix|Chelsea|AM|26|4
+Jan Paul van Hecke|Brighton|CB|25|5
+Crysencio Summerville|West Ham|LW|23|4
+Johan Mojica|Mallorca|LB|31|5
+Gustavo Puerta|Racing Santander|CM|21|5
+Jhon Córdoba|Krasnodar|ST|31|5
+Santiago Arias|Bahia|RB|32|5
+Deiver Machado|Nantes|LB|30|6
+Malik Tillman|PSV|AM|23|5
+Auston Trusty|Sheffield Utd|CB|27|5
+Miles Robinson|FC Cincinnati|CB|28|5
+Joe Scally|Mönchengladbach|RB|22|5
+Mark McKenzie|Genk|CB|25|5
+Matt Freese|Chicago Fire|GK|25|6
+Josip Šutalo|Ajax|CB|23|5
+Luka Vušković|HSV|CB|19|5
+Martin Baturina|Como|AM|22|5
+Petar Sučić|Inter|CM|22|5
+Ivan Perišić|PSV|LW|36|5
+Chadi Riad|Crystal Palace|CB|22|5
+Neil El Aynaoui|Roma|CM|22|5
+Ismael Saibari|PSV|AM|24|5
+Ayoub El Kaabi|Olympiacos|ST|31|5
+Raúl Rangel|Guadalajara|GK|28|6
+Israel Reyes|Club América|CB|23|6
+Jesús Gallardo|Toluca|LB|30|6
+Érik Lira|Cruz Azul|CM|24|6
+Álvaro Fidalgo|Club América|CM|28|5
+Brian Gutiérrez|Guadalajara|AM|22|5
+Keito Nakamura|Reims|AM|24|4
+Daizen Maeda|Celtic|LW|27|5
+Tsuyoshi Watanabe|Feyenoord|CB|26|5
+Shogo Taniguchi|Sint-Truiden|CB|32|6
+Abdülkerim Bardakcı|Galatasaray|CB|29|5
+İsmail Yüksek|Fenerbahçe|CM|25|5
+Orkun Kökçü|Benfica|CM|25|4
+Mert Müldür|Udinese|RB|25|5
+Gregor Kobel|Dortmund|GK|27|4
+Nico Elvedi|Mönchengladbach|CB|28|5
+Denis Zakaria|Monaco|CM|28|5
+Michel Aebischer|Bologna|CM|27|5
+Djibril Sow|Sevilla|CM|28|5
+William Pacho|Paris SG|CB|23|4
+Joel Ordóñez|Club Brugge|CB|22|5
+Alan Franco|Atlético Mineiro|CM|27|5
+Alistair Johnston|Celtic|RB|27|5
+Richie Laryea|Toronto FC|RB|29|6
+Derek Cornelius|Marseille|CB|27|5
+Liam Millar|Hull City|LW|25|5
+Mostafa Shobeir|Zamalek|GK|30|6
+Mohamed Hany|Zamalek|CB|27|6
+Yasser Ibrahim|Al Ahly|CB|28|6
+Emam Ashour|Al Ahly|CM|27|6
+Mostafa Zico|Zamalek|CM|30|6
+Isak Hien|Atalanta|CB|26|5
+Gustaf Lagerbielke|Braga|CB|26|5
+Yasin Ayari|Brighton|CM|22|5
+Benjamin Nygren|Celtic|ST|23|5
+Jesper Karlström|Udinese|CM|31|6
+Iqraam Rayners|Mamelodi Sundowns|ST|25|6
+Khuliso Mudau|Mamelodi Sundowns|RB|27|6
+Relebohile Mofokeng|Orlando Pirates|LW|21|5
+Oswin Appollis|Orlando Pirates|LW|24|6
+Nathan Ngoy|Lille|CB|21|6
+Brandon Mechele|Club Brugge|CB|32|6
+Maxim De Cuyper|Brighton|LB|24|4
+Nicolas Raskin|Rangers|CM|23|5
+Hans Vanaken|Club Brugge|CM|32|5
+Julian Ryerson|Dortmund|RB|27|5
+Kristoffer Ajer|Brentford|CB|26|5
+Torbjørn Heggem|Bologna|RB|25|5
+Oscar Bobb|Fulham|AM|22|4
+Jørgen Strand Larsen|Crystal Palace|ST|25|4
+Gustav Schjelderup|Benfica|LW|21|5
+Yan Diomande|RB Leipzig|CM|21|4
 `; }
 
   OPPONENTS_BY_LEAGUE(){
@@ -1304,6 +2207,27 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     A('Youcef Atal 30');
     A('Antoine Semenyo 123,Abdul Fatawu Issahaku 52,Jordan Ayew 27');
     A('Abduqodir Khusanov 48');
+    A('Maxence Lacroix 35,Lucas Digne 27,Nico O\'Reilly 110,Elliot Anderson 72,Jarell Quansah 27');
+    A('Douglas Santos 27,Marcos Llorente 27,Felix Nmecha 90');
+    A('Gonzalo Montiel 27,Facundo Medina 27,Nicolás Tagliafico 27,Nico Paz 105');
+    A('Gonçalo Inácio 77,Renato Veiga 48,João Félix 48');
+    A('Jan Paul van Hecke 48,Crysencio Summerville 61');
+    A('Johan Mojica 27,Gustavo Puerta 27,Jhon Córdoba 35,Santiago Arias 27,Deiver Machado 27');
+    A('Malik Tillman 39,Auston Trusty 27,Miles Robinson 27,Joe Scally 27,Mark McKenzie 27,Matt Freese 27');
+    A('Josip Šutalo 35,Luka Vušković 27,Martin Baturina 35,Petar Sučić 48,Ivan Perišić 27');
+    A('Chadi Riad 27,Neil El Aynaoui 35,Ismael Saibari 95,Ayoub El Kaabi 35');
+    A('Raúl Rangel 27,Israel Reyes 27,Jesús Gallardo 27,Érik Lira 27,Álvaro Fidalgo 35,Brian Gutiérrez 27');
+    A('Keito Nakamura 52,Daizen Maeda 35,Tsuyoshi Watanabe 27,Shogo Taniguchi 27');
+    A('Abdülkerim Bardakcı 27,İsmail Yüksek 27,Orkun Kökçü 61,Mert Müldür 27');
+    A('Gregor Kobel 61,Nico Elvedi 27,Denis Zakaria 27,Michel Aebischer 27,Djibril Sow 27');
+    A('William Pacho 145,Joel Ordóñez 27,Alan Franco 27');
+    A('Alistair Johnston 27,Richie Laryea 27,Derek Cornelius 27,Liam Millar 27');
+    A('Mostafa Shobeir 27,Mohamed Hany 27,Yasser Ibrahim 27,Emam Ashour 27,Mostafa Zico 27');
+    A('Isak Hien 52,Gustaf Lagerbielke 27,Yasin Ayari 35,Benjamin Nygren 27,Jesper Karlström 27');
+    A('Iqraam Rayners 27,Khuliso Mudau 27,Relebohile Mofokeng 35,Oswin Appollis 27');
+    A('Nathan Ngoy 27,Brandon Mechele 27,Maxim De Cuyper 39,Nicolas Raskin 39,Hans Vanaken 27');
+    A('Julian Ryerson 27,Kristoffer Ajer 35,Torbjørn Heggem 27,Oscar Bobb 61,Jørgen Strand Larsen 52,Gustav Schjelderup 39');
+    A('Yan Diomande 115');
     this._val=v; return v;
   }
 
@@ -1398,13 +2322,36 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       'marcus-rashford-barcelona':NW('TRANSFER','Barça weigh a permanent deal as add-ons are debated',2.0,'06-21'),
       'robert-lewandowski-barcelona':NW('TRANSFER','Leaves Barcelona at 37; next move under discussion',-3.5,'06-20'),
       'bruno-fernandes-man-utd':NW('AWARDS BUZZ','Pundits naming Fernandes the front-runner for PFA Player of the Year on the back of his club form',5.5,'06-23'),
-      'lionel-messi-inter-miami':NW('MATCH RECAP','Messi’s opening hat-trick vs Algeria is being called one of the great group-stage individual showings as Argentina cruise through Group J',6.0,'06-17'),
-      'cristiano-ronaldo-al-nassr':NW('MATCH RECAP','Ronaldo drew heavy criticism after a quiet night in Portugal’s shock 1-1 draw with DR Congo, with pundits questioning his impact at this stage of his career',-4.0,'06-18'),
-      'kylian-mbappe-real-madrid':NW('MATCH RECAP','Mbappé’s brace against Iraq on his 100th France cap has reporters hailing his consistency as France ease into the round of 32',4.5,'06-23'),
-      'erling-haaland-man-city':NW('MATCH RECAP','Haaland’s brace against Senegal finally delivers his first World Cup goals, ending years of tournament frustration with a bang',5.0,'06-17'),
-      'matheus-cunha-man-utd':NW('MATCH RECAP','Cunha’s first-half brace against Haiti has reporters noting his third goal of the tournament and his growing influence for Brazil',4.0,'06-20'),
-      'jamal-musiala-bayern':NW('MATCH RECAP','Germany’s 7-1 demolition of Curaçao was one of the tournament’s most one-sided scorelines, with Musiala among the standout performers',4.0,'06-16'),
-      'mohammed-kudus-tottenham':NW('MATCH RECAP','Ghana’s goalless draw with England was enough to send them through, with Kudus praised for marshalling the midfield in a backs-to-the-wall display',3.0,'06-24')
+      "lionel-messi-inter-miami":NW("MATCH RECAP","Messi's opening hat-trick vs Algeria is being called one of the great group-stage individual showings as Argentina cruise through Group J",6.0,"06-17"),
+      "cristiano-ronaldo-al-nassr":NW("MATCH RECAP","Ronaldo drew heavy criticism after a quiet night in Portugal's shock 1-1 draw with DR Congo, with pundits questioning his impact at this stage of his career",-4.0,"06-18"),
+      "kylian-mbappe-real-madrid":NW("MATCH RECAP","Mbappé ends the group stage with 4 goals — a brace on his 100th France cap vs Iraq plus further strikes that have him level with Haaland in the Golden Boot race. 16 goals in 16 World Cup games; pundits are running out of superlatives.",7.5,"06-26"),
+      "erling-haaland-man-city":NW("MATCH RECAP","Haaland ends the group stage with 4 goals, ending years of World Cup frustration. He and Mbappé are inseparable at the top of the Golden Boot race — Norway fans have been in full voice and the world is watching.",7.0,"06-26"),
+      "matheus-cunha-man-utd":NW("MATCH RECAP","Cunha's first-half brace against Haiti has reporters noting his third goal of the tournament and his growing influence for Brazil",4.0,"06-20"),
+      "jamal-musiala-bayern":NW("MATCH RECAP","Germany's 7-1 demolition of Curaçao was one of the tournament's most one-sided scorelines, with Musiala among the standout performers",4.0,"06-16"),
+      'mohammed-kudus-tottenham':NW('MATCH RECAP','Kudus was an unused substitute as Ghana ground out a 0-0 draw with England to advance, with Lawrence Ati-Zigi the standout performer pulling off a series of sharp saves',2.0,'06-24'),
+      'yan-diomande-rb-leipzig':NW('TRANSFER','Verbal agreement reached with PSG — Diomande set to become one of the most expensive midfielders in history',9.5,'06-29'),
+
+      // ── WC 2026 Group-stage breakout hype entries ──────────────────────────
+      // Underdogs / shock performers first — these get the biggest relative boost
+      // because our underdog multiplier amplifies unknown players more.
+      'vozinha-famalicao':NW('WORLD CUP BUZZ','The 40-year-old Cape Verde keeper pulled off 7 saves in a stunning 0-0 draw with Spain. He has gone viral with 16M+ Instagram followers overnight and is being called the tournament\'s feel-good story. Cape Verde became the smallest nation by population to ever reach the knockouts.',9.0,'06-25'),
+      'ayyoub-bouaddi-lille':NW('WORLD CUP BUZZ','The 18-year-old maths student bossed Brazil\'s midfield — 87 touches, multiple completed dribbles, MOTM rating from every major outlet. Comparisons to Zidane at the same age are everywhere.',9.0,'06-21'),
+      'ismael-saibari-psv':NW('WORLD CUP BUZZ','Three goals in three group games for Morocco, each at a decisive moment. He\'s become the heartbeat of Morocco\'s run and is being linked with every top-six Premier League club.',8.5,'06-26'),
+      'keito-nakamura-reims':NW('WORLD CUP BUZZ','Nakamura has been Japan\'s standout creative force — two goals and two assists in the group stage, routinely outclassing opponents worth 10x his transfer fee. J-League fans are calling him the best Japanese player since Kagawa.',8.5,'06-25'),
+      'deniz-undav-stuttgart':NW('WORLD CUP BUZZ','Three goals in Germany\'s first two games coming off the bench. His super-sub impact has matched Roger Milla\'s legendary World Cup substitute record for goal contributions — Germany\'s secret weapon.',8.0,'06-22'),
+      'yasin-ayari-brighton':NW('WORLD CUP BUZZ','Two goals against Tunisia in a poignant performance — the Sweden midfielder of Tunisian heritage playing against his ancestral nation. His composed sujoud celebration went global. Multiple European giants have already made inquiries.',7.5,'06-20'),
+      'folarin-balogun-monaco':NW('WORLD CUP BUZZ','Balogun opened his tournament with a brace against Paraguay, announced himself as the USMNT\'s main man with authority. USA fans are already saying this is his tournament to own.',7.5,'06-16'),
+      'pau-cubarsi-barcelona':NW('WORLD CUP BUZZ','19 years old and playing every single minute of Spain\'s group stage without looking out of place once. Analysts calling him the most composed teenager at a World Cup since Pirlo in 1998.',7.5,'06-26'),
+      'nico-o-reilly-man-city':NW('WORLD CUP BUZZ','O\'Reilly earned a place in England\'s group stage squad and hit the crossbar as a substitute against Ghana. At 20, playing on the biggest stage for a tournament host — scouts from across Europe are watching his every move.',6.5,'06-24'),
+      'nico-paz-como':NW('WORLD CUP BUZZ','Got his first World Cup start in Argentina\'s final group game at 21 and impressed — calm on the ball, intelligent movement off it. Zero goals or assists but already being talked about as a future Argentina regular by coaches who watched.',6.0,'06-25'),
+      'william-pacho-paris-sg':NW('WORLD CUP BUZZ','Ecuador shocked Germany in the group stage and Pacho was the anchor at the back for one of the tournament\'s biggest upsets. The PSG centre-back is proving his big-money transfer fee at the biggest stage.',7.5,'06-26'),
+      'weston-mckennie-juventus':NW('WORLD CUP BUZZ','The only USA player to start all three group games — captained the side against Turkey and created three chances in the 4-1 win over Paraguay. McKennie\'s engine and leadership are the spine of this USMNT in front of a home crowd.',7.0,'06-27'),
+      'felix-nmecha-dortmund':NW('WORLD CUP BUZZ','Nmecha has been Germany\'s unsung hero in midfield — breaking up play, driving forward, and scoring the only goal in a tight win. Pundits calling him one of the tournament\'s most underrated performers.',6.5,'06-19'),
+      'achraf-hakimi-paris-sg':NW('WORLD CUP BUZZ','21 chances created in the group stage — more than any African player since Yaya Touré in 2010. Hakimi is at his absolute peak and Morocco\'s creative engine; his goal and assist vs Haiti made front pages worldwide.',8.0,'06-26'),
+      'bruno-guimaraes-newcastle':NW('WORLD CUP BUZZ','Joint-leading assist maker of the group stage with three. Guimarães has become the fulcrum of a rampant Brazil side and is being called the best midfielder at the tournament by several analysts.',7.5,'06-26'),
+      'kai-havertz-arsenal':NW('WORLD CUP BUZZ','A brace in Germany\'s 7-1 demolition of Curaçao — penalty and a deft chip — earned him Player of the Match and finally quieted the critics. He has been Germany\'s most complete forward throughout the group stage.',7.0,'06-14'),
+      'ousmane-dembele-paris-sg':NW('MATCH RECAP','Hat-trick against Norway inside the opening 20 minutes — the first player since Ronaldo to score three so quickly in a WC group game. France\'s attack looks unstoppable with Mbappé and Dembélé in this form.',8.5,'06-20'),
+      'vinicius-junior-real-madrid':NW('MATCH RECAP','Four goals in all three group games — Brazil\'s primary offensive reference back to his very best after a difficult club season. ESPN ranking him joint-top with Messi in the Golden Boot race.',8.5,'06-26')
     };
     const MOOD={
       'kylian-mbappe-real-madrid':'\u201cMr World Cup\u201d trending after the Iraq brace',
@@ -1417,7 +2364,22 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       'ousmane-dembele-paris-sg':'Wholesome reaction to ending his goal drought',
       'jude-bellingham-real-madrid':'Frustration after a flat 0-0 with Ghana',
       'luis-diaz-bayern':'Colombia trending after his match-winner',
-      'bruno-fernandes-man-utd':'Premier League Player of the Season talk all over his timeline'
+      'bruno-fernandes-man-utd':'Premier League Player of the Season talk all over his timeline',
+      'vozinha-famalicao':'"Mr Cape Verde" — 16M Instagram followers in 48h, memes and tributes from every corner of the internet',
+      'ayyoub-bouaddi-lille':'"The maths genius who solved Brazil" — viral profile piece breaking everywhere',
+      'ismael-saibari-psv':'"Morocco\'s new Ziyech" trending in Arab football circles and beyond',
+      'keito-nakamura-reims':'"Samurai Messi" trending in Japan; clubs reportedly queuing up',
+      'deniz-undav-stuttgart':'"Super-sub Undav" highlight reels have 12M views across social media',
+      'yasin-ayari-brighton':'Sujoud celebration clip hit 8M views, story resonating globally',
+      'folarin-balogun-monaco':'"Balogun is America\'s striker" — USA fans fully sold after the Paraguay brace',
+      'pau-cubarsi-barcelona':'"Spain\'s Maldini" already being used by pundits',
+      'nico-paz-como':'"Messi\'s heir" narrative building in Argentine media after two assists',
+      'achraf-hakimi-paris-sg':'"The Ronaldo of right-backs at this tournament" trending in Morocco',
+      'kai-havertz-arsenal':'Critics silenced — "the real Havertz is at the World Cup" dominating football discourse',
+      'vinicius-junior-real-madrid':'Brazil fans finally exhale — "Vini is back and the world should be scared"',
+      'weston-mckennie-juventus':'"Captain America" trending after McKennie wore the armband at a home World Cup — ranch dressing and leadership in equal measure',
+      'kylian-mbappe-real-madrid':'4 group stage goals — Mbappe vs Messi Golden Boot race dominating every headline',
+      'erling-haaland-man-city':'Norway fans in raptures — Haaland finally delivered at a World Cup and the goals keep coming'
     };
     // Daily World Cup recap articles — each covers the standout games from
     // one matchday, with refs to the players whose stock pages should link
@@ -1426,28 +2388,32 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     const ARTICLES=[
       AT('06-15','MATCH DAY','Germany run riot in a 7-1 demolition of Curaçao',
         'One of the most one-sided scorelines of the group stage.',
-        'Germany put seven past Curaçao without reply at the other end bar one consolation goal. Jamal Musiala and Florian Wirtz combined for two goal involvements apiece, while Kai Havertz was also on the scoresheet as Germany made an emphatic start to Group E.',
+        'Germany dismantled Curaçao 7-1 in one of the most ruthless performances the World Cup group stage has ever seen. <<jamal-musiala-bayern|Jamal Musiala>> was electric throughout, registering two goal involvements with his instinctive movement constantly carving open space. <<florian-wirtz-liverpool|Florian Wirtz>> was equally destructive, combining with Musiala to produce a series of combinations that Curaçao simply had no answer to, and <<kai-havertz-arsenal|Kai Havertz>> capped a dominant evening by getting on the scoresheet himself.\n\nThe scoreline leaves Germany as early favourites in Group E, and their stock — collectively and individually — is rising sharply. The question now is whether they can maintain this intensity against more competitive opposition.',
         ['jamal-musiala-bayern','florian-wirtz-liverpool','kai-havertz-arsenal']),
-      AT('06-16','MATCH DAY','Brace day in Group I as France and Norway both win',
-        'Mbappé and Haaland both scored twice on a rough day for Senegal.',
-        'France brushed Senegal aside 3-1 with Kylian Mbappé scoring twice, all four of his shots on target. The same day, Erling Haaland finally announced himself at a World Cup with a brace as Norway won 3-2 — his first goals at the tournament after years of near-misses.',
+      AT('06-16','MATCH DAY','Brace day in Group I as Mbappé and Haaland both strike twice',
+        'A landmark day for two of the tournament’s biggest names, on a rough afternoon for Senegal.',
+        'Two of world football’s elite strikers reminded everyone of their quality on the same afternoon. <<kylian-mbappe-real-madrid|Kylian Mbappé>> was relentless against Senegal, converting twice with all four of his shots finding the target as France cruised to a 3-1 win. His movement in behind the Senegalese defence was unplayable at times, and a fifth goal of the tournament already looks well within reach.\n\nSimultaneously, <<erling-haaland-man-city|Erling Haaland>> finally silenced years of World Cup frustration with a brace as Norway edged a 3-2 thriller — his first goals at the tournament after multiple near-miss tournaments. The reaction from the Norwegian squad told its own story; this felt like a weight lifted.',
         ['kylian-mbappe-real-madrid','erling-haaland-man-city']),
-      AT('06-17','MATCH DAY','Ronaldo blanked as DR Congo hold Portugal; Bellingham and Kane fire England past Croatia',
+      AT('06-17','MATCH DAY','Ronaldo blanked as DR Congo hold Portugal; Bellingham fires England past Croatia',
         'A shock draw for the five-time Ballon d’Or winner contrasted with goals at the other end of Group L.',
-        'Cristiano Ronaldo was a peripheral figure as Portugal could only draw 1-1 with DR Congo, prompting pointed questions from pundits about his influence at this stage of his career. Bruno Fernandes also went close but couldn’t break the deadlock. Elsewhere, Jude Bellingham and a Harry Kane brace — including a penalty — fired England to a 4-2 win over Croatia.',
+        '<<cristiano-ronaldo-al-nassr|Cristiano Ronaldo>> was a peripheral figure as Portugal could only draw 1-1 with DR Congo, prompting pointed questions from pundits about his influence at this stage of his career. <<bruno-fernandes-man-utd|Bruno Fernandes>> also failed to impose himself and Portugal left the pitch to a chorus of jeers from their own supporters. For Ronaldo, the narrative around his relevance at 41 is not going away.\n\nElsewhere in the same group, <<jude-bellingham-real-madrid|Jude Bellingham>> put in a commanding display and <<harry-kane-bayern|Harry Kane>> netted twice — including a penalty — as England beat Croatia 4-2. Kane looks sharp and confident going into the business end of the group stage.',
         ['cristiano-ronaldo-al-nassr','bruno-fernandes-man-utd','jude-bellingham-real-madrid','harry-kane-bayern']),
-      AT('06-19','MATCH DAY','Cunha brace sends Brazil through as Scotland’s World Cup ends in Group C',
-        'Brazil’s in-form forward continues to make a compelling case for a starting role.',
-        'Matheus Cunha scored twice in the first half to seal a 3-0 win over Haiti, taking his tournament tally to two goals and underlining his growing influence for Brazil ahead of the knockouts, on a day Scotland’s own World Cup came to an end in Group C.',
-        ['matheus-cunha-man-utd']),
+      AT('06-19','MATCH DAY','Cunha brace fires Brazil past Haiti as Scotland’s World Cup ends',
+        'Brazil’s in-form forward scores twice in a dominant 3-0 win, as Group C reaches its conclusion.',
+        '<<matheus-cunha-man-utd|Matheus Cunha>> was the stand-out performer as Brazil dismantled Haiti 3-0, scoring twice in the first half to put the game beyond doubt before <<vinicius-junior-real-madrid|Vinícius Júnior>> wrapped it up with a composed finish. Cunha’s brace takes his tournament tally to two goals and he is making a compelling case for a permanent starting role going into the knockouts.\n\nElsewhere in Group C on the same evening, Scotland’s World Cup campaign came to an end, ending their hopes of reaching the round of 32. Brazil march on as serious contenders with momentum building and their stock rising accordingly.',
+        ['matheus-cunha-man-utd','vinicius-junior-real-madrid']),
       AT('06-22','MATCH DAY','Messi and Mbappé both strike again as the group stage winds down',
         'Two of the tournament’s outstanding individual performers added to their tallies.',
-        'Lionel Messi scored twice as Argentina beat Austria 2-0 to top Group J, taking his tournament tally to five goals in two games. Kylian Mbappé matched him goal-for-goal, netting a brace against Iraq on his 100th France cap as Les Bleus eased into the round of 32.',
+        '<<lionel-messi-inter-miami|Lionel Messi>> turned back the clock with a stunning brace as Argentina beat Austria 2-0 to top Group J, taking his tournament tally to five goals across two matches. At 38, he continues to defy expectations and the consensus among analysts is that he will be the decisive player if Argentina reach the knockout stages.\n\n<<kylian-mbappe-real-madrid|Kylian Mbappé>> matched him goal-for-goal on the same evening, netting a brace against Iraq on his 100th France cap as Les Bleus eased into the round of 32. The two players are running away with the Golden Boot conversation, and the markets have responded accordingly.',
         ['lionel-messi-inter-miami','kylian-mbappe-real-madrid']),
-      AT('06-23','MATCH DAY','Portugal rout Uzbekistan as Ghana scrape through on a flat night with England',
-        'Ronaldo and Bruno Fernandes combine in a statement win, while Ghana’s defense earns a tournament-defining point.',
-        'Cristiano Ronaldo answered his DR Congo critics with a goal from a Bruno Fernandes assist as Portugal thrashed Uzbekistan 5-0. The same night, Ghana’s goalless draw with England was enough to send them through, with Mohammed Kudus praised for marshalling the midfield in a backs-to-the-wall display.',
-        ['cristiano-ronaldo-al-nassr','bruno-fernandes-man-utd','mohammed-kudus-tottenham'])
+      AT('06-23','MATCH DAY','Portugal rout Uzbekistan as Ghana grind out a vital point against England',
+        'Ronaldo and Fernandes answer critics in style, while Ghana’s defence steals the headlines.',
+        '<<cristiano-ronaldo-al-nassr|Cristiano Ronaldo>> answered his DR Congo critics emphatically, scoring from a <<bruno-fernandes-man-utd|Bruno Fernandes>> assist as Portugal thrashed Uzbekistan 5-0. It was a statement performance that silenced — at least temporarily — the noise around his place in the team, and Fernandes was outstanding throughout, creating three clear chances in the first half alone.\n\nIn the same evening’s other fixture, Ghana’s 0-0 draw with England was just enough to send them through. <<lawrence-ati-zigi-st-gallen|Lawrence Ati-Zigi>> was the standout performer in goal, pulling off a series of sharp saves to deny England on multiple occasions. <<alexander-djiku-eintracht-frankfurt|Alexander Djiku>> was immense at the back alongside him. Notably, <<mohammed-kudus-tottenham|Mohammed Kudus>> was an unused substitute throughout — his influence will be needed in the knockouts.',
+        ['cristiano-ronaldo-al-nassr','bruno-fernandes-man-utd','lawrence-ati-zigi-st-gallen','alexander-djiku-eintracht-frankfurt','mohammed-kudus-tottenham']),
+      AT('06-27','MATCH DAY','Portugal face heavy criticism after low-intensity draw with Colombia',
+        'A second-place finish in Group L raises serious questions heading into the knockouts.',
+        'Many fans are criticizing Portugal’s midfield after a deeply underwhelming 0-0 draw with Colombia sealed a second-place group finish. <<bruno-fernandes-man-utd|Bruno Fernandes>> and <<vitinha-paris-sg|Vitinha>> both failed to run the game, and were outclassed by 34-year-old veteran James Rodríguez, who bossed proceedings for Colombia with a display that had no right to be so commanding at his age.\n\n<<cristiano-ronaldo-al-nassr|Cristiano Ronaldo>> again failed to make an impact, cutting a frustrated figure throughout. Portugal must now face Croatia in the round of 32 rather than the weaker side that finishing top would have offered. Colombia dominated the game with 24 shots to Portugal’s 13, and it was only a string of saves from <<diogo-costa-porto|Diogo Costa>> — six in total — that kept the scoreline level.\n\nVery late in added time, Colombia thought they had found a winner through <<davinson-sanchez-galatasaray|Davinson Sánchez>>, heading home from a corner — but VAR correctly ruled it out for offside, denying what would have been a dramatic conclusion to a flat evening.',
+        ['bruno-fernandes-man-utd','vitinha-paris-sg','cristiano-ronaldo-al-nassr','diogo-costa-porto','davinson-sanchez-galatasaray'])
     ];
     const nat={};
     const add=(country,names)=>names.split(',').forEach(n=>nat[n.trim()]=country);
@@ -1500,6 +2466,60 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     add('Panama','Adalberto Carrasquilla,Orlando Mosquera,Eric Davis,José Luis Rodríguez');
     add('DR Congo','Yoane Wissa,Chancel Mbemba,Lionel Mpasi,Arthur Masuaku,Samuel Moutoussamy,Cédric Bakambu');
     add('Uzbekistan','Eldor Shomurodov,Abbosbek Fayzullaev,Utkir Yusupov,Abduqodir Khusanov,Jasur Yakhshiboev');
+
+    add('France','Kingsley Coman,Jules Koundé,Mattéo Guendouzi,Benoît Badiashile,Benjamin Pavard');
+    add('England','Dominic Solanke,Ben White');
+    add('Brazil','João Pedro,Gabriel Magalhães,Guilherme Arana,Yan Couto,Pedro');
+    add('Spain','Álvaro Morata,Dani Carvajal,Pedro Porro,Eric García');
+    add('Germany','Leroy Sané,Chris Führich');
+    add('Argentina','Alejandro Garnacho,Franco Mastantuono,Valentín Carboni,Marcos Senesi,Gio Lo Celso');
+    add('Portugal','Bernardo Silva,Diogo Jota,Nélson Semedo,Rúben Neves,Pedro Gonçalves');
+    add('Netherlands','Donyell Malen,Brian Brobbey,Lutsharel Geertruida,Justin Bijlow,Joshua Zirkzee');
+    add('Norway','Sander Berge,Kristian Thorstvedt,Ørjan Nyland,Håkon Evjen');
+    add('Colombia','James Rodríguez,Yerry Mina,Miguel Ángel Borja,Óscar Estupiñán');
+    add('Mexico','Hirving Lozano,Raúl Jiménez,Luis Ángel Malagón,César Montes,Jorge Sánchez,Gerardo Arteaga,Johan Vásquez,Roberto Alvarado,Santiago Giménez');
+    add('Belgium','Timothy Castagne,Zeno Debast,Arthur Vermeeren,Orel Mangala,Alexis Saelemaekers,Thomas Meunier');
+    add('Morocco','Youssef En-Nesyri,Nayef Aguerd,Amine Harit,Zakaria Aboukhlal');
+    add('Japan','Hidemasa Morita,Reo Hatate,Junya Ito,Mao Hosoya,Tomoki Iwata');
+    add('Croatia','Nikola Vlašić,Luka Sučić,Petar Musa,Marin Pongračić,Mario Pašalić');
+    add('Turkey','Zeki Çelik,Altay Bayındır,Barış Alper Yılmaz,Yusuf Yazıcı');
+    add('USA','Gio Reyna,Brendan Aaronson,Josh Sargent,Walker Zimmermann');
+    add('Switzerland','Noah Okafor,Fabian Rieder,Zeki Amdouni,Jonas Omlin,Silvan Widmer');
+    add('Ecuador','Kendry Páez,Jeremy Sarmiento,Byron Castillo,Djorkaeff Reasco');
+    add('Uruguay','Giorgian De Arrascaeta,Nicolás De La Cruz,Sebastián Coates,Maxi Gómez,Fernando Muslera');
+    add('Denmark','Mads Hermansen,Jesper Lindstrøm,Viktor Kristiansen,Alexander Bah,Mads Roerslev');
+    add('Nigeria','Terem Moffi,Ola Aina,Fisayo Dele-Bashiru,Cyriel Dessers,Zaidu Sanusi');
+    add('Ghana','Thomas Partey,Kamaldeen Sulemana,Joseph Aidoo,Daniel Amartey');
+    add('South Korea','Yang Hyun-jun,Jeong Woo-yeong,Bae Jun-ho,Seol Young-woo');
+    add('Canada','Ismael Kone,Cyle Larin,Luca Koleosho,Kamal Miller');
+    add('Egypt','Mohamed Elneny,Nasser Maher');
+    add('Poland','Arkadiusz Milik,Nicola Zalewski,Kamil Piątkowski,Jakub Moder');
+    add('Sweden','Emil Forsberg,Hugo Larsson,Carl Starfelt,Jesper Karlsson,Mattias Svanberg');
+    add('South Africa','Evidence Makgopa,Bongani Zungu,Sipho Mbule,Grant Kekana');
+    add('France','Maxence Lacroix,Lucas Digne');
+    add('England','Nico O\'Reilly,Elliot Anderson,Jarell Quansah');
+    add('Brazil','Douglas Santos');
+    add('Spain','Marcos Llorente');
+    add('Germany','Felix Nmecha');
+    add('Argentina','Gonzalo Montiel,Facundo Medina,Nicolás Tagliafico,Nico Paz');
+    add('Portugal','Gonçalo Inácio,Renato Veiga,João Félix');
+    add('Netherlands','Jan Paul van Hecke,Crysencio Summerville');
+    add('Colombia','Johan Mojica,Gustavo Puerta,Jhon Córdoba,Santiago Arias,Deiver Machado');
+    add('USA','Malik Tillman,Auston Trusty,Miles Robinson,Joe Scally,Mark McKenzie,Matt Freese');
+    add('Croatia','Josip Šutalo,Luka Vušković,Martin Baturina,Petar Sučić,Ivan Perišić');
+    add('Morocco','Chadi Riad,Neil El Aynaoui,Ismael Saibari,Ayoub El Kaabi');
+    add('Mexico','Raúl Rangel,Israel Reyes,Jesús Gallardo,Érik Lira,Álvaro Fidalgo,Brian Gutiérrez');
+    add('Japan','Keito Nakamura,Daizen Maeda,Tsuyoshi Watanabe,Shogo Taniguchi');
+    add('Turkey','Abdülkerim Bardakcı,İsmail Yüksek,Orkun Kökçü,Mert Müldür');
+    add('Switzerland','Gregor Kobel,Nico Elvedi,Denis Zakaria,Michel Aebischer,Djibril Sow');
+    add('Ecuador','William Pacho,Joel Ordóñez,Alan Franco');
+    add('Canada','Alistair Johnston,Richie Laryea,Derek Cornelius,Liam Millar');
+    add('Egypt','Mostafa Shobeir,Mohamed Hany,Yasser Ibrahim,Emam Ashour,Mostafa Zico');
+    add('Sweden','Isak Hien,Gustaf Lagerbielke,Yasin Ayari,Benjamin Nygren,Jesper Karlström');
+    add('South Africa','Iqraam Rayners,Khuliso Mudau,Relebohile Mofokeng,Oswin Appollis');
+    add('Belgium','Nathan Ngoy,Brandon Mechele,Maxim De Cuyper,Nicolas Raskin,Hans Vanaken');
+    add('Norway','Julian Ryerson,Kristoffer Ajer,Torbjørn Heggem,Oscar Bobb,Jørgen Strand Larsen,Gustav Schjelderup');
+    add('Ivory Coast','Yan Diomande');
     this._data={WC,STARS,NEWS,MOOD,ARTICLES,NATION:nat};
     return this._data;
   }
@@ -1652,16 +2672,16 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       // matches means no more spotlight. This is a hype-axis effect, not a
       // performance one, so it's applied here rather than to fotmob/formSig.
       const eliminated = atWC && !!wcEff && /^Eliminated/.test(wcEff.status);
-      const moodSig=Math.max(6,Math.min(99,(46+hypeRaw*0.6+(stars?14:0)) - (eliminated?30:0)));
+      const moodSig=Math.max(6,Math.min(99,(46+hypeRaw*1.4+(stars?14:0)) - (eliminated?30:0)));
       const tmVal=(mv!=null)?mv:Math.round((tierBase[tier]*(0.9+0.5*r())) * (youth?1.18:1) /10)*5;
       const tmTrendUp = change30d>=0;
-      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*0.6));
+      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*1.4));
 
       // ---- price = anchor + performance + form + hype, in log space (see
       // pricing-model.md). A player with no real signal trades flat at
       // the anchor; real output and real news move it, not raw market value.
       const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
-      const wPerf=0.5, wForm=0.3, wHype=0.2;
+      const wPerf=0.5, wForm=0.3, wHype=0.35;
       // perf/form only apply when we actually have a RATED appearance —
       // "no data" must stay neutral (0), never read as "bad". Note `atWC` is
       // also true for squad-confirmed players with no minutes yet (the inSquad
@@ -1672,11 +2692,24 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       // and the 1D change exploded. Gate on avgR>0 (an actual rated match) so
       // no-minutes-yet is a real neutral and a debut is a normal-sized move.
       const hasMatchData = atWC && avgR>0;
-      const perfScore = hasMatchData ? clamp((fotmob-46)/30, -1, 1) : 0;
-      const formScore = hasMatchData ? clamp((formSig-46)/30, -1, 1) : 0;
+      // Underdog multiplier: an unknown cheap player surpassing expectations
+      // generates outsized hype vs a known star doing what's expected. We
+      // derive notoriety [0,1] from anchor (20=unknown → 0, 200=superstar → 1)
+      // and use it to asymmetrically scale perf/form — unknowns get amplified
+      // upside and softened downside; expensive stars get the reverse.
+      const notoriety = clamp((anchor - 20) / 180, 0, 1); // 0=unknown, 1=superstar
+      const rawPerf = hasMatchData ? clamp((fotmob-46)/30, -1, 1) : 0;
+      const rawForm = hasMatchData ? clamp((formSig-46)/30, -1, 1) : 0;
+      // upMult: unknowns earn 1.55x on good perf, stars earn 0.75x
+      // downMult: unknowns are punished 0.6x on bad perf, stars 1.4x
+      const upMult   = 1.55 - 0.8 * notoriety; // unknown→1.55, star→0.75
+      const downMult = 0.60 + 0.8 * notoriety; // unknown→0.60, star→1.40
+      const applyMult=(v,up,dn)=>v>=0?v*up:v*dn;
+      const perfScore = applyMult(rawPerf, upMult, downMult);
+      const formScore = applyMult(rawForm, upMult, downMult);
       // hype basket = mood + transfer/news signal, capped so buzz alone can
-      // never dwarf fundamentals.
-      const hypeScore = clamp(((moodSig-46)+(transferSig-46))/2/30, -1, 1);
+      // never dwarf fundamentals. Unknowns also get a touch more hype uplift.
+      const hypeScore = clamp(((moodSig-46)+(transferSig-46))/2/30, -1, 1) * (1.3 - 0.4*notoriety);
       const fairValueBase = anchor * Math.exp(wPerf*perfScore + wForm*formScore);
       const fairValue = fairValueBase * Math.exp(wHype*hypeScore);
       // Demand pressure from virtual agents + real user trades (server-side
@@ -1684,7 +2717,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       // fair value, so genuine hype bubbles and sell-offs are visible but
       // fundamentals still anchor the price.
       const demandScore = (live && live.demand) ? (live.demand[id] || 0) : 0;
-      const price = fairValue * Math.exp(0.15 * demandScore);
+      const price = fairValue * Math.exp(0.28 * demandScore);
 
       // history 90d ending at current price. A player with a real signal
       // (WC performance or curated news) actually drifted to get here, so
@@ -1715,7 +2748,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       // (same 0.6 multiplier) instead of quietly burying ~75% of it in a
       // multi-day ease-in the live chart never reflected.
       for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N){ e._impactPct=0; continue; }
-        const bump=(e.delta/100)*price*0.6, ramp=1, halfLife=6;
+        const bump=(e.delta/100)*price*0.9, ramp=1, halfLife=6;
         for(let j=idx;j<N;j++){ const daysIn=j-idx+1; // +1: the match day itself is already day 1, not day 0 — otherwise a same-day event (idx===N-1) eases in at 0 and never visibly moves today's price.
           const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
           const decay=Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);
@@ -1911,7 +2944,9 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   // ---------- portfolio math ----------
   holdingsValue(){ let v=0; const h=this.state.holdings; for(const id in h){ const p=this.byId(id); if(p) v+=this.curPrice(p)*h[id].qty; } return v; }
   costBasis(){ let v=0; const h=this.state.holdings; for(const id in h){ v+=h[id].qty*h[id].avg; } return v; }
-  netWorth(){ return this.state.cash + this.holdingsValue(); }
+  shortsLiability(){ let v=0; const sh=this.state.shorts; for(const id in sh){ const p=this.byId(id); if(p) v+=this.curPrice(p)*sh[id].qty; } return v; }
+  shortsPnl(){ let v=0; const sh=this.state.shorts; for(const id in sh){ const p=this.byId(id); if(p) v+=(sh[id].avg-this.curPrice(p))*sh[id].qty; } return v; }
+  netWorth(){ return this.state.cash + this.holdingsValue() - this.shortsLiability(); }
   allTimePL(){ return this.netWorth() - 10000; }
 
   // ---------- daily reward ----------
@@ -1927,12 +2962,26 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   }
 
   // ---------- actions ----------
-  nav(v){ this.setState({view:v,selectedArticleId:null}); }
+  nav(v){ this.setState({view:v,selectedArticleId:null}); if(v==='clubs') this.loadMyClub(); }
   goHome(){ this.setState({view:'market'}); }
-  openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90}); }
+  openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90}); window.scrollTo(0,0); }
   goBack(){ this.setState({view:'market'}); }
   openArticle(id){ this.setState({view:'articles',selectedArticleId:id}); }
   setLeague(lg){ this.setState({league:lg}); }
+  toggleFilters(){ this.setState(s=>({filterOpen:!s.filterOpen})); }
+  onFilterNationChange(e){ this.setState({filterNation:e.target.value,filterTeam:'ALL'}); }
+  onFilterTeamChange(e){ this.setState({filterTeam:e.target.value}); }
+  onFilterAgeMin(e){ this.setState({filterAgeMin:e.target.value}); }
+  onFilterAgeMax(e){ this.setState({filterAgeMax:e.target.value}); }
+  onFilterPriceMin(e){ this.setState({filterPriceMin:e.target.value}); }
+  onFilterPriceMax(e){ this.setState({filterPriceMax:e.target.value}); }
+  onFilterVolMin(e){ this.setState({filterVolMin:e.target.value}); }
+  onFilterVolMax(e){ this.setState({filterVolMax:e.target.value}); }
+  onFilter1dMin(e){ this.setState({filter1dMin:e.target.value}); }
+  onFilter1dMax(e){ this.setState({filter1dMax:e.target.value}); }
+  onFilter7dMin(e){ this.setState({filter7dMin:e.target.value}); }
+  onFilter7dMax(e){ this.setState({filter7dMax:e.target.value}); }
+  clearFilters(){ this.setState({filterNation:'ALL',filterTeam:'ALL',filterAgeMin:'',filterAgeMax:'',filterPriceMin:'',filterPriceMax:'',filterVolMin:'',filterVolMax:'',filter1dMin:'',filter1dMax:'',filter7dMin:'',filter7dMax:'',league:'ALL'}); }
   setSort(key){
     const S=this.state;
     if(S.sortKey===key){ this.setState({sortDir:S.sortDir==='asc'?'desc':'asc'}); return; }
@@ -1943,8 +2992,24 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   onSearch(e){ this.setState({search:e.target.value}); }
   toggleWatch(id){ const w=this.state.watch.slice(); const i=w.indexOf(id); if(i>=0)w.splice(i,1); else w.push(id); this.setState({watch:w},()=>this.persist()); }
 
-  openTrade(id,side){ const p=this.byId(id); const held=this.state.holdings[id]; if(side==='sell'&&(!held||held.qty<1))return; this.setState({tradeOpen:true,tradeId:id,tradeSide:side,tradeQty:1}); }
+  openTrade(id,side){ const p=this.byId(id); const held=this.state.holdings[id]; const shorted=this.state.shorts[id]; if(side==='sell'&&(!held||held.qty<1))return; if(side==='cover'&&(!shorted||shorted.qty<1))return; this.setState({tradeOpen:true,tradeId:id,tradeSide:side,tradeQty:1}); }
   closeTrade(){ this.setState({tradeOpen:false}); }
+  openFeedback(){ this.setState({feedbackOpen:true,feedbackSent:false,feedbackError:'',feedbackText:'',feedbackName:''}); }
+  closeFeedback(){ this.setState({feedbackOpen:false}); }
+  async submitFeedback(){
+    const S=this.state;
+    if(!S.feedbackText.trim()) return;
+    this.setState({feedbackSending:true,feedbackError:''});
+    try{
+      const res=await fetch(this._feedbackEndpoint,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({name:S.feedbackName||'Anonymous',message:S.feedbackText}),
+      });
+      if(res.ok){ this.setState({feedbackSent:true,feedbackSending:false}); }
+      else{ this.setState({feedbackError:'Submission failed — please try again.',feedbackSending:false}); }
+    }catch(e){ this.setState({feedbackError:'Network error — please try again.',feedbackSending:false}); }
+  }
   setTradeQty(q){ this.setState({tradeQty:Math.max(1,q)}); }
   confirmTrade(){
     const id=this.state.tradeId, side=this.state.tradeSide, qty=this.state.tradeQty;
@@ -1957,30 +3022,46 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   }
   fillPendingOrders(DB){
     if(!this.state.pendingOrders.length) return;
-    const holdings=Object.assign({},this.state.holdings); const txns=this.state.txns.slice();
-    let cash=this.state.cash;
+    const holdings=Object.assign({},this.state.holdings); const shorts=Object.assign({},this.state.shorts); const txns=this.state.txns.slice();
+    let cash=this.state.cash; let didFill=false;
     for(const order of this.state.pendingOrders){
       const p=this.byId(order.id); if(!p) continue;
       const price=this.curPrice(p); const qty=order.qty; const total=price*qty;
       if(order.side==='buy'){
-        if(total>cash+1e-9) continue; // can't afford at the fill price — order lapses
+        if(total>cash+1e-9) continue;
         const cur=holdings[order.id]||{qty:0,avg:0};
         const newQty=cur.qty+qty; const newAvg=(cur.qty*cur.avg+qty*price)/newQty;
         holdings[order.id]={qty:newQty,avg:newAvg};
         txns.unshift({side:'BUY',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
         cash-=total;
-      } else {
-        const cur=holdings[order.id]; if(!cur||cur.qty<qty) continue; // no longer holds enough — order lapses
+      } else if(order.side==='sell'){
+        const cur=holdings[order.id]; if(!cur||cur.qty<qty) continue;
         const newQty=cur.qty-qty; if(newQty<=0) delete holdings[order.id]; else holdings[order.id]={qty:newQty,avg:cur.avg};
         txns.unshift({side:'SELL',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
         cash+=total;
+      } else if(order.side==='hatewatch'){
+        // Short: receive cash now, owe shares at current price later
+        if(total>cash+1e-9) continue; // require 1x collateral to cap downside
+        const cur=shorts[order.id]||{qty:0,avg:0};
+        const newQty=cur.qty+qty; const newAvg=(cur.qty*cur.avg+qty*price)/newQty;
+        shorts[order.id]={qty:newQty,avg:newAvg};
+        txns.unshift({side:'HATEWATCH',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
+        cash+=total; // receive short-sale proceeds
+      } else if(order.side==='cover'){
+        // Cover: buy back shorted shares
+        const cur=shorts[order.id]; if(!cur||cur.qty<qty) continue;
+        if(total>cash+1e-9) continue;
+        const newQty=cur.qty-qty; if(newQty<=0) delete shorts[order.id]; else shorts[order.id]={qty:newQty,avg:cur.avg};
+        txns.unshift({side:'COVER',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
+        cash-=total;
       }
       // Tell the worker about this trade so real user demand moves the shared
       // market price (same signal as virtual agents). Fire-and-forget: if the
       // worker is down, the trade still executes locally.
       if(this._liveWorkerBase){ fetch(this._liveWorkerBase+'/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:order.id,side:order.side})}).catch(()=>{}); }
+      didFill=true;
     }
-    this.setState({holdings,txns,cash,pendingOrders:[]},()=>this.persist());
+    this.setState({holdings,txns,cash,shorts,pendingOrders:[]},()=>{ this.persist(); if(didFill) this.submitScore(); });
   }
   openReward(){ this.setState({showReward:true}); }
   closeReward(){ this.setState({showReward:false}); }
@@ -1993,16 +3074,264 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   }
   stop(e){ e.stopPropagation(); }
 
+  // ---------- profile ----------
+  openProfileView(name){ this.setState({profileViewName:name||null,view:'profile'}); }
+  closeProfileView(){ this.setState({view:'leaders',profileViewName:null}); }
+  profileStats(){
+    const S=this.state; const txns=S.txns||[];
+    const buys=txns.filter(t=>t.side==='BUY');
+    const sells=txns.filter(t=>t.side==='SELL');
+    const totalBuyQty=buys.reduce((a,t)=>a+t.qty,0);
+    const totalSellQty=sells.reduce((a,t)=>a+t.qty,0);
+    const totalBuyValue=buys.reduce((a,t)=>a+t.total,0);
+    // favorite player: most total qty bought
+    const buyByPlayer={};
+    buys.forEach(t=>{ buyByPlayer[t.id]=(buyByPlayer[t.id]||{name:t.name,qty:0}); buyByPlayer[t.id].qty+=t.qty; });
+    const favEntry=Object.values(buyByPlayer).sort((a,b)=>b.qty-a.qty)[0]||null;
+    // unique players ever traded
+    const tradedIds=new Set(txns.map(t=>t.id));
+    // current holdings analysis
+    const h=S.holdings; const DB=this.getDB();
+    let bestPL=null, bestPLName='', bestPLPct=0;
+    let worstPL=null, worstPLName='', worstPLPct=0;
+    let winCount=0, totalLong=0;
+    for(const id in h){
+      const holding=h[id]; const p=this.byId(id);
+      if(!p) continue;
+      const cur=this.curPrice(p); const pl=(cur-holding.avg)*holding.qty; const plPct=(cur-holding.avg)/holding.avg*100;
+      totalLong++;
+      if(pl>=0) winCount++;
+      if(bestPL===null||pl>bestPL){ bestPL=pl; bestPLName=p.name; bestPLPct=plPct; }
+      if(worstPL===null||pl<worstPL){ worstPL=pl; worstPLName=p.name; worstPLPct=plPct; }
+    }
+    const winRate=totalLong>0?Math.round(winCount/totalLong*100):null;
+    // portfolio diversity: unique leagues in holdings
+    const heldLeagues=new Set(Object.keys(h).map(id=>{ const p=this.byId(id); return p?p.lg:''; }).filter(Boolean));
+    const nw=this.netWorth(); const pl=nw-10000;
+    return {
+      nw, pl, plUp:pl>=0, ath:S.allTimeHigh||nw,
+      totalTrades:txns.length, totalBuys:buys.length, totalSells:sells.length,
+      totalBuyQty, totalSellQty, totalBuyValue,
+      favPlayer:favEntry?favEntry.name:'—',
+      playersTraded:tradedIds.size,
+      positions:totalLong, diversity:heldLeagues.size,
+      winRate, bestPLName, bestPLPct, worstPLName, worstPLPct,
+      streak:S.streak||0, cash:S.cash,
+      joinDate:S.joinDate||'—',
+    };
+  }
+
+  // ---------- identity (leaderboard) ----------
+  loadToken(){ try{ let t=localStorage.getItem('fs_token'); if(!t){ t=Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem('fs_token',t); } return t; }catch(e){ return 'anon'; } }
+  loadUsername(){ try{ return localStorage.getItem('fs_username')||''; }catch(e){ return ''; } }
+  saveUsername(n){ try{ localStorage.setItem('fs_username',n.trim().slice(0,32)); }catch(e){} }
+
   // ---------- leaderboard ----------
+  submitScore(){
+    const name=this.loadUsername(); if(!name||!this._sbUrl) return;
+    const nw=Math.round(this.netWorth());
+    fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+      body:JSON.stringify({token:this.loadToken(),name,net_worth:nw,updated_at:new Date().toISOString()})}).catch(()=>{});
+  }
   leaderboardData(){
-    const names=['Jordi Cruyff','Sofia Marchetti','Tunde Bakare','Liu Wei','Hassan Khalil','Mateo Rossi','Elena Petrova','Sven Larsson','Diego Fuentes','Yuki Tanaka','Amara Diallo','Greta Hofmann','Pavel Novák','Chiara Romano','Noah Williams','Fatima Zahra','Kenji Mori','Ana Silva','Tomás Reyes','Igor Volkov','Marek Kowalski','Nadia Haddad','Lukas Brandt','Owen Pryce'];
-    const arr=names.map(n=>{ const r=this.rand01(n); const profit=Math.round((r-0.34)*9000); return {name:n,profit,bot:true}; });
-    const myProfit=Math.round(this.allTimePL());
-    arr.push({name:'You',profit:myProfit,me:true});
-    arr.sort((a,b)=>b.profit-a.profit);
+    const myName=this.loadUsername()||'You';
+    const myNW=Math.round(this.netWorth());
+    const real=this._liveLeaderboard||[];
+    // Merge real entries with "you" — if user's name is already in the list
+    // (from a prior submission), update that entry so rank stays accurate.
+    const arr=real.filter(e=>e.name!==myName).map(e=>({name:e.name,netWorth:e.netWorth}));
+    arr.push({name:myName,netWorth:myNW,me:true});
+    arr.sort((a,b)=>b.netWorth-a.netWorth);
     return arr;
   }
   myRank(){ const lb=this.leaderboardData(); return lb.findIndex(x=>x.me)+1; }
+
+  // ============ CLUBS ============
+  getUserId(){
+    let uid=localStorage.getItem('footystock_uid');
+    if(!uid){uid=([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));localStorage.setItem('footystock_uid',uid);}
+    return uid;
+  }
+  genCode(){return Math.random().toString(36).slice(2,8).toUpperCase();}
+
+  async loadMyClub(){
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const uid=this.getUserId();
+      const memberships=await Supa.get('club_members','user_id=eq.'+uid+'&select=club_id');
+      if(!memberships.length){
+        const pub=await Supa.get('clubs','is_public=eq.true&order=created_at.desc&limit=20&select=id,name,description,leader_name,is_public,min_net_worth,created_at');
+        this.setState({myClub:null,clubMembers:[],clubComps:[],clubPublicList:pub,clubLoading:false});
+        return;
+      }
+      const clubId=memberships[0].club_id;
+      const [clubs,members,comps]=await Promise.all([
+        Supa.get('clubs','id=eq.'+clubId),
+        Supa.get('club_members','club_id=eq.'+clubId+'&order=joined_at.asc'),
+        Supa.get('competitions','club_id=eq.'+clubId+'&order=created_at.desc&limit=10'),
+      ]);
+      this.setState({myClub:clubs[0]||null,clubMembers:members,clubComps:comps,clubLoading:false});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  async createClub(){
+    const{clubCreateName:name,clubCreateDesc:desc,clubCreatePublic:isPublic,clubCreateMinNW:minNW}=this.state;
+    if(!name.trim()){this.setState({clubError:'Club name is required.'});return;}
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const existing=await Supa.get('club_members','user_id=eq.'+uid+'&select=club_id');
+      if(existing.length){this.setState({clubLoading:false,clubError:'You are already in a club. Leave it first.'});return;}
+      const code=this.genCode();
+      const club=await Supa.post('clubs',{name:name.trim(),description:desc.trim(),leader_id:uid,leader_name:dname,is_public:isPublic,invite_code:code,min_net_worth:parseFloat(minNW)||0});
+      const c=Array.isArray(club)?club[0]:club;
+      await Supa.post('club_members',{club_id:c.id,user_id:uid,display_name:dname});
+      await this.loadMyClub();
+      this.setState({clubView:'home',clubCreateName:'',clubCreateDesc:'',clubSuccess:'Club created!'});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message.includes('unique')?'A club with that name already exists.':e.message});}
+  }
+
+  async joinClubByCode(){
+    const code=this.state.clubJoinCode.trim().toUpperCase();
+    if(!code){this.setState({clubError:'Enter an invite code.'});return;}
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const clubs=await Supa.get('clubs','invite_code=eq.'+code);
+      if(!clubs.length){this.setState({clubLoading:false,clubError:'Invalid invite code.'});return;}
+      const club=clubs[0];
+      const members=await Supa.get('club_members','club_id=eq.'+club.id);
+      if(members.length>=11){this.setState({clubLoading:false,clubError:'This club is full (max 11 members).'});return;}
+      if(members.find(m=>m.user_id===uid)){this.setState({clubLoading:false,clubError:'You are already in this club.'});return;}
+      const nw=this.netWorth();
+      if(nw<club.min_net_worth){this.setState({clubLoading:false,clubError:'This club requires a net worth of '+this.money(club.min_net_worth)+'.'});return;}
+      await Supa.post('club_members',{club_id:club.id,user_id:uid,display_name:dname});
+      await this.loadMyClub();
+      this.setState({clubView:'home',clubJoinCode:'',clubSuccess:'Joined '+club.name+'!'});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  async joinClubById(clubId){
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const existing=await Supa.get('club_members','user_id=eq.'+uid+'&select=club_id');
+      if(existing.length){this.setState({clubLoading:false,clubError:'Leave your current club first.'});return;}
+      const members=await Supa.get('club_members','club_id=eq.'+clubId);
+      if(members.length>=11){this.setState({clubLoading:false,clubError:'This club is full.'});return;}
+      const clubs=await Supa.get('clubs','id=eq.'+clubId);
+      const club=clubs[0];
+      const nw=this.netWorth();
+      if(nw<club.min_net_worth){this.setState({clubLoading:false,clubError:'Requires net worth of '+this.money(club.min_net_worth)+'.'});return;}
+      await Supa.post('club_members',{club_id:clubId,user_id:uid,display_name:dname});
+      await this.loadMyClub();
+      this.setState({clubSuccess:'Joined '+club.name+'!'});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  async leaveClub(){
+    if(!confirm('Leave your club? You will lose access to active competitions.'))return;
+    const uid=this.getUserId();
+    const{myClub}=this.state;
+    if(myClub&&myClub.leader_id===uid){
+      const others=this.state.clubMembers.filter(m=>m.user_id!==uid);
+      if(others.length>0){alert('Transfer leadership or remove all members before leaving.');return;}
+      await Supa.del('clubs','id=eq.'+myClub.id);
+    }else{
+      await Supa.del('club_members','club_id=eq.'+myClub.id+'&user_id=eq.'+uid);
+    }
+    this.setState({myClub:null,clubMembers:[],clubComps:[],clubView:'home'});
+    await this.loadMyClub();
+  }
+
+  async removeMember(memberId){
+    if(!confirm('Remove this member from the club?'))return;
+    await Supa.del('club_members','id=eq.'+memberId);
+    await this.loadMyClub();
+  }
+
+  async createCompetition(){
+    const{myClub}=this.state;
+    if(!myClub)return;
+    const name=prompt('Competition name (e.g. "Week 1"):');
+    if(!name)return;
+    const days=parseInt(prompt('Duration in days (e.g. 7):')||'7');
+    if(isNaN(days)||days<1)return;
+    const endsAt=new Date(Date.now()+days*86400000).toISOString();
+    this.setState({clubLoading:true});
+    try{
+      await Supa.post('competitions',{club_id:myClub.id,name:name.trim(),ends_at:endsAt,status:'active'});
+      await this.loadMyClub();
+    }catch(e){this.setState({clubError:e.message,clubLoading:false});}
+  }
+
+  async enterComp(compId){
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    const{myClub}=this.state;
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const rows=await Supa.get('comp_portfolios','competition_id=eq.'+compId+'&user_id=eq.'+uid);
+      let port=rows[0];
+      if(!port){
+        const res=await Supa.post('comp_portfolios',{competition_id:compId,club_id:myClub.id,user_id:uid,display_name:dname,cash:10000,holdings:{}});
+        port=Array.isArray(res)?res[0]:res;
+      }
+      const lb=await this.loadCompLb(compId);
+      this.setState({compPortfolio:port,activeCompId:compId,clubView:'comp',compLeaderboard:lb,clubLoading:false});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  async loadCompLb(compId){
+    const rows=await Supa.get('comp_portfolios','competition_id=eq.'+compId+'&select=display_name,cash,holdings');
+    return rows.map(r=>{
+      const h=r.holdings||{};
+      const hVal=Object.entries(h).reduce((sum,[id,qty])=>{
+        const p=this._lastDB?(this._lastDB.find(x=>x.id===id)||null):null;
+        return sum+((p?this.curPrice(p):0)*qty);
+      },0);
+      const total=(r.cash||0)+hVal;
+      return{display_name:r.display_name,value:total,profit:total-10000};
+    }).sort((a,b)=>b.profit-a.profit);
+  }
+
+  compPortfolioValue(){
+    const{compPortfolio}=this.state;
+    if(!compPortfolio)return 10000;
+    const h=compPortfolio.holdings||{};
+    const hVal=Object.entries(h).reduce((sum,[id,qty])=>{
+      const p=this._lastDB?(this._lastDB.find(x=>x.id===id)||null):null;
+      return sum+((p?this.curPrice(p):0)*qty);
+    },0);
+    return (compPortfolio.cash||0)+hVal;
+  }
+
+  async execCompTrade(side,playerId,qty,price){
+    const{compPortfolio,activeCompId}=this.state;
+    if(!compPortfolio)return;
+    const holdings=Object.assign({},compPortfolio.holdings||{});
+    let cash=compPortfolio.cash||0;
+    const total=price*qty;
+    if(side==='BUY'){
+      if(cash<total){this.setState({clubError:'Not enough competition cash.'});return;}
+      cash-=total;
+      holdings[playerId]=(holdings[playerId]||0)+qty;
+    }else{
+      const owned=holdings[playerId]||0;
+      if(owned<qty){this.setState({clubError:'Not enough shares in competition portfolio.'});return;}
+      cash+=total;
+      holdings[playerId]=owned-qty;
+      if(holdings[playerId]<=0)delete holdings[playerId];
+    }
+    const uid=this.getUserId();
+    const updated=await Supa.patch('comp_portfolios','competition_id=eq.'+activeCompId+'&user_id=eq.'+uid,{cash,holdings,updated_at:new Date().toISOString()});
+    const port=Array.isArray(updated)?updated[0]:updated;
+    const lb=await this.loadCompLb(activeCompId);
+    this.setState({compPortfolio:{...compPortfolio,cash,holdings},compLeaderboard:lb,clubError:''});
+  }
 
   // ============ RENDER ============
   renderVals(){
@@ -2011,6 +3340,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     // live worker data is available — see the comment in componentDidMount.
     // This first, near-instant render just shows an empty/blank state.
     const DB=S.ready?this.getDB():[];
+    if(DB.length) this._lastDB=DB;
     const GREEN='#16a85f',RED='#d23b2c',GBG='#e7f6ec',RBG='#fbe9e7';
     const cd=(n)=>n>=0?'#3ddc8a':'#ff5d5d';
     // stdev of daily returns (annualized) + high/low over all available history,
@@ -2038,7 +3368,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       const {volPct,hiAll,loAll}=riskStats(p);
       return {
         id:p.id,name:p.name,last:p.name.split(' ').slice(-1)[0],team:p.team,abbr:p.abbr,lg:p.abbr,
-        league:p.lgName,pos:p.pos,rank:p.rank,price:this.money(price),
+        league:p.lgName,pos:p.pos,rank:p.rank,price:this.money(price),rawPrice:price,
         chg:this.pct(p.change7d),arrow:up7?'▲':'▼',cd:cd(p.change7d),
         wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',
         wkColor:up7?GREEN:RED,wkBg:up7?GBG:RBG,
@@ -2057,6 +3387,36 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     // movers
     const movers=[...DB].sort((a,b)=>b.change7d-a.change7d).slice(0,4).map(decorate);
 
+    // morning recap
+    const byWk=[...DB].sort((a,b)=>b.change7d-a.change7d);
+    const recapGainers=byWk.slice(0,3).map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
+    const recapLosers=byWk.slice(-3).reverse().map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
+    const upCount=DB.filter(p=>p.change7d>0).length;
+    const downCount=DB.filter(p=>p.change7d<0).length;
+    const topGainer=byWk[0], topLoser=byWk[byWk.length-1];
+    const recapDate=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const bullish=upCount>=downCount;
+    // tally shares bought/sold per player from user's own trade history
+    const buyTally={}, sellTally={};
+    for(const t of (S.txns||[])){
+      if(t.side==='BUY'){ buyTally[t.id]=(buyTally[t.id]||{id:t.id,name:t.name,qty:0}); buyTally[t.id].qty+=t.qty; }
+      else if(t.side==='SELL'){ sellTally[t.id]=(sellTally[t.id]||{id:t.id,name:t.name,qty:0}); sellTally[t.id].qty+=t.qty; }
+    }
+    const mkTrade=(obj)=>{ const p=DB.find(x=>x.id===obj.id); const d=p?decorate(p):null; return {name:obj.name,qty:obj.qty,price:d?d.price:'—',onClick:p?()=>this.openPlayer(p.id):()=>{}}; };
+    const recapMostBought=Object.values(buyTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade);
+    const recapMostSold=Object.values(sellTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade);
+    const recap={
+      date:recapDate,
+      sentiment:`${upCount} rising · ${downCount} falling`,
+      gainers:recapGainers,
+      losers:recapLosers,
+      mostBought:recapMostBought,
+      mostSold:recapMostSold,
+      headline:`${topGainer.name} leads this week's risers (+${topGainer.change7d.toFixed(1)}%), while ${topLoser.name} is the week's biggest faller (${topLoser.change7d.toFixed(1)}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up over the past 7 days.`,
+    };
+    const showRecap=!S.recapDismissed;
+    const dismissRecap=()=>this.setState({recapDismissed:true});
+
     // league chips
     const LG=[['ALL','All'],['EPL','Premier League'],['LAL','La Liga'],['SEA','Serie A'],['BUN','Bundesliga'],['LI1','Ligue 1'],['PROS','Prospects']];
     const leagueChips=LG.map(([k,name])=>{ const on=S.league===k; return {name,onClick:()=>this.setLeague(k),
@@ -2071,11 +3431,41 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     const fold=(s)=>s.normalize('NFD').replace(/[̀-ͯ]/g,'').toLowerCase()
       .replace(/[øđðłþæœß]/g,c=>foldMap[c]||c);
     const q=fold(S.search.trim());
+    const fAgeMin=S.filterAgeMin!==''?parseInt(S.filterAgeMin):null;
+    const fAgeMax=S.filterAgeMax!==''?parseInt(S.filterAgeMax):null;
+    const fPrMin=S.filterPriceMin!==''?parseFloat(S.filterPriceMin):null;
+    const fPrMax=S.filterPriceMax!==''?parseFloat(S.filterPriceMax):null;
+    const fVolMin=S.filterVolMin!==''?parseFloat(S.filterVolMin):null;
+    const fVolMax=S.filterVolMax!==''?parseFloat(S.filterVolMax):null;
+    const f1dMin=S.filter1dMin!==''?parseFloat(S.filter1dMin):null;
+    const f1dMax=S.filter1dMax!==''?parseFloat(S.filter1dMax):null;
+    const f7dMin=S.filter7dMin!==''?parseFloat(S.filter7dMin):null;
+    const f7dMax=S.filter7dMax!==''?parseFloat(S.filter7dMax):null;
     let list=DB.filter(p=>{
       if(S.league!=='ALL' && p.lg!==S.league) return false;
+      if(S.filterNation!=='ALL' && p.nation!==S.filterNation) return false;
+      if(S.filterTeam!=='ALL' && p.team!==S.filterTeam) return false;
+      if(fAgeMin!==null && p.age<fAgeMin) return false;
+      if(fAgeMax!==null && p.age>fAgeMax) return false;
+      if(fPrMin!==null || fPrMax!==null){ const pr=this.curPrice(p); if(fPrMin!==null && pr<fPrMin) return false; if(fPrMax!==null && pr>fPrMax) return false; }
+      if(fVolMin!==null || fVolMax!==null){ const {volPct}=riskStats(p); if(fVolMin!==null && volPct<fVolMin) return false; if(fVolMax!==null && volPct>fVolMax) return false; }
+      if(f1dMin!==null || f1dMax!==null){ const hN=p.hist.length; const dayChg=p.hist[hN-2]?((p.hist[hN-1]-p.hist[hN-2])/p.hist[hN-2])*100:0; if(f1dMin!==null && dayChg<f1dMin) return false; if(f1dMax!==null && dayChg>f1dMax) return false; }
+      if(f7dMin!==null || f7dMax!==null){ if(f7dMin!==null && p.change7d<f7dMin) return false; if(f7dMax!==null && p.change7d>f7dMax) return false; }
       if(q && !(fold(p.name).includes(q)||fold(p.team).includes(q))) return false;
       return true;
     });
+    // nation + team dropdown options
+    const allNations=[...new Set(DB.map(p=>p.nation).filter(Boolean))].sort();
+    // Use null (not false) for unselected — the framework calls removeAttribute
+    // when value is null, but setAttribute('selected','false') when it's boolean
+    // false, and any presence of the selected attribute selects the option.
+    const sel=(v)=>v||null;
+    const nationOptions=[{val:'ALL',label:'All Countries',selected:sel(S.filterNation==='ALL')},...allNations.map(n=>({val:n,label:n,selected:sel(S.filterNation===n)}))];
+    const teamSrcDB=S.filterNation==='ALL'?DB:DB.filter(p=>p.nation===S.filterNation);
+    const allTeams=[...new Set(teamSrcDB.map(p=>p.team))].sort();
+    const teamOptions=[{val:'ALL',label:'All Clubs',selected:sel(S.filterTeam==='ALL')},...allTeams.map(t=>({val:t,label:t,selected:sel(S.filterTeam===t)}))];
+    const activeFilterCount=[S.filterNation!=='ALL',S.filterTeam!=='ALL',S.league!=='ALL',S.filterAgeMin!=='',S.filterAgeMax!=='',S.filterPriceMin!=='',S.filterPriceMax!=='',S.filterVolMin!=='',S.filterVolMax!=='',S.filter1dMin!=='',S.filter1dMax!=='',S.filter7dMin!=='',S.filter7dMax!==''].filter(Boolean).length;
+    const hasActiveFilters=activeFilterCount>0;
     const marketList=list.map(decorate);
     const sortFieldMap={name:'name',price:'priceNum',day:'dayChgNum',week:'wkChgNum',vol:'volNum',range:'hiAllNum',rank:'rank'};
     const sortField=sortFieldMap[S.sortKey]||'rank';
@@ -2098,7 +3488,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     ];
 
     // nav tabs
-    const tabsDef=[['market','Market'],['articles','Articles'],['portfolio','Portfolio'],['watch','Watchlist'],['leaders','Leaderboard']];
+    const tabsDef=[['market','Market'],['articles','Articles'],['portfolio','Portfolio'],['watch','Watchlist'],['clubs','Clubs'],['leaders','Leaderboard'],['profile','Profile']];
     const navTabs=tabsDef.map(([k,label])=>{ const on=S.view===k||(k==='market'&&S.view==='detail'); return {label,onClick:()=>this.nav(k),
       color:on?'#16201a':'#9aa39b',underline:on?'#16a85f':'transparent'}; });
 
@@ -2243,7 +3633,7 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           this.setState({chartDragStart:k,chartHoverIdx:k}); };
         const onChartTouchMove=(e)=>{ e.preventDefault(); const t=e.touches[0]; const k=idxFromClientX(t.clientX,e.currentTarget.getBoundingClientRect());
           if(this.state.chartHoverIdx!==k) this.setState({chartHoverIdx:k}); };
-        const onChartTouchEnd=()=>{ if(this.state.chartDragStart!=null) this.setState({chartDragStart:null}); };
+        const onChartTouchEnd=()=>{ this.setState({chartDragStart:null,chartHoverIdx:null}); };
 
         const hoverIdx=S.chartHoverIdx; const dragStartIdx=S.chartDragStart;
         const dragging = dragStartIdx!=null && hoverIdx!=null;
@@ -2327,7 +3717,15 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
           posValue:this.money(posValue),posPl:(posUp?'+':'−')+this.money(Math.abs(posPl)).slice(1),posPlColor:posUp?GREEN:RED,
           watchLabel:watched?'★ Watching':'☆ Watch',watchColor:watched?'#e2a32b':'#8a938c',
           onToggleWatch:()=>this.toggleWatch(p.id),onBuy:()=>this.openTrade(p.id,'buy'),onSell:()=>this.openTrade(p.id,'sell'),
-          sellBg:hasPos?'#fff':'#f5f6f3',sellColor:hasPos?'#16201a':'#bfc6be',sellBorder:hasPos?'#e1e4dd':'#eef1ec',sellCursor:hasPos?'pointer':'not-allowed' };
+          sellBg:hasPos?'#fff':'#f5f6f3',sellColor:hasPos?'#16201a':'#bfc6be',sellBorder:hasPos?'#e1e4dd':'#eef1ec',sellCursor:hasPos?'pointer':'not-allowed',
+          onHatewatch:()=>this.openTrade(p.id,'hatewatch'),onCover:()=>this.openTrade(p.id,'cover'),
+          shortPos:S.shorts[p.id]||null,
+          hasShort:!!(S.shorts[p.id]&&S.shorts[p.id].qty>0),
+          shortQty:S.shorts[p.id]?S.shorts[p.id].qty:0,
+          shortAvg:S.shorts[p.id]?this.money(S.shorts[p.id].avg):'—',
+          shortValue:S.shorts[p.id]?this.money(this.curPrice(p)*S.shorts[p.id].qty):'—',
+          shortPl:(()=>{ const sh=S.shorts[p.id]; if(!sh) return '—'; const pl=(sh.avg-this.curPrice(p))*sh.qty; const up=pl>=0; return (up?'+':'−')+this.money(Math.abs(pl)).slice(1); })(),
+          shortPlColor:(()=>{ const sh=S.shorts[p.id]; if(!sh) return '#46504a'; return (sh.avg-this.curPrice(p))>=0?GREEN:RED; })() };
       }
     }
     const rangeTabs=[['90m',"90'"],['24h','24H'],[7,'7D'],[30,'30D'],[90,'90D']]
@@ -2344,9 +3742,18 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       .sort((a,b)=>0);
 
     // ---- txns ----
-    const txnList=S.txns.slice(0,30).map(t=>({ side:t.side,name:t.name,
-      detail:`${t.qty} @ ${this.money(t.price)} · ${t.date}`,total:(t.side==='BUY'?'−':'+')+this.money(t.total).slice(1),
-      color:t.side==='BUY'?RED:GREEN,bg:t.side==='BUY'?RBG:GBG }));
+    const HW='#b91c1c',HWBG='#fde8e7';
+    const txnList=S.txns.slice(0,30).map(t=>{ const hw=t.side==='HATEWATCH'||t.side==='COVER'; const cashIn=t.side==='SELL'||t.side==='HATEWATCH'; return { side:t.side,name:t.name,
+      detail:`${t.qty} @ ${this.money(t.price)} · ${t.date}`,total:(cashIn?'+':'−')+this.money(t.total).slice(1),
+      color:hw?HW:t.side==='BUY'?RED:GREEN,bg:hw?HWBG:t.side==='BUY'?RBG:GBG }; });
+
+    // ---- shorts list ----
+    const shortsList=Object.keys(S.shorts).map(id=>{ const p=this.byId(id); if(!p) return null; const sh=S.shorts[id]; const price=this.curPrice(p);
+      const val=price*sh.qty; const plv=(sh.avg-price)*sh.qty; const up=plv>=0; const plpct=(plv/(sh.avg*sh.qty))*100;
+      return { name:p.name,lg:p.abbr,pos:p.pos,price:this.money(price),qty:sh.qty,avg:this.money(sh.avg),value:this.money(val),
+        pl:(up?'+':'−')+this.money(Math.abs(plv)).slice(1),plPct:this.pct(plpct),plColor:up?GREEN:RED,onClick:()=>this.openPlayer(id) }; })
+      .filter(Boolean);
+    const hasShorts=shortsList.length>0, noShorts=shortsList.length===0;
 
     // ---- watch ----
     const watchList=S.watch.map(id=>this.byId(id)).filter(Boolean).map(p=>{ const dec=decorate(p); dec.onRemove=()=>this.toggleWatch(p.id); return dec; });
@@ -2357,8 +3764,13 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     const offOf0=(d)=>Math.round((today0-new Date('2026-'+d+'T18:00:00Z'))/86400000);
     const articleVM=(a)=>{
       const refsResolved=a.refs.map(rid=>this.byId(rid)).filter(Boolean).map(p=>({name:p.name,onClick:()=>this.openPlayer(p.id)}));
+      const bodySegs=a.body.split(/(<<[^>]+>>)/).filter(Boolean).map(seg=>{
+        const m=seg.match(/^<<([^|]+)\|([^>]+)>>$/);
+        if(m){ const pid=m[1]; return {isText:false,isLink:true,v:m[2],onClick:()=>this.openPlayer(pid)}; }
+        return {isText:true,isLink:false,v:seg};
+      });
       return { id:a.d+'|'+a.headline, date:this.dateShort(new Date(today0.getTime()-offOf0(a.d)*86400000)),
-        tag:a.tag, headline:a.headline, dek:a.dek, body:a.body, refs:refsResolved,
+        tag:a.tag, headline:a.headline, dek:a.dek, body:a.body, bodySegs, refs:refsResolved,
         open:()=>this.openArticle(a.d+'|'+a.headline) };
     };
     const articlesSorted=D.ARTICLES.slice().sort((a,b)=>offOf0(a.d)-offOf0(b.d));
@@ -2369,28 +3781,45 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     // ---- leaderboard ----
     const lb=this.leaderboardData(); const medals={1:'🥇',2:'🥈',3:'🥉'};
     const avatarColors=['#16a85f','#0c1f15','#2a6fdb','#b8543a','#7a4fbf','#c98a1e','#1f8a5b','#4a5568'];
-    const leaderboard=lb.map((x,i)=>{ const rk=i+1; const up=x.profit>=0; const initials=x.me?'YOU':x.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
-      const nwv=10000+x.profit;
-      return { medal:medals[rk]||String(rk), rankColor:rk<=3?'#16201a':'#aab2ab', name:x.name,
+    const leaderboard=lb.map((x,i)=>{ const rk=i+1; const profit=(x.netWorth||10000)-10000; const up=profit>=0;
+      const initials=x.me?'YOU':x.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+      return { medal:medals[rk]||String(rk), rankColor:rk<=3?'#16201a':'#aab2ab', name:x.me?(x.name+' (you)'):x.name,
         initials, avatarBg:x.me?'#16a85f':avatarColors[this.hash(x.name)%avatarColors.length],
-        netWorth:this.money0(nwv), profit:this.money0(Math.abs(x.profit)), profitArrow:up?'▲':'▼', profitColor:up?GREEN:RED,
-        rowBg:x.me?'#f0faf4':'transparent' }; });
+        netWorth:this.money0(x.netWorth||10000), profit:this.money0(Math.abs(profit)), profitArrow:up?'▲':'▼', profitColor:up?GREEN:RED,
+        rowBg:x.me?'#f0faf4':'transparent',
+        onClick: x.me ? ()=>this.openProfileView(null) : ()=>this.setState({profileViewName:x.name,view:'profile'}) }; });
+    const lbUsername=this.loadUsername();
+    const lbNameSave=()=>{ const n=(this._lbNameDraft||'').trim(); if(!n) return; this.saveUsername(n); this._lbNameDraft=''; setTimeout(()=>this.submitScore(),100); this.setState(s=>({tick:s.tick+1})); };
+    const lbNameData={ showPrompt:!lbUsername, showEdit:!!lbUsername, current:lbUsername,
+      onInput:(e)=>{ this._lbNameDraft=e.target.value; },
+      onKeyDown:(e)=>{ if(e.key==='Enter') lbNameSave(); },
+      onSave:lbNameSave };
 
     // ---- trade modal ----
     let tr=null;
     if(S.tradeOpen && S.tradeId){ const p=this.byId(S.tradeId); const price=this.curPrice(p); const qty=S.tradeQty; const total=price*qty;
-      const buy=S.tradeSide==='buy'; const held=S.holdings[p.id]; const heldQty=held?held.qty:0;
-      const cashAfter=buy?this.state.cash-total:this.state.cash+total;
-      let error=''; if(buy&&total>this.state.cash) error='Not enough buying power.'; if(!buy&&qty>heldQty) error='You only hold '+heldQty+' shares.';
+      const buy=S.tradeSide==='buy'; const isHW=S.tradeSide==='hatewatch'; const isCover=S.tradeSide==='cover';
+      const held=S.holdings[p.id]; const heldQty=held?held.qty:0;
+      const shorted=S.shorts[p.id]; const shortedQty=shorted?shorted.qty:0;
+      const cashAfter=(buy||isCover)?this.state.cash-total:this.state.cash+total;
+      let error='';
+      if(buy&&total>this.state.cash) error='Not enough buying power.';
+      if(S.tradeSide==='sell'&&qty>heldQty) error='You only hold '+heldQty+' shares.';
+      if(isHW&&total>this.state.cash) error='Need collateral equal to position size.';
+      if(isCover&&qty>shortedQty) error='You only have '+shortedQty+' shares hatewatched.';
       const ok=!error;
+      const HW_RED='#b91c1c';
       const maxBuy=Math.floor(this.state.cash/price);
-      const quickQtys=(buy?[1,5,10,'Max']:[1,5,'Half','All']).map(label=>{ let q; if(label==='Max')q=Math.max(1,maxBuy); else if(label==='All')q=heldQty; else if(label==='Half')q=Math.max(1,Math.floor(heldQty/2)); else q=label; return {label:String(label),onClick:()=>this.setTradeQty(q)}; });
+      const quickQtys=(buy||isHW?[1,5,10,'Max']:isCover?[1,5,'Half','All']:[1,5,'Half','All']).map(label=>{ let q; if(label==='Max')q=Math.max(1,maxBuy); else if(label==='All')q=isCover?shortedQty:heldQty; else if(label==='Half')q=Math.max(1,Math.floor((isCover?shortedQty:heldQty)/2)); else q=label; return {label:String(label),onClick:()=>this.setTradeQty(q)}; });
+      const sideLabel=buy?'Buy order':isHW?'Hatewatch':isCover?'Cover hatewatch':'Sell order';
+      const sideColor=isHW||isCover?HW_RED:buy?GREEN:RED;
+      const confirmLabel=isHW?('Hatewatch '+qty+' · '+this.money(total)):isCover?('Cover '+qty+' · '+this.money(total)):buy?('Buy '+qty+' · '+this.money(total)):('Sell '+qty+' · '+this.money(total));
       tr={ name:p.name,team:p.team,pos:p.pos,price:this.money(price),qty,
-        sideLabel:buy?'Buy order':'Sell order',sideColor:buy?GREEN:RED,
-        total:this.money(total),balanceLabel:buy?'Cash after':'Cash after',balanceAfter:this.money(cashAfter),balanceColor:cashAfter<0?RED:'#16201a',
+        sideLabel,sideColor,
+        total:this.money(total),balanceLabel:'Cash after',balanceAfter:this.money(cashAfter),balanceColor:cashAfter<0?RED:'#16201a',
         inc:()=>this.setTradeQty(qty+1),dec:()=>this.setTradeQty(qty-1),quickQtys,error,
-        confirm:()=>this.confirmTrade(),confirmLabel:buy?('Buy '+qty+' · '+this.money(total)):('Sell '+qty+' · '+this.money(total)),
-        confirmBg:ok?(buy?GREEN:RED):'#c4ccc3',confirmCursor:ok?'pointer':'not-allowed',confirmOpacity:ok?'1':'0.7' }; }
+        confirm:()=>this.confirmTrade(),confirmLabel,
+        confirmBg:ok?(isHW||isCover?HW_RED:buy?GREEN:RED):'#c4ccc3',confirmCursor:ok?'pointer':'not-allowed',confirmOpacity:ok?'1':'0.7' }; }
 
     // ---- reward modal ----
     const sched=this.rewardSchedule(); const claimable=this.isClaimable();
@@ -2413,11 +3842,24 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
     return {
       // shell
       navTabs, ticker, leagueChips, marketCols, search:S.search, onSearch:(e)=>this.onSearch(e),
+      filterOpen:S.filterOpen, toggleFilters:()=>this.toggleFilters(),
+      nationOptions, teamOptions, activeFilterCount, hasActiveFilters,
+      filterNation:S.filterNation, filterTeam:S.filterTeam,
+      filterAgeMin:S.filterAgeMin, filterAgeMax:S.filterAgeMax,
+      filterPriceMin:S.filterPriceMin, filterPriceMax:S.filterPriceMax,
+      filterVolMin:S.filterVolMin, filterVolMax:S.filterVolMax,
+      filter1dMin:S.filter1dMin, filter1dMax:S.filter1dMax,
+      filter7dMin:S.filter7dMin, filter7dMax:S.filter7dMax,
+      onFilterNationChange:(e)=>this.onFilterNationChange(e),
+      onFilterTeamChange:(e)=>this.onFilterTeamChange(e),
+      onFilterAgeMin:(e)=>this.onFilterAgeMin(e), onFilterAgeMax:(e)=>this.onFilterAgeMax(e),
+      onFilterPriceMin:(e)=>this.onFilterPriceMin(e), onFilterPriceMax:(e)=>this.onFilterPriceMax(e),
+      clearFilters:()=>this.clearFilters(),
       goHome:()=>this.goHome(), goLeaders:()=>this.nav('leaders'),
       cashFmt:this.money(this.state.cash),
       rewardBtnLabel,rewardBtnColor,rewardBtnBg, openReward:()=>this.openReward(),
       // views
-      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders', isArticles:S.view==='articles',
+      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders', isArticles:S.view==='articles', isProfile:S.view==='profile', isClubs:S.view==='clubs', isComp:S.clubView==='comp'&&S.view==='clubs',
       // articles
       articlesAll, hasSelectedArticle, noSelectedArticle, selectedArticle, backToArticles:()=>this.setState({selectedArticleId:null}),
       hasArticles:articlesAll.length>0, noArticles:articlesAll.length===0,
@@ -2433,11 +3875,92 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
       // watch
       hasWatch:S.watch.length>0, noWatch:S.watch.length===0, watchList,
       // leaderboard
-      leaderboard,
+      leaderboard, lbNameData, goLeaders:()=>this.nav('leaders'),
+      // profile
+      profileIsMe: S.profileViewName===null,
+      profileName: S.profileViewName || this.loadUsername() || 'You',
+      profileLbEntry: S.profileViewName ? (lb.find(x=>x.name===S.profileViewName)||null) : null,
+      profileStats: (()=>{ if(S.profileViewName!==null) return {}; const ps=this.profileStats(); return {...ps, nwFmt:this.money(ps.nw), plFmt:(ps.plUp?'+':'')+this.money(Math.abs(ps.pl)), plColor:ps.plUp?'#16a85f':'#d23b2c', athFmt:this.money(ps.ath), cashFmt:this.money(ps.cash), winRateFmt:ps.winRate!==null?ps.winRate+'%':'—', bestPosPctFmt:ps.bestPLName?(ps.bestPLPct>=0?'+':'')+ps.bestPLPct.toFixed(1)+'%':'', bestPLNameDisplay:ps.bestPLName||'—', diversityLabel:ps.diversity+' league'+(ps.diversity!==1?'s':'')}; })(),
+      profileOtherNW: (()=>{ if(!S.profileViewName) return '—'; const e=lb.find(x=>x.name===S.profileViewName); return e?e.netWorth:'—'; })(),
+      profileOtherPL: (()=>{ if(!S.profileViewName) return '—'; const e=lb.find(x=>x.name===S.profileViewName); return e?(e.profitArrow+e.profit):'—'; })(),
+      profileOtherPLColor: (()=>{ if(!S.profileViewName) return '#8a938c'; const e=lb.find(x=>x.name===S.profileViewName); return e?e.profitColor:'#8a938c'; })(),
+      profileOtherMedal: (()=>{ if(!S.profileViewName) return '—'; const e=lb.find(x=>x.name===S.profileViewName); return e?e.medal:'—'; })(),
+      profileInitials: (S.profileViewName || this.loadUsername() || 'YO').slice(0,2).toUpperCase(),
+      profileIsOther: S.profileViewName !== null,
+      goProfile:()=>this.openProfileView(null),
+      closeProfile:()=>this.closeProfileView(),
       // trade modal
-      tradeOpen:S.tradeOpen, tr, closeTrade:()=>this.closeTrade(), stop:(e)=>this.stop(e),
+      tradeOpen:S.tradeOpen, tr, closeTrade:()=>this.closeTrade(), stop:(e)=>this.stop(e), shortsList,hasShorts,noShorts,
       // reward modal
       showReward:S.showReward, rw, closeReward:()=>this.closeReward(),
+      // feedback
+      openFeedback:()=>this.openFeedback(),
+      feedbackOpen:S.feedbackOpen,
+      closeFeedback:()=>this.closeFeedback(),
+      stopFeedback:(e)=>{ e && e.stopPropagation && e.stopPropagation(); },
+      fbSent:S.feedbackSent, fbNotSent:!S.feedbackSent,
+      fbOnName:(e)=>this.setState({feedbackName:e.target.value}),
+      fbOnText:(e)=>this.setState({feedbackText:e.target.value}),
+      fbSubmit:()=>this.submitFeedback(),
+      fbError:S.feedbackError,
+      fbBtnBg:S.feedbackSending?'#8a938c':(S.feedbackText.trim()?'#16a85f':'#b6c4bb'),
+      fbBtnCursor:S.feedbackSending||!S.feedbackText.trim()?'not-allowed':'pointer',
+      fbBtnLabel:S.feedbackSending?'Sending…':'Send feedback',
+      // clubs
+      clubLoading:S.clubLoading, myClub:S.myClub, clubMembers:S.clubMembers,
+      clubComps:S.clubComps.map(c=>{
+        const now=new Date(); const ends=new Date(c.ends_at);
+        const diffMs=ends-now; const diffD=Math.ceil(diffMs/86400000);
+        const timeLeft=diffMs<0?'Ended':(diffD===0?'Ends today':`${diffD}d left`);
+        const isActive=c.status==='active'&&diffMs>0;
+        return{...c,timeLeft,isActive,onEnter:()=>this.enterComp(c.id)};
+      }),
+      clubPublicList:S.clubPublicList.map(c=>({...c,onJoin:()=>this.joinClubById(c.id)})),
+      isMyClubLeader:S.myClub&&S.myClub.leader_id===this.getUserId(),
+      clubInviteCode:S.myClub?S.myClub.invite_code:'',
+      clubError:S.clubError, clubSuccess:S.clubSuccess,
+      clubView:S.clubView,
+      noClub:!S.myClub&&!S.clubLoading,
+      hasClub:!!S.myClub,
+      isClubHome:S.clubView==='home',
+      isClubCreate:S.clubView==='create',
+      isClubJoin:S.clubView==='join',
+      isClubComp:S.clubView==='comp',
+      goClubHome:()=>this.setState({clubView:'home',clubError:'',clubSuccess:''}),
+      goClubCreate:()=>this.setState({clubView:'create',clubError:'',clubSuccess:''}),
+      goClubJoin:()=>this.setState({clubView:'join',clubError:'',clubSuccess:''}),
+      onClubCreateName:(e)=>this.setState({clubCreateName:e.target.value}),
+      onClubCreateDesc:(e)=>this.setState({clubCreateDesc:e.target.value}),
+      onClubCreatePublic:(v)=>this.setState({clubCreatePublic:v}),
+      onClubCreateMinNW:(e)=>this.setState({clubCreateMinNW:e.target.value}),
+      clubCreateName:S.clubCreateName, clubCreateDesc:S.clubCreateDesc,
+      clubCreatePublic:S.clubCreatePublic, clubCreateMinNW:S.clubCreateMinNW,
+      submitCreateClub:()=>this.createClub(),
+      onClubJoinCode:(e)=>this.setState({clubJoinCode:e.target.value}),
+      clubJoinCode:S.clubJoinCode,
+      submitJoinClub:()=>this.joinClubByCode(),
+      leaveClub:()=>this.leaveClub(),
+      createComp:()=>this.createCompetition(),
+      // comp mode
+      compPortfolio:S.compPortfolio,
+      compLeaderboard:S.compLeaderboard,
+      compValue:this.money(this.compPortfolioValue()),
+      compProfit:(()=>{const v=this.compPortfolioValue()-10000;return{fmt:(v>=0?'+':'')+this.money(Math.abs(v)),color:v>=0?'#16a85f':'#e03e3e',arrow:v>=0?'▲':'▼'}})(),
+      compCash:S.compPortfolio?this.money(S.compPortfolio.cash):'€10,000',
+      compHoldings:(()=>{
+        if(!S.compPortfolio)return[];
+        return Object.entries(S.compPortfolio.holdings||{}).map(([id,qty])=>{
+          const p=this._lastDB?(this._lastDB.find(x=>x.id===id)):null;
+          if(!p)return null;
+          const price=this.curPrice(p);
+          return{name:p.name,team:p.team,qty,price:this.money(price),value:this.money(price*qty),onClick:()=>this.openPlayer(id)};
+        }).filter(Boolean);
+      })(),
+      exitComp:()=>this.setState({clubView:'home',activeCompId:null,compPortfolio:null}),
+      compBuyPlayer:(id,price)=>this.execCompTrade('BUY',id,1,price),
+      compSellPlayer:(id,price)=>this.execCompTrade('SELL',id,1,price),
+      activeCompName:(()=>{const c=S.clubComps.find(x=>x.id===S.activeCompId);return c?c.name:'Competition';})(),
+      copyInviteCode:()=>{if(S.myClub)navigator.clipboard.writeText(S.myClub.invite_code).then(()=>this.setState({clubSuccess:'Invite code copied!'}));},
     };
   }
 }
