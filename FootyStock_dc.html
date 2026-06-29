@@ -1291,6 +1291,9 @@ class Component extends DCLogic {
     if(cachedLive) settleFirstLoad();
     else setTimeout(settleFirstLoad, 6000);
     this.liveTimer = setInterval(pollLive, 30000);
+    // Poll club data every 30s so new members, ownership changes, and
+    // removals appear without a manual refresh.
+    this.clubTimer = setInterval(()=>{ if(this.state.myClub) this.loadMyClub(); }, 30000);
     this.timer = setInterval(()=>{
       const DB = this.getDB();
       // orders fill at the next price tick, not the price shown when confirmed —
@@ -1315,7 +1318,7 @@ class Component extends DCLogic {
     // auto-open reward if claimable on first load
     if(this.isClaimable()) this.setState({showReward:true});
   }
-  componentWillUnmount(){ clearInterval(this.timer); clearInterval(this.liveTimer); clearInterval(this.leaderboardTimer); }
+  componentWillUnmount(){ clearInterval(this.timer); clearInterval(this.liveTimer); clearInterval(this.leaderboardTimer); clearInterval(this.clubTimer); }
 
   // ---------- persistence ----------
   load(){
