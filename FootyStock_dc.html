@@ -4037,14 +4037,14 @@ Yan Diomande|RB Leipzig|CM|21|4
         // render the latest day's move as a seeded hourly (or, for 90m, match-minute)
         // curve instead of a second data source
         const slice=is90m?(()=>{ const prevClose=p.hist[N-2]??p.hist[N-1]; const MINS=matchMinute; const s=[];
-          // The live ticker reacts to the *full* size of today's performance
-          // (the same bump magnitude that eventually gets baked into hist —
-          // see buildDB's ease-in loop, 0.6 multiplier), not to price-prevClose.
-          // price only reflects a fraction of that move while the match is
-          // still live (multi-day ramp-in), so using price-prevClose here
-          // collapses the whole chart flat — there's nothing to show yet by
-          // the official, still-settling quote even after a hat-trick.
-          const fullSwing = prevClose*((todaysEvent.delta||0)/100)*0.6;
+          // The live ticker must land exactly on the headline price at "now" —
+          // buildDB already bakes today's *full* match bump into hist[N-1]/price
+          // the same day (full strength immediately, see the comment by the
+          // ease-in loop), so the target swing is simply price-prevClose. Using
+          // a separately recomputed delta*multiplier here (the old approach)
+          // drifted from that actual bump and made the chart cap far below the
+          // real current price.
+          const fullSwing = price-prevClose;
           if(todaysMarks){
             const totalW=todaysMarks.reduce((sum,mk)=>sum+(markWeight[mk.kind]||0),0);
             for(let m=0;m<=MINS;m++){
