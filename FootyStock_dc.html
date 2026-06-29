@@ -924,7 +924,26 @@
 
       <!-- club chat -->
       <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Club chat</div>
-      <!-- messages -->
+      <!-- setup needed banner -->
+      <sc-if value="{{ clubChatSetupNeeded }}">
+        <div style="background:#fef9ec;border:1px solid #f5d87a;border-radius:14px;padding:18px 20px;margin-bottom:16px">
+          <div style="font:700 14px 'Space Grotesk';color:#92610a;margin-bottom:6px">⚙️ One-time setup needed</div>
+          <div style="font:500 13px 'Hanken Grotesk';color:#6b4d0e;line-height:1.5;margin-bottom:10px">The <code>club_messages</code> table doesn't exist in Supabase yet. Run this SQL in your <a href="https://supabase.com/dashboard/project/pwlszzrvwhflijbjwnnf/sql" style="color:#16a85f">Supabase SQL editor</a>:</div>
+          <pre style="background:#fffbec;border:1px solid #f5d87a;border-radius:8px;padding:12px;font:500 12px monospace;color:#3a2e00;overflow-x:auto;white-space:pre-wrap;margin:0">create table club_messages (
+  id uuid default gen_random_uuid() primary key,
+  club_id uuid references clubs(id) on delete cascade not null,
+  user_id text not null,
+  display_name text not null,
+  type text default 'text',
+  body text,
+  payload jsonb,
+  created_at timestamptz default now()
+);
+alter table club_messages disable row level security;</pre>
+        </div>
+      </sc-if>
+      <!-- messages (only shown when table exists) -->
+      <sc-if value="{{ clubChatReady }}">
       <div id="club-chat-scroll" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:16px;min-height:180px;max-height:420px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:14px">
         <sc-if value="{{ clubMessages.length === 0 }}">
           <div style="text-align:center;padding:40px 0;font:500 13px 'Hanken Grotesk';color:#b0b8b4">No messages yet. Say hello!</div>
@@ -986,7 +1005,8 @@
         <input id="club-chat-input" value="{{ clubChatInput }}" onInput="{{ onClubChatInput }}" onKeydown="{{ onClubChatKeydown }}" placeholder="Message your club…" style="flex:1;border:1px solid #e1e4dd;border-radius:12px;padding:10px 14px;font:500 14px 'Hanken Grotesk';outline:none;background:#fff" />
         <button onClick="{{ submitClubChat }}" disabled="{{ clubChatSending }}" style="flex-shrink:0;background:#16a85f;border:none;color:#fff;font:700 13px 'Hanken Grotesk';padding:10px 16px;border-radius:12px;cursor:pointer">Send</button>
       </div>
-    </sc-if>
+      </sc-if><!-- end clubChatReady -->
+    </sc-if><!-- end hasClubHome -->
 
   </div>
   </sc-if>
@@ -1380,7 +1400,7 @@ class Component extends DCLogic {
       clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
       clubJoinCode: '', clubJoinSearch: '',
       clubError: '', clubSuccess: '',
-      clubMessages: [], clubChatInput: '', clubChatSending: false,
+      clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null,
     };
   }
   componentDidMount(){
@@ -3353,9 +3373,12 @@ Yan Diomande|RB Leipzig|CM|21|4
     const clubId=this.state.myClub?.id; if(!clubId) return;
     try{
       const msgs=await Supa.get('club_messages','club_id=eq.'+clubId+'&order=created_at.asc&limit=100');
-      this.setState({clubMessages:msgs});
+      this.setState({clubMessages:msgs,clubChatReady:true});
       setTimeout(()=>{ const el=document.getElementById('club-chat-scroll'); if(el) el.scrollTop=el.scrollHeight; },50);
-    }catch(e){}
+    }catch(e){
+      // Table likely doesn't exist yet — flag it so the UI shows setup instructions.
+      this.setState({clubChatReady:false});
+    }
   }
 
   async sendChatMessage(type='text', payload=null){
@@ -3368,7 +3391,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     try{
       await Supa.post('club_messages',{club_id:clubId,user_id:uid,display_name:dname,type,body,payload});
       await this.loadClubMessages();
-    }catch(e){}
+    }catch(e){ this.setState({clubChatSending:false,clubChatReady:false}); return; }
     this.setState({clubChatSending:false});
   }
 
@@ -4189,6 +4212,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       submitJoinClub:()=>this.joinClubByCode(),
       leaveClub:()=>this.leaveClub(),
       copyInviteCode:()=>{if(S.myClub)navigator.clipboard.writeText(S.myClub.invite_code).then(()=>this.setState({clubSuccess:'Invite code copied!'}));},
+      clubChatReady:S.clubChatReady===true,
+      clubChatSetupNeeded:S.clubChatReady===false,
+      clubChatLoading:S.clubChatReady===null,
       clubChatInput:S.clubChatInput,
       onClubChatInput:(e)=>this.setState({clubChatInput:e.target.value}),
       onClubChatKeydown:(e)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();this.sendChatMessage();}},
