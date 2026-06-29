@@ -1283,6 +1283,27 @@
   Share
 </button>
 
+<!-- ============ PHONE LOGIN GATE ============ -->
+<sc-if value="{{ showLoginGate }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:200;background:linear-gradient(160deg,#0c1f15 0%,#11321f 60%,#0a180f 100%);display:flex;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:400px">
+    <div style="text-align:center;margin-bottom:36px">
+      <div style="font:800 32px 'Space Grotesk';color:#eaf3ed;letter-spacing:-.02em">FootyStock</div>
+      <div style="font:500 15px 'Hanken Grotesk';color:#7fb89a;margin-top:8px">The football stock market game</div>
+    </div>
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px">
+      <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Create your account</div>
+      <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">Your phone number is your login — same number on any device gives you back your account.</div>
+      <input id="fs-login-phone" type="tel" placeholder="Phone number (e.g. +44 7700 900000)" maxlength="20" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
+      <input id="fs-login-name" placeholder="Display name" maxlength="32" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
+      <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
+      <button onClick="{{ doLogin }}" style="width:100%;font:700 16px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">Play now →</button>
+      <div style="font:500 12px 'Hanken Grotesk';color:#7fb89a;text-align:center;margin-top:14px;line-height:1.5">No password, no SMS. Your phone number identifies your account. For entertainment only — no real money.</div>
+    </div>
+  </div>
+</div>
+</sc-if>
+
 <!-- ============ FEEDBACK BUTTON ============ -->
 <button onClick="{{ openFeedback }}" style="position:fixed;bottom:28px;right:24px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
   <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13a2 2 0 0 1-2 2H6l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/></svg>
@@ -1483,6 +1504,7 @@ class Component extends DCLogic {
       clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null,
       shareOpen: false, shareCopied: false, mysteryOpen: false, mysteryPacks: [], recoverOpen: false,
       phoneVal: '', phoneSaving: false, phoneSaved: false,
+      loggedIn: !!this.loadPhone(), loginError: '',
     };
   }
   componentDidMount(){
@@ -3437,9 +3459,36 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
 
   // ---------- identity (leaderboard) ----------
-  loadToken(){ try{ let t=localStorage.getItem('fs_token'); if(!t){ t=Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem('fs_token',t); } return t; }catch(e){ return 'anon'; } }
+  loadPhone(){ try{ return localStorage.getItem('fs_phone')||''; }catch(e){ return ''; } }
+  savePhone2(ph){ try{ localStorage.setItem('fs_phone',ph); }catch(e){} }
+  phoneToToken(ph){ // deterministic token from phone so same phone = same account on any device
+    let h=2166136261; for(let i=0;i<ph.length;i++){ h^=ph.charCodeAt(i); h=Math.imul(h,16777619); } h=h>>>0;
+    let h2=h^0xdeadbeef; for(let i=0;i<ph.length;i++){ h2^=ph.charCodeAt(ph.length-1-i)*31; h2=Math.imul(h2,16777619); } h2=h2>>>0;
+    return 'ph_'+h.toString(16).padStart(8,'0')+h2.toString(16).padStart(8,'0');
+  }
+  loadToken(){ try{
+    const ph=this.loadPhone();
+    if(ph) return this.phoneToToken(ph);
+    let t=localStorage.getItem('fs_token'); if(!t){ t=Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem('fs_token',t); } return t;
+  }catch(e){ return 'anon'; } }
   loadUsername(){ try{ return localStorage.getItem('fs_username')||''; }catch(e){ return ''; } }
   saveUsername(n){ try{ localStorage.setItem('fs_username',n.trim().slice(0,32)); }catch(e){} }
+  async doLogin(phone, name){
+    const ph=phone.replace(/\s+/g,'').trim();
+    if(!ph||ph.length<6){ this.setState({loginError:'Enter a valid phone number.'}); return; }
+    if(!name.trim()){ this.setState({loginError:'Enter a display name.'}); return; }
+    // Check if phone already exists in Supabase — if so restore username
+    let resolvedName=name.trim();
+    try{
+      const token=this.phoneToToken(ph);
+      const rows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(token)+'&select=name,phone');
+      if(rows&&rows.length&&rows[0].name) resolvedName=rows[0].name;
+    }catch(e){}
+    this.savePhone2(ph);
+    this.saveUsername(resolvedName);
+    this.setState({loggedIn:true,loginError:''});
+    setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); this.loadMyPhone(); },200);
+  }
 
   // ---------- leaderboard ----------
   submitScore(){
@@ -3518,12 +3567,8 @@ Yan Diomande|RB Leipzig|CM|21|4
   isFounder(){ return (this.state.joinDate||"9999") < "2026-07-10"; }
   // ============ PHONE ============
   async loadMyPhone(){
-    const token=this.loadToken(); if(!token||!this._sbUrl) return;
-    try{
-      const rows=await Supa.get("leaderboard","token=eq."+token+"&select=phone");
-      if(rows&&rows.length) this._myPhone=rows[0].phone||"";
-      this.setState(s=>({tick:s.tick+1}));
-    }catch(e){}
+    this._myPhone=this.loadPhone();
+    this.setState(s=>({tick:s.tick+1}));
   }
   async savePhone(){
     const val=(document.getElementById("fs-phone-input")||{}).value||"";
@@ -4358,6 +4403,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       // reward modal
       showReward:S.showReward, rw, closeReward:()=>this.closeReward(),
       // feedback
+      showLoginGate:!S.loggedIn,
+      loginError:S.loginError,
+      doLogin:()=>{ const ph=(document.getElementById('fs-login-phone')||{}).value||''; const nm=(document.getElementById('fs-login-name')||{}).value||''; this.doLogin(ph,nm); },
       openFeedback:()=>this.openFeedback(),
       feedbackOpen:S.feedbackOpen,
       closeFeedback:()=>this.closeFeedback(),
