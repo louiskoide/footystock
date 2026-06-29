@@ -2181,55 +2181,55 @@ Yan Diomande|RB Leipzig|CM|21|4
 
   // ---------- REAL market values (€M, Transfermarkt-style, mid-2026, form-adjusted) ----------
   VAL(){ if(this._val) return this._val; const v={}; const A=s=>s.split(',').forEach(p=>{p=p.trim();const i=p.lastIndexOf(' ');v[p.slice(0,i).trim()]=+p.slice(i+1);});
-    A('Erling Haaland 334,Phil Foden 129,Rodri 102,Savinho 82,Bernardo Silva 48,Jérémy Doku 155,Joško Gvardiol 168,Omar Marmoush 126,Tijjani Reijnders 67,Rayan Cherki 180');
-    A('Bukayo Saka 207,Martin Ødegaard 102,Viktor Gyökeres 132,Declan Rice 175,William Saliba 152,Gabriel Martinelli 48,Kai Havertz 61,Martín Zubimendi 61,Noni Madueke 55');
-    A('Mohamed Salah 116,Florian Wirtz 155,Alexander Isak 163,Hugo Ekitiké 151,Dominik Szoboszlai 129,Ryan Gravenberch 72,Jeremie Frimpong 39,Virgil van Dijk 144');
-    A('Cole Palmer 203,Moisés Caicedo 86,João Pedro 152,Estêvão 72,Enzo Fernández 138,Pedro Neto 48,Liam Delap 39');
-    A('Bruno Fernandes 216,Bryan Mbeumo 109,Matheus Cunha 120,Benjamin Šeško 152,Alejandro Garnacho 86,Kobbie Mainoo 151');
-    A('James Maddison 27,Dejan Kulusevski 94,Cristian Romero 129,Mohammed Kudus 61,Micky van de Ven 135,Mathys Tel 48');
-    A('Bruno Guimarães 160,Anthony Gordon 55,Sandro Tonali 48,Nick Woltemade 55,Ollie Watkins 102,Morgan Rogers 159,Emiliano Martínez 61');
-    A('Kylian Mbappé 361,Jude Bellingham 337,Vinícius Júnior 287,Rodrygo 94,Federico Valverde 116,Aurélien Tchouaméni 123,Eduardo Camavinga 98,Trent Alexander-Arnold 160,Arda Güler 180,Dean Huijsen 138,Endrick 27,Franco Mastantuono 61');
-    A('Lamine Yamal 500,Raphinha 250,Pedri 246,Robert Lewandowski 67,Frenkie de Jong 72,Dani Olmo 165,Pau Cubarsí 116,Marcus Rashford 138,Gavi 150,Alejandro Balde 106');
-    A('Julián Álvarez 165,Antoine Griezmann 77,Alexander Sørloth 98,Giuliano Simeone 90,Alex Baena 39,Thiago Almada 61,Nico Williams 123,Iñaki Williams 27,Mikel Oyarzabal 98,Takefusa Kubo 109');
-    A('Lautaro Martínez 201,Marcus Thuram 170,Nicolò Barella 94,Hakan Çalhanoğlu 147,Alessandro Bastoni 170,Federico Dimarco 152,Francesco Pio Esposito 27');
-    A('Rafael Leão 132,Christian Pulišić 155,Santiago Giménez 39,Luka Modrić 27,Adrien Rabiot 61,Mike Maignan 120');
-    A('Dušan Vlahović 129,Kenan Yıldız 126,Teun Koopmeiners 48,Gleison Bremer 132,Jonathan David 48');
-    A('Kevin De Bruyne 86,Romelu Lukaku 27,Scott McTominay 123,Khvicha Kvaratskhelia 284,Noa Lang 39');
-    A('Paulo Dybala 48,Matías Soulé 55,Manu Koné 48,Mile Svilar 135,Ademola Lookman 48,Charles De Ketelaere 61,Gianluca Scamacca 98');
-    A('Harry Kane 347,Jamal Musiala 307,Michael Olise 326,Joshua Kimmich 138,Luis Díaz 205,Dayot Upamecano 94,Aleksandar Pavlović 116,Nicolas Jackson 106,Lennart Karl 150');
-    A('Patrik Schick 113,Alejandro Grimaldo 116,Ernest Poku 72,Serhou Guirassy 120,Karim Adeyemi 129,Julian Brandt 94,Nico Schlotterbeck 155,Jobe Bellingham 82,Maximilian Beier 106');
-    A('Loïs Openda 27,Christoph Baumgartner 116,Antonio Nusa 72,Johan Bakayoko 39,Deniz Undav 120,Ermedin Demirović 102,Chris Führich 113,Angelo Stiller 55,Jonathan Burkardt 116,Can Uzun 152');
-    A('Ousmane Dembélé 315,Vitinha 180,João Neves 199,Désiré Doué 216,Achraf Hakimi 228,Bradley Barcola 173,Gonçalo Ramos 72,Nuno Mendes 268,Warren Zaïre-Emery 165');
-    A('Maghnes Akliouche 123,Folarin Balogun 94,Aleksandr Golovin 90,Ansu Fati 116,Eliesse Ben Seghir 27,Mason Greenwood 158,Pierre-Emerick Aubameyang 48,Amine Gouiri 102,Igor Paixão 61');
-    A('Olivier Giroud 27,Hákon Haraldsson 61,Benjamin André 27,Malick Fofana 27,Pavel Šulc 126');
-    A('Mika Godts 72,Wim Bounida 55,Ricardo Pepi 72,Sem Steijn 72,Sergiño Dest 55,Vangelis Pavlidis 77,Kerem Aktürkoğlu 72,Gianluca Prestianni 67,Geovany Quenda 86,Francisco Trincão 77,Morten Hjulmand 82,Rodrigo Mora 82,Samu Aghehowa 82');
-    A('Theo Hernández 67,Ibrahima Konaté 61,Christopher Nkunku 72,Youssouf Fofana 27,John Stones 27,Eberechi Eze 27,Marc Guéhi 116,Alisson 52,Éder Militão 138,Casemiro 86');
-    A('Unai Simón 27,Mikel Merino 116,Manuel Neuer 27,Robert Andrich 27,Lionel Messi 48,Alexis Mac Allister 48,Rodrigo De Paul 55,Cristiano Ronaldo 43,Rúben Dias 61,Diogo Costa 77');
-    A('Cody Gakpo 86,Denzel Dumfries 27,Xavi Simons 27,Nathan Aké 27,Richard Ríos 67,Weston McKennie 27,Mateo Kovačić 27,Brahim Díaz 39,Takehiro Tomiyasu 61');
-    A('Darwin Núñez 94,Ronald Araújo 141,Rodrigo Bentancur 48,Thibaut Courtois 55,Youri Tielemans 27');
-    A('Yassine Bounou 43,Sofyan Amrabat 48,Hakim Ziyech 35,Noussair Mazraoui 48,Andy Robertson 27,Billy Gilmour 27,Kaoru Mitoma 27,Wataru Endo 27,Daichi Kamada 27');
-    A('Son Heung-min 58,Kim Min-jae 77,Lee Kang-in 90,Hwang Hee-chan 61,Granit Xhaka 43,Manuel Akanji 61,Yann Sommer 27,Breel Embolo 52,Alphonso Davies 106,Tajon Buchanan 27');
-    A('Piotr Zieliński 48,Wojciech Szczęsny 27,Jakub Kiwior 67,Pervis Estupiñán 61,Piero Hincapié 27,Rasmus Højlund 72,Pierre-Emile Højbjerg 27,Joachim Andersen 27');
-    A('Sardar Azmoun 27,Mehdi Taremi 43,Alexis Sánchez 20,Victor Osimhen 106,Wilfred Ndidi 39,Alex Iwobi 27,Miguel Almirón 46,Julio Enciso 52');
-    A('Sébastien Haller 35,Franck Kessié 39,Wilfried Singo 61,Salem Al-Dawsari 35,Riyad Mahrez 30,Ramy Bensebaini 77,Ismaël Bennacer 46,David Alaba 27,Marcel Sabitzer 27,Konrad Laimer 116,Yoane Wissa 27');
-    A('Lucas Chevalier 72,Wesley Fofana 72,Lucas Hernández 48,Randal Kolo Muani 72,Jordan Pickford 61,Levi Colwill 27,Reece James 135,Jarrod Bowen 82,Morgan Gibbs-White 77,Ivan Toney 61,Kieran Trippier 27');
-    A('Ederson 58,Marquinhos 48,Lucas Paquetá 77,Richarlison 86,David Raya 152,Marc Cucurella 77,Fabián Ruiz 48,Ferran Torres 86');
-    A('Marc-André ter Stegen 43,Antonio Rüdiger 27,Jonathan Tah 52,Leon Goretzka 39,Niclas Füllkrug 48');
-    A('Lisandro Martínez 48,Leandro Paredes 35,Exequiel Palacios 48,Nicolás González 27');
-    A('José Sá 52,António Silva 86,João Cancelo 52,Renato Sanches 35');
-    A('Matthijs de Ligt 67,Jurriën Timber 144,Stefan de Vrij 27');
-    A('Davinson Sánchez 43,Jefferson Lerma 27');
-    A('Tyler Adams 52,Antonee Robinson 86,Yunus Musah 27,Tim Weah 39');
-    A('Dominik Livaković 43,Josip Stanišić 52');
-    A('Ayyoub Bouaddi 39,Bilal El Khannouss 61,Azzedine Ounahi 43');
-    A('Hiroki Ito 82,Ritsu Doan 52');
-    A('Manuel Ugarte 61');
-    A('Ferdi Kadıoğlu 27');
-    A('Amadou Onana 55,Leandro Trossard 48,Wout Faes 48');
-    A('Andreas Christensen 27,Christian Eriksen 35,Jonas Wind 48');
-    A('William Troost-Ekong 30,Calvin Bassey 48,Frank Onyeka 43,Samuel Chukwueze 27');
-    A('Harry Souttar 43');
-    A('Odilon Kossounou 39,Simon Adingra 61,Seko Fofana 43');
+    A('Erling Haaland 200,Phil Foden 80,Rodri 65,Savinho 60,Bernardo Silva 35,Jérémy Doku 85,Joško Gvardiol 110,Omar Marmoush 60,Tijjani Reijnders 50,Rayan Cherki 95');
+    A('Bukayo Saka 110,Martin Ødegaard 70,Viktor Gyökeres 95,Declan Rice 120,William Saliba 90,Gabriel Martinelli 40,Kai Havertz 50,Martín Zubimendi 55,Noni Madueke 50');
+    A('Mohamed Salah 70,Florian Wirtz 130,Alexander Isak 95,Hugo Ekitiké 85,Dominik Szoboszlai 70,Ryan Gravenberch 55,Jeremie Frimpong 35,Virgil van Dijk 45');
+    A('Cole Palmer 120,Moisés Caicedo 65,João Pedro 80,Estêvão 70,Enzo Fernández 75,Pedro Neto 45,Liam Delap 40');
+    A('Bruno Fernandes 55,Bryan Mbeumo 65,Matheus Cunha 60,Benjamin Šeško 90,Alejandro Garnacho 65,Kobbie Mainoo 70');
+    A('James Maddison 25,Dejan Kulusevski 60,Cristian Romero 75,Mohammed Kudus 50,Micky van de Ven 70,Mathys Tel 45');
+    A('Bruno Guimarães 90,Anthony Gordon 50,Sandro Tonali 45,Nick Woltemade 45,Ollie Watkins 60,Morgan Rogers 75,Emiliano Martínez 50');
+    A('Kylian Mbappé 180,Jude Bellingham 130,Vinícius Júnior 140,Rodrygo 75,Federico Valverde 75,Aurélien Tchouaméni 70,Eduardo Camavinga 70,Trent Alexander-Arnold 85,Arda Güler 90,Dean Huijsen 80,Endrick 30,Franco Mastantuono 55');
+    A('Lamine Yamal 200,Raphinha 90,Pedri 150,Robert Lewandowski 30,Frenkie de Jong 45,Dani Olmo 100,Pau Cubarsí 70,Marcus Rashford 55,Gavi 65,Alejandro Balde 65');
+    A('Julián Álvarez 95,Antoine Griezmann 25,Alexander Sørloth 60,Giuliano Simeone 55,Alex Baena 35,Thiago Almada 45,Nico Williams 85,Iñaki Williams 25,Mikel Oyarzabal 60,Takefusa Kubo 60');
+    A('Lautaro Martínez 90,Marcus Thuram 90,Nicolò Barella 65,Hakan Çalhanoğlu 60,Alessandro Bastoni 90,Federico Dimarco 80,Francesco Pio Esposito 30');
+    A('Rafael Leão 75,Christian Pulišić 70,Santiago Giménez 35,Luka Modrić 10,Adrien Rabiot 20,Mike Maignan 60');
+    A('Dušan Vlahović 60,Kenan Yıldız 80,Teun Koopmeiners 40,Gleison Bremer 65,Jonathan David 45');
+    A('Kevin De Bruyne 30,Romelu Lukaku 15,Scott McTominay 60,Khvicha Kvaratskhelia 140,Noa Lang 35');
+    A('Paulo Dybala 20,Matías Soulé 45,Manu Koné 45,Mile Svilar 50,Ademola Lookman 45,Charles De Ketelaere 50,Gianluca Scamacca 50');
+    A('Harry Kane 55,Jamal Musiala 150,Michael Olise 150,Joshua Kimmich 65,Luis Díaz 100,Dayot Upamecano 60,Aleksandar Pavlović 60,Nicolas Jackson 65,Lennart Karl 75');
+    A('Patrik Schick 35,Alejandro Grimaldo 55,Ernest Poku 50,Serhou Guirassy 55,Karim Adeyemi 55,Julian Brandt 40,Nico Schlotterbeck 65,Jobe Bellingham 55,Maximilian Beier 55');
+    A('Loïs Openda 25,Christoph Baumgartner 55,Antonio Nusa 50,Johan Bakayoko 35,Deniz Undav 55,Ermedin Demirović 45,Chris Führich 45,Angelo Stiller 40,Jonathan Burkardt 50,Can Uzun 65');
+    A('Ousmane Dembélé 80,Vitinha 140,João Neves 140,Désiré Doué 120,Achraf Hakimi 65,Bradley Barcola 80,Gonçalo Ramos 50,Nuno Mendes 90,Warren Zaïre-Emery 85');
+    A('Maghnes Akliouche 55,Folarin Balogun 40,Aleksandr Golovin 35,Ansu Fati 40,Eliesse Ben Seghir 25,Mason Greenwood 65,Pierre-Emerick Aubameyang 15,Amine Gouiri 45,Igor Paixão 40');
+    A('Olivier Giroud 5,Hákon Haraldsson 40,Benjamin André 20,Malick Fofana 25,Pavel Šulc 55');
+    A('Mika Godts 45,Wim Bounida 40,Ricardo Pepi 30,Sem Steijn 40,Sergiño Dest 25,Vangelis Pavlidis 45,Kerem Aktürkoğlu 45,Gianluca Prestianni 40,Geovany Quenda 50,Francisco Trincão 35,Morten Hjulmand 45,Rodrigo Mora 45,Samu Aghehowa 45');
+    A('Theo Hernández 50,Ibrahima Konaté 55,Christopher Nkunku 55,Youssouf Fofana 30,John Stones 20,Eberechi Eze 25,Marc Guéhi 60,Alisson 30,Éder Militão 55,Casemiro 25');
+    A('Unai Simón 20,Mikel Merino 60,Manuel Neuer 10,Robert Andrich 25,Lionel Messi 10,Alexis Mac Allister 40,Rodrigo De Paul 30,Cristiano Ronaldo 15,Rúben Dias 45,Diogo Costa 50');
+    A('Cody Gakpo 55,Denzel Dumfries 25,Xavi Simons 25,Nathan Aké 20,Richard Ríos 45,Weston McKennie 20,Mateo Kovačić 20,Brahim Díaz 30,Takehiro Tomiyasu 35');
+    A('Darwin Núñez 60,Ronald Araújo 70,Rodrigo Bentancur 30,Thibaut Courtois 35,Youri Tielemans 20');
+    A('Yassine Bounou 25,Sofyan Amrabat 30,Hakim Ziyech 15,Noussair Mazraoui 30,Andy Robertson 15,Billy Gilmour 20,Kaoru Mitoma 25,Wataru Endo 20,Daichi Kamada 20');
+    A('Son Heung-min 35,Kim Min-jae 55,Lee Kang-in 55,Hwang Hee-chan 35,Granit Xhaka 20,Manuel Akanji 40,Yann Sommer 15,Breel Embolo 25,Alphonso Davies 65,Tajon Buchanan 20');
+    A('Piotr Zieliński 30,Wojciech Szczęsny 15,Jakub Kiwior 35,Pervis Estupiñán 30,Piero Hincapié 25,Rasmus Højlund 55,Pierre-Emile Højbjerg 20,Joachim Andersen 20');
+    A('Sardar Azmoun 20,Mehdi Taremi 25,Alexis Sánchez 8,Victor Osimhen 65,Wilfred Ndidi 20,Alex Iwobi 20,Miguel Almirón 20,Julio Enciso 30');
+    A('Sébastien Haller 15,Franck Kessié 20,Wilfried Singo 35,Salem Al-Dawsari 15,Riyad Mahrez 15,Ramy Bensebaini 35,Ismaël Bennacer 25,David Alaba 10,Marcel Sabitzer 15,Konrad Laimer 55,Yoane Wissa 20');
+    A('Lucas Chevalier 45,Wesley Fofana 50,Lucas Hernández 25,Randal Kolo Muani 45,Jordan Pickford 30,Levi Colwill 25,Reece James 60,Jarrod Bowen 45,Morgan Gibbs-White 45,Ivan Toney 30,Kieran Trippier 15');
+    A('Ederson 25,Marquinhos 30,Lucas Paquetá 45,Richarlison 50,David Raya 65,Marc Cucurella 40,Fabián Ruiz 35,Ferran Torres 45');
+    A('Marc-André ter Stegen 20,Antonio Rüdiger 20,Jonathan Tah 35,Leon Goretzka 20,Niclas Füllkrug 25');
+    A('Lisandro Martínez 35,Leandro Paredes 15,Exequiel Palacios 25,Nicolás González 20');
+    A('José Sá 25,António Silva 55,João Cancelo 30,Renato Sanches 15');
+    A('Matthijs de Ligt 40,Jurriën Timber 80,Stefan de Vrij 20');
+    A('Davinson Sánchez 20,Jefferson Lerma 15');
+    A('Tyler Adams 30,Antonee Robinson 45,Yunus Musah 20,Tim Weah 25');
+    A('Dominik Livaković 20,Josip Stanišić 30');
+    A('Ayyoub Bouaddi 25,Bilal El Khannouss 35,Azzedine Ounahi 20');
+    A('Hiroki Ito 40,Ritsu Doan 30');
+    A('Manuel Ugarte 45');
+    A('Ferdi Kadıoğlu 20');
+    A('Amadou Onana 40,Leandro Trossard 30,Wout Faes 20');
+    A('Andreas Christensen 20,Christian Eriksen 15,Jonas Wind 25');
+    A('William Troost-Ekong 15,Calvin Bassey 25,Frank Onyeka 20,Samuel Chukwueze 20');
+    A('Harry Souttar 20');
+    A('Odilon Kossounou 25,Simon Adingra 35,Seko Fofana 20');
     A('Iliman Ndiaye 72,Pape Gueye 39');
     A('Youcef Atal 30');
     A('Antoine Semenyo 123,Abdul Fatawu Issahaku 52,Jordan Ayew 27');
@@ -2555,7 +2555,7 @@ Yan Diomande|RB Leipzig|CM|21|4
   getDB(){ if(this._db) return this._db; this._db = this.buildDB(); return this._db; }
   buildDB(){
     const teams=this.TEAMS(), lgName=this.LEAGUE_NAME(), opp=this.OPPONENTS_BY_LEAGUE();
-    const tierBase={1:228,2:158,3:99,4:58,5:35,6:23};
+    const tierBase={1:150,2:100,3:65,4:40,5:25,6:15};
     const lines=this.ROSTER().trim().split('\n');
     // Real wall-clock date, not a fixed demo anchor — live match dates from
     // the worker are real calendar dates, so "today" has to track the
@@ -3711,12 +3711,8 @@ Yan Diomande|RB Leipzig|CM|21|4
         const formBarColor=(f)=>f>=60?GREEN:f>=48?'#e2a32b':RED;
         const hypeLabel=(h)=>{ if(h>=88)return'Phenomenon'; if(h>=74)return'Viral'; if(h>=60)return'Trending'; if(h>=46)return'Building Buzz'; if(h>=32)return'Under the Radar'; return'Ghost'; };
         const hypeBarColor=(h)=>h>=60?GREEN:h>=46?'#e2a32b':RED;
-        // Convert internal game anchor (inflated) to realistic €M display value.
-        // Scale factor 0.38 maps game anchors to plausible TM range; perf ratio
-        // capped at ±30% so a hot WC can lift the display value but can't make
-        // a €100M player look like a €500M one; hard cap at €250M.
         const perfRatio=p.anchor?Math.min(1.3,Math.max(0.7,p.price/p.anchor)):1;
-        const effTmVal=Math.max(5,Math.min(250,Math.round(p.tmVal*perfRatio*0.38/5)*5));
+        const effTmVal=Math.max(5,Math.min(250,Math.round(p.tmVal*perfRatio/5)*5));
         const sigDefs=[
           ['Match rating · World Cup',p.signals.fotmob, p.avgR?p.avgR.toFixed(2)+' avg':'No WC matches'],
           ['World Cup form',p.signals.form, p.atWC?formLabel(p.signals.form):'Not at the World Cup'],
