@@ -49,22 +49,34 @@
     .fs-movers-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
     .fs-stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
 
-    .fs-scrollx{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -12px;padding:0 12px}
-    .fs-row-market{min-width:920px!important;padding:12px 14px!important;grid-template-columns:42px minmax(150px,1fr) 100px 110px 80px 80px 80px 130px!important}
-    .fs-row-holdings{min-width:620px!important;padding:12px 14px!important;grid-template-columns:minmax(150px,1fr) 90px 110px 110px 110px!important}
-    .fs-row-watch{min-width:600px!important;padding:12px 14px!important;grid-template-columns:minmax(150px,1fr) 110px 120px 96px 80px!important}
-    .fs-row-leader{min-width:460px!important;padding:12px 14px!important;grid-template-columns:60px minmax(120px,1fr) 130px 120px!important}
+    /* Market table: rank | player | price | 1D — hide sparkline(3) 7D(6) vol(7) range(8) */
+    .fs-row-market{min-width:0!important;padding:10px 12px!important;gap:10px!important;grid-template-columns:30px minmax(0,1fr) 72px 60px!important}
+    .fs-row-market>*:nth-child(3),.fs-row-market>*:nth-child(6),.fs-row-market>*:nth-child(7),.fs-row-market>*:nth-child(8){display:none!important}
+    /* Holdings: player | shares | value | P/L — hide avg cost(3) */
+    .fs-row-holdings{min-width:0!important;padding:10px 12px!important;gap:8px!important;grid-template-columns:minmax(0,1fr) 44px 72px 88px!important}
+    .fs-row-holdings>*:nth-child(3){display:none!important}
+    /* Watchlist: player | price | 7D | remove — hide sparkline(2) */
+    .fs-row-watch{min-width:0!important;padding:10px 12px!important;gap:8px!important;grid-template-columns:minmax(0,1fr) 72px 60px 36px!important}
+    .fs-row-watch>*:nth-child(2){display:none!important}
+    /* Leaderboard: rank | trader | profit — hide net worth(3) */
+    .fs-row-leader{min-width:0!important;padding:10px 12px!important;gap:10px!important;grid-template-columns:36px minmax(0,1fr) 90px!important}
+    .fs-row-leader>*:nth-child(3){display:none!important}
+    /* Avatar badge: switch to system font to avoid Space Grotesk glyph artifacts */
+    .fs-avatar-badge{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif!important}
     .fs-row-events{min-width:420px!important}
-    .fs-row-txn{padding:12px 14px!important}
+    .fs-row-txn{padding:10px 12px!important}
 
     .fs-detail-grid{grid-template-columns:minmax(0,1fr)!important}
     .fs-trade-panel{position:static!important;top:auto!important;order:-1!important}
-    .fs-detail-name{font-size:24px!important}
-    .fs-detail-price{font-size:26px!important}
+    .fs-detail-name{font-size:22px!important}
+    .fs-detail-price{font-size:24px!important}
+    /* Chart: less tall on narrow screens */
+    .fs-price-chart{height:200px!important}
     .fs-modal-card{padding:20px!important}
   }
   @media (max-width:420px){
     .fs-movers-grid{grid-template-columns:1fr!important}
+    .fs-row-market{padding:9px 10px!important}
   }
 </style>
 </helmet>
@@ -275,7 +287,7 @@
 
           <!-- chart -->
           <div style="position:relative;margin-top:8px">
-            <svg viewBox="0 0 760 260" width="100%" height="260" preserveAspectRatio="none" style="display:block;overflow:visible;cursor:crosshair"
+            <svg class="fs-price-chart" viewBox="0 0 760 260" width="100%" height="260" preserveAspectRatio="none" style="display:block;overflow:visible;cursor:crosshair"
                  onMouseMove="{{ d.onChartMove }}" onMouseDown="{{ d.onChartDown }}" onMouseUp="{{ d.onChartUp }}" onMouseLeave="{{ d.onChartLeave }}"
                  onTouchStart="{{ d.onChartTouchStart }}" onTouchMove="{{ d.onChartTouchMove }}" onTouchEnd="{{ d.onChartTouchEnd }}" onTouchCancel="{{ d.onChartTouchEnd }}">
               <defs><linearGradient id="fsArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="{{ d.chartColor }}" stop-opacity="0.18"></stop><stop offset="100%" stop-color="{{ d.chartColor }}" stop-opacity="0"></stop></linearGradient></defs>
@@ -595,7 +607,7 @@
       <sc-for list="{{ leaderboard }}" as="l" hint-placeholder-count="12">
         <div class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }}">
           <span style="font:700 15px 'Space Grotesk';color: {{ l.rankColor }}">{{ l.medal }}</span>
-          <span style="display:flex;align-items:center;gap:10px"><span style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk'">{{ l.name }}</b></span>
+          <span style="display:flex;align-items:center;gap:10px"><span class="fs-avatar-badge" style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk'">{{ l.name }}</b></span>
           <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ l.netWorth }}</span>
           <span style="text-align:right;font:700 14px 'Space Grotesk';color: {{ l.profitColor }}">{{ l.profitArrow }}{{ l.profit }}</span>
         </div>
