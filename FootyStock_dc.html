@@ -2916,8 +2916,10 @@ Yan Diomande|RB Leipzig|CM|21|4
       const rHist = this.priceHistory(id, wobbledPrice, dayKey);
       const RN = rHist.length;
 
-      // change7d/change30d are placeholders — actual values computed in decorate()
-      // directly off p.hist so badge always matches the chart.
+      // change7d is a placeholder — actual value computed in decorate() off p.hist.
+      const change7d = 0;
+      // realDays: how many real (non-synthetic) closes are stored for this player.
+      const realDays = (this._histStore?.[id]?.r?.length) || 1;
 
       // Articles mentioning this player — only elite/notable performances get
       // a writeup (see DATA().ARTICLES), shown under the player page when
