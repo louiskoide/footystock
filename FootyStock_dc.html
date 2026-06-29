@@ -3240,33 +3240,33 @@ Yan Diomande|RB Leipzig|CM|21|4
     const movers=[...DB].sort((a,b)=>b.change7d-a.change7d).slice(0,4).map(decorate);
 
     // morning recap
-    const byWk=[...DB].sort((a,b)=>b.change7d-a.change7d);
-    const recapGainers=byWk.slice(0,3).map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
-    const recapLosers=byWk.slice(-3).reverse().map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
-    const upCount=DB.filter(p=>p.change7d>0).length;
-    const downCount=DB.filter(p=>p.change7d<0).length;
-    const topGainer=byWk[0], topLoser=byWk[byWk.length-1];
-    const recapDate=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-    const bullish=upCount>=downCount;
-    // tally shares bought/sold per player from user's own trade history
-    const buyTally={}, sellTally={};
-    for(const t of (S.txns||[])){
-      if(t.side==='BUY'){ buyTally[t.id]=(buyTally[t.id]||{id:t.id,name:t.name,qty:0}); buyTally[t.id].qty+=t.qty; }
-      else if(t.side==='SELL'){ sellTally[t.id]=(sellTally[t.id]||{id:t.id,name:t.name,qty:0}); sellTally[t.id].qty+=t.qty; }
-    }
-    const mkTrade=(obj)=>{ const p=DB.find(x=>x.id===obj.id); const d=p?decorate(p):null; return {name:obj.name,qty:obj.qty,price:d?d.price:'—',onClick:p?()=>this.openPlayer(p.id):()=>{}}; };
-    const recapMostBought=Object.values(buyTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade);
-    const recapMostSold=Object.values(sellTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade);
-    const recap={
-      date:recapDate,
-      sentiment:`${upCount} rising · ${downCount} falling`,
-      gainers:recapGainers,
-      losers:recapLosers,
-      mostBought:recapMostBought,
-      mostSold:recapMostSold,
-      headline:`${topGainer.name} leads this week's risers (+${topGainer.change7d.toFixed(1)}%), while ${topLoser.name} is the week's biggest faller (${topLoser.change7d.toFixed(1)}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up over the past 7 days.`,
-    };
-    const showRecap=!S.recapDismissed;
+    const showRecap=DB.length>0&&!S.recapDismissed;
+    const recap=(()=>{
+      if(!DB.length) return {date:'',sentiment:'',gainers:[],losers:[],mostBought:[],mostSold:[],headline:''};
+      const byWk=[...DB].sort((a,b)=>b.change7d-a.change7d);
+      const recapGainers=byWk.slice(0,3).map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
+      const recapLosers=byWk.slice(-3).reverse().map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
+      const upCount=DB.filter(p=>p.change7d>0).length;
+      const downCount=DB.filter(p=>p.change7d<0).length;
+      const topGainer=byWk[0], topLoser=byWk[byWk.length-1];
+      const recapDate=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+      const bullish=upCount>=downCount;
+      const buyTally={}, sellTally={};
+      for(const t of (S.txns||[])){
+        if(t.side==='BUY'){ buyTally[t.id]=(buyTally[t.id]||{id:t.id,name:t.name,qty:0}); buyTally[t.id].qty+=t.qty; }
+        else if(t.side==='SELL'){ sellTally[t.id]=(sellTally[t.id]||{id:t.id,name:t.name,qty:0}); sellTally[t.id].qty+=t.qty; }
+      }
+      const mkTrade=(obj)=>{ const p=DB.find(x=>x.id===obj.id); const d=p?decorate(p):null; return {name:obj.name,qty:obj.qty,price:d?d.price:'—',onClick:p?()=>this.openPlayer(p.id):()=>{}}; };
+      return {
+        date:recapDate,
+        sentiment:`${upCount} rising · ${downCount} falling`,
+        gainers:recapGainers,
+        losers:recapLosers,
+        mostBought:Object.values(buyTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade),
+        mostSold:Object.values(sellTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade),
+        headline:`${topGainer.name} leads this week's risers (+${topGainer.change7d.toFixed(1)}%), while ${topLoser.name} is the week's biggest faller (${topLoser.change7d.toFixed(1)}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up over the past 7 days.`,
+      };
+    })();
     const dismissRecap=()=>this.setState({recapDismissed:true});
 
     // league chips
