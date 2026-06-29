@@ -63,7 +63,9 @@
     .fs-row-leader>*:nth-child(3){display:none!important}
     /* Avatar badge: switch to system font to avoid Space Grotesk glyph artifacts */
     .fs-avatar-badge{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif!important}
-    .fs-row-events{min-width:420px!important}
+    /* Events table: hide rating col(4), shrink to fit */
+    .fs-row-events{min-width:0!important;grid-template-columns:66px minmax(0,1fr) 52px 70px!important;gap:8px!important}
+    .fs-row-events>*:nth-child(4){display:none!important}
     .fs-row-txn{padding:10px 12px!important}
 
     .fs-detail-grid{grid-template-columns:minmax(0,1fr)!important}
@@ -2322,7 +2324,7 @@ Yan Diomande|RB Leipzig|CM|21|4
   // ---------- actions ----------
   nav(v){ this.setState({view:v,selectedArticleId:null}); }
   goHome(){ this.setState({view:'market'}); }
-  openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90}); }
+  openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90}); window.scrollTo(0,0); }
   goBack(){ this.setState({view:'market'}); }
   openArticle(id){ this.setState({view:'articles',selectedArticleId:id}); }
   setLeague(lg){ this.setState({league:lg}); }
@@ -2695,7 +2697,7 @@ Yan Diomande|RB Leipzig|CM|21|4
           this.setState({chartDragStart:k,chartHoverIdx:k}); };
         const onChartTouchMove=(e)=>{ e.preventDefault(); const t=e.touches[0]; const k=idxFromClientX(t.clientX,e.currentTarget.getBoundingClientRect());
           if(this.state.chartHoverIdx!==k) this.setState({chartHoverIdx:k}); };
-        const onChartTouchEnd=()=>{ if(this.state.chartDragStart!=null) this.setState({chartDragStart:null}); };
+        const onChartTouchEnd=()=>{ this.setState({chartDragStart:null,chartHoverIdx:null}); };
 
         const hoverIdx=S.chartHoverIdx; const dragStartIdx=S.chartDragStart;
         const dragging = dragStartIdx!=null && hoverIdx!=null;
