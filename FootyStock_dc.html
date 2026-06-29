@@ -168,6 +168,14 @@
       </div>
     </div>
 
+    <!-- stale price warning -->
+    <sc-if value="{{ pricesStale }}">
+    <div style="background:#fff8ec;border:1px solid #f5c842;border-radius:12px;padding:11px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:16px">⚠️</span>
+      <span style="font:500 13px 'Hanken Grotesk';color:#7a5c00">Prices may be outdated — live connection lost. Trading is disabled until prices refresh.</span>
+    </div>
+    </sc-if>
+
     <!-- morning market recap -->
     <sc-if value="{{ showRecap }}">
     <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:20px 24px;margin-bottom:26px;position:relative">
@@ -1270,6 +1278,7 @@ class Component extends DCLogic {
     const pollLive = ()=>{
       fetch(LIVE_WORKER_URL).then(r=>r.ok?r.json():null).then(data=>{
         if(data && fresher(data)){ this._wcLive = data; this._db = null; this.saveCachedLive(data); }
+        this._lastFetchMs = Date.now();
         settleFirstLoad();
         this.setState(s=>({tick:s.tick+1}));
       }).catch(()=>settleFirstLoad());
@@ -2964,9 +2973,19 @@ Yan Diomande|RB Leipzig|CM|21|4
     }catch(e){ this.setState({feedbackError:'Network error — please try again.',feedbackSending:false}); }
   }
   setTradeQty(q){ this.setState({tradeQty:Math.max(1,q)}); }
+  pricesAreFresh(){
+    // Prices must have refreshed successfully within the last 5 minutes.
+    if(!this._lastFetchMs) return false;
+    return (Date.now() - this._lastFetchMs) < 5 * 60 * 1000;
+  }
   confirmTrade(){
     const id=this.state.tradeId, side=this.state.tradeSide, qty=this.state.tradeQty;
     const p=this.byId(id); if(!p) return;
+    if(!this.pricesAreFresh()){
+      this.setState({tradeOpen:false});
+      alert('Prices are stale — your connection to the live server may have dropped. Reconnect and wait for prices to refresh before trading.');
+      return;
+    }
     // queue the order — it fills at the *next* price tick, not the price shown
     // right now. Anyone watching a match live and trying to beat the price
     // reaction gets the same next-tick price as everyone else.
@@ -3757,6 +3776,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       plArrow:plUp?'▲':'▼', plAbsFmt:this.money(Math.abs(pl)), plPctFmt:this.pct((pl/10000)*100),
       plChipBg:plUp?'rgba(61,220,138,.18)':'rgba(255,93,93,.18)', plChipColor:plUp?'#3ddc8a':'#ff5d5d',
       nwSpark:nwHistPts, movers, marketList, universeNote:DB.length+' players priced — movers ranked by real World Cup form &amp; transfer activity. Players not at the World Cup sit flat until the market moves.',
+      pricesStale:!this.pricesAreFresh(),
       showRecap, recap, dismissRecap,
       recapNoBought:recap.noBought, recapNoSold:recap.noSold,
       recapShowBought:S.recapTab==='bought', recapShowSold:S.recapTab==='sold',
