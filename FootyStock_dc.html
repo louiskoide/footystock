@@ -3525,20 +3525,10 @@ Yan Diomande|RB Leipzig|CM|21|4
     const decorate=(p)=>{
       const price=this.curPrice(p);
       const hN=p.hist.length;
-      const realDays=p.realDays||1;
       const todayClose=p.hist[hN-1];
-      // 1D: only compare yesterday if we have a real stored yesterday.
-      // hist[hN-2] is synthetic (frozen per player) when realDays < 2.
-      const dayChg = realDays>=2 ? ((todayClose-p.hist[hN-2])/p.hist[hN-2])*100 : 0;
-      // 7D: never read into frozen synthetic backfill.
-      // With 7+ real days: true 7D (hist[hN-7] is real).
-      // With 2-6 real days: oldest real close vs today (partial period, still real).
-      // With 1 real day: 0 (nothing to compare).
-      const wkChg = realDays>=7
-        ? ((todayClose-p.hist[hN-7])/p.hist[hN-7])*100
-        : realDays>=2
-          ? ((todayClose-p.hist[hN-realDays])/p.hist[hN-realDays])*100
-          : 0;
+      // Read directly from the chart data (p.hist) so badge always matches chart.
+      const dayChg = ((todayClose-p.hist[hN-2])/p.hist[hN-2])*100;
+      const wkChg  = ((todayClose-p.hist[hN-7])/p.hist[hN-7])*100;
       const up7=wkChg>=0;
       const upDay=dayChg>=0;
       const {volPct,hiAll,loAll}=riskStats(p);
@@ -3701,9 +3691,7 @@ Yan Diomande|RB Leipzig|CM|21|4
         const price=this.curPrice(p);
         const today=new Date();
         const N=p.hist.length;
-        const rd=p.realDays||1;
-        const detailWkChg=rd>=7?((p.hist[N-1]-p.hist[N-7])/p.hist[N-7])*100
-          :rd>=2?((p.hist[N-1]-p.hist[N-rd])/p.hist[N-rd])*100:0;
+        const detailWkChg=((p.hist[N-1]-p.hist[N-7])/p.hist[N-7])*100;
         const up7=detailWkChg>=0; const cc=up7?GREEN:RED;
         // Real kickoff-relative minute marks (goals/cards), pulled from
         // API-Football's fixture events by the live worker — when present,
