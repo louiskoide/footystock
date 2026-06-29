@@ -1176,14 +1176,11 @@
         </div>
       </div>
 
-      <!-- phone number / account recovery -->
+      <!-- email / account info -->
       <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:20px 22px;margin-bottom:28px">
-        <div style="font:700 13px 'Hanken Grotesk';margin-bottom:4px">Phone number</div>
-        <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:14px;line-height:1.5">Link a phone number for account recovery. Never shared publicly.</div>
-        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-          <input id="fs-phone-input" placeholder="{{ myPhone }}" maxlength="30" style="flex:1;min-width:180px;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff">
-          <button onClick="{{ savePhone }}" style="font:600 13px 'Hanken Grotesk';background:#16201a;color:#eaf3ed;border:none;border-radius:10px;padding:10px 18px;cursor:pointer">{{ phoneBtnLabel }}</button>
-        </div>
+        <div style="font:700 13px 'Hanken Grotesk';margin-bottom:4px">Account email</div>
+        <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:10px;line-height:1.5">Your verified email. Same email on any device gives you back your account.</div>
+        <div style="font:600 14px 'Hanken Grotesk';color:#16201a;background:#f5f6f3;border-radius:9px;padding:10px 14px">{{ myEmail }}</div>
       </div>
     </sc-if>
 
@@ -1292,13 +1289,28 @@
       <div style="font:500 15px 'Hanken Grotesk';color:#7fb89a;margin-top:8px">The football stock market game</div>
     </div>
     <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px">
-      <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Create your account</div>
-      <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">Your phone number is your login — same number on any device gives you back your account.</div>
-      <input id="fs-login-phone" type="tel" placeholder="Phone number (e.g. +44 7700 900000)" maxlength="20" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
-      <input id="fs-login-name" placeholder="Display name" maxlength="32" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
-      <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
-      <button onClick="{{ doLogin }}" style="width:100%;font:700 16px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">Play now →</button>
-      <div style="font:500 12px 'Hanken Grotesk';color:#7fb89a;text-align:center;margin-top:14px;line-height:1.5">No password, no SMS. Your phone number identifies your account. For entertainment only — no real money.</div>
+
+      <!-- Step 1: email + name -->
+      <sc-if value="{{ loginStepEmail }}" hint-placeholder-val="{{ true }}">
+        <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Create your account</div>
+        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">We'll email you a code to verify — no password needed.</div>
+        <input id="fs-login-email" type="email" placeholder="Email address" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
+        <input id="fs-login-name" placeholder="Display name (must be unique)" maxlength="32" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
+        <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
+        <button onClick="{{ doSendOtp }}" style="width:100%;font:700 16px 'Hanken Grotesk';background: {{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginBtnLabel }}</button>
+        <div style="font:500 12px 'Hanken Grotesk';color:#7fb89a;text-align:center;margin-top:14px;line-height:1.5">For entertainment only — no real money.</div>
+      </sc-if>
+
+      <!-- Step 2: enter OTP code -->
+      <sc-if value="{{ loginStepOtp }}" hint-placeholder-val="{{ false }}">
+        <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Check your email</div>
+        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">We sent a 6-digit code to <b style="color:#eaf3ed">{{ loginEmail }}</b>. Enter it below.</div>
+        <input id="fs-login-otp" type="text" inputmode="numeric" placeholder="6-digit code" maxlength="6" style="width:100%;box-sizing:border-box;font:700 22px 'Space Grotesk';letter-spacing:.2em;text-align:center;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:14px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
+        <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
+        <button onClick="{{ doVerifyOtp }}" style="width:100%;font:700 16px 'Hanken Grotesk';background: {{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginBtnLabel }}</button>
+        <button onClick="{{ loginBack }}" style="width:100%;font:600 14px 'Hanken Grotesk';background:none;color:#7fb89a;border:none;padding:12px;cursor:pointer;margin-top:6px">← Use a different email</button>
+      </sc-if>
+
     </div>
   </div>
 </div>
@@ -1504,7 +1516,7 @@ class Component extends DCLogic {
       clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null,
       shareOpen: false, shareCopied: false, mysteryOpen: false, mysteryPacks: [], recoverOpen: false,
       phoneVal: '', phoneSaving: false, phoneSaved: false,
-      loggedIn: !!this.loadPhone(), loginError: '',
+      loggedIn: !!this.loadEmail(), loginStep: 'email', loginEmail: '', loginError: '', loginSending: false,
     };
   }
   componentDidMount(){
@@ -3491,35 +3503,65 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
 
   // ---------- identity (leaderboard) ----------
-  loadPhone(){ try{ return localStorage.getItem('fs_phone')||''; }catch(e){ return ''; } }
-  savePhone2(ph){ try{ localStorage.setItem('fs_phone',ph); }catch(e){} }
-  phoneToToken(ph){ // deterministic token from phone so same phone = same account on any device
-    let h=2166136261; for(let i=0;i<ph.length;i++){ h^=ph.charCodeAt(i); h=Math.imul(h,16777619); } h=h>>>0;
-    let h2=h^0xdeadbeef; for(let i=0;i<ph.length;i++){ h2^=ph.charCodeAt(ph.length-1-i)*31; h2=Math.imul(h2,16777619); } h2=h2>>>0;
-    return 'ph_'+h.toString(16).padStart(8,'0')+h2.toString(16).padStart(8,'0');
-  }
+  // ---------- email auth ----------
+  _sbAuth(){ return 'https://pwlszzrvwhflijbjwnnf.supabase.co/auth/v1'; }
+  _sbAuthHdr(){ return {'apikey':'sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_','Content-Type':'application/json'}; }
+  loadEmail(){ try{ return localStorage.getItem('fs_email')||''; }catch(e){ return ''; } }
+  saveEmail(e){ try{ localStorage.setItem('fs_email',e); }catch(e){} }
   loadToken(){ try{
-    const ph=this.loadPhone();
-    if(ph) return this.phoneToToken(ph);
-    let t=localStorage.getItem('fs_token'); if(!t){ t=Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem('fs_token',t); } return t;
+    const t=localStorage.getItem('fs_token'); if(t) return t;
+    const fresh=Math.random().toString(36).slice(2)+Date.now().toString(36);
+    localStorage.setItem('fs_token',fresh); return fresh;
   }catch(e){ return 'anon'; } }
   loadUsername(){ try{ return localStorage.getItem('fs_username')||''; }catch(e){ return ''; } }
   saveUsername(n){ try{ localStorage.setItem('fs_username',n.trim().slice(0,32)); }catch(e){} }
-  async doLogin(phone, name){
-    const ph=phone.replace(/\s+/g,'').trim();
-    if(!ph||ph.length<6){ this.setState({loginError:'Enter a valid phone number.'}); return; }
+
+  async doSendOtp(){
+    const email=(document.getElementById('fs-login-email')||{}).value||'';
+    const name=(document.getElementById('fs-login-name')||{}).value||'';
+    if(!email.includes('@')){ this.setState({loginError:'Enter a valid email address.'}); return; }
     if(!name.trim()){ this.setState({loginError:'Enter a display name.'}); return; }
-    // Check if phone already exists in Supabase — if so restore username
-    let resolvedName=name.trim();
+    if(name.trim().length<2){ this.setState({loginError:'Display name must be at least 2 characters.'}); return; }
+    // Check username uniqueness
     try{
-      const token=this.phoneToToken(ph);
-      const rows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(token)+'&select=name,phone');
-      if(rows&&rows.length&&rows[0].name) resolvedName=rows[0].name;
+      const existing=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name.trim())+'&select=token');
+      const myToken=this.loadToken();
+      if(existing&&existing.length&&existing[0].token!==myToken){ this.setState({loginError:'That display name is taken. Choose another.'}); return; }
     }catch(e){}
-    this.savePhone2(ph);
-    this.saveUsername(resolvedName);
-    this.setState({loggedIn:true,loginError:''});
-    setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); this.loadMyPhone(); },200);
+    this.setState({loginError:'',loginSending:true});
+    try{
+      const res=await fetch(this._sbAuth()+'/otp',{method:'POST',headers:this._sbAuthHdr(),body:JSON.stringify({email:email.trim(),create_user:true})});
+      if(!res.ok){ const e=await res.json(); this.setState({loginError:e.error_description||e.msg||'Failed to send code.',loginSending:false}); return; }
+      this._pendingLoginEmail=email.trim();
+      this._pendingLoginName=name.trim();
+      this.setState({loginStep:'otp',loginEmail:email.trim(),loginError:'',loginSending:false});
+    }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
+  }
+
+  async doVerifyOtp(){
+    const code=(document.getElementById('fs-login-otp')||{}).value||'';
+    const email=this._pendingLoginEmail||this.state.loginEmail||'';
+    if(!code||code.length<6){ this.setState({loginError:'Enter the 6-digit code from your email.'}); return; }
+    this.setState({loginError:'',loginSending:true});
+    try{
+      const res=await fetch(this._sbAuth()+'/verify',{method:'POST',headers:this._sbAuthHdr(),body:JSON.stringify({type:'email',email,token:code.trim()})});
+      if(!res.ok){ const e=await res.json(); this.setState({loginError:e.error_description||e.msg||'Invalid code. Try again.',loginSending:false}); return; }
+      const session=await res.json();
+      const userId=session?.user?.id||session?.id;
+      if(!userId){ this.setState({loginError:'Verification failed. Try again.',loginSending:false}); return; }
+      // Use Supabase user ID as the stable token
+      try{ localStorage.setItem('fs_token',userId); }catch(e){}
+      this.saveEmail(email);
+      const name=this._pendingLoginName||'';
+      if(name) this.saveUsername(name);
+      // Check if returning user — restore their username from leaderboard
+      try{
+        const rows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(userId)+'&select=name');
+        if(rows&&rows.length&&rows[0].name) this.saveUsername(rows[0].name);
+      }catch(e){}
+      this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
+      setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); this.syncFromCloud(); },300);
+    }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
   }
 
   // ---------- leaderboard ----------
@@ -3599,7 +3641,7 @@ Yan Diomande|RB Leipzig|CM|21|4
   isFounder(){ return (this.state.joinDate||"9999") < "2026-07-10"; }
   // ============ PHONE ============
   async loadMyPhone(){
-    this._myPhone=this.loadPhone();
+    this._myPhone=this.loadEmail();
     this.setState(s=>({tick:s.tick+1}));
   }
   async savePhone(){
@@ -4436,8 +4478,13 @@ Yan Diomande|RB Leipzig|CM|21|4
       showReward:S.showReward, rw, closeReward:()=>this.closeReward(),
       // feedback
       showLoginGate:!S.loggedIn,
-      loginError:S.loginError,
-      doLogin:()=>{ const ph=(document.getElementById('fs-login-phone')||{}).value||''; const nm=(document.getElementById('fs-login-name')||{}).value||''; this.doLogin(ph,nm); },
+      loginStepEmail:S.loginStep==='email', loginStepOtp:S.loginStep==='otp',
+      loginEmail:S.loginEmail, loginError:S.loginError,
+      loginBtnBg:S.loginSending?'#4a7a5f':'#16a85f',
+      loginBtnLabel:S.loginSending?(S.loginStep==='otp'?'Verifying…':'Sending…'):(S.loginStep==='otp'?'Verify code':'Send code →'),
+      doSendOtp:()=>this.doSendOtp(),
+      doVerifyOtp:()=>this.doVerifyOtp(),
+      loginBack:()=>this.setState({loginStep:'email',loginError:''}),
       openFeedback:()=>this.openFeedback(),
       feedbackOpen:S.feedbackOpen,
       closeFeedback:()=>this.closeFeedback(),
@@ -4540,10 +4587,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       stopMystery:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
       mysteryPacks: S.mysteryPacks||[],
       isFounder: this.isFounder(),
-      myPhone: this._myPhone||'',
-      phoneSaving: S.phoneSaving, phoneSaved: S.phoneSaved,
-      phoneBtnLabel: S.phoneSaved ? 'Saved ✓' : (S.phoneSaving ? 'Saving…' : 'Save'),
-      savePhone:()=>this.savePhone(),
+      myEmail: this.loadEmail()||'—',
       recoverOpen: S.recoverOpen, closeRecover:()=>this.setState({recoverOpen:false}),
       stopRecover:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
     };
