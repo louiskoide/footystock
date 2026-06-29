@@ -721,8 +721,8 @@
         <div style="margin-bottom:16px">
           <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px">Visibility</label>
           <div style="display:flex;gap:10px">
-            <button onClick="{{ () => onClubCreatePublic(true) }}" style="{{ clubPublicBtnStyle }}">Public</button>
-            <button onClick="{{ () => onClubCreatePublic(false) }}" style="{{ clubPrivateBtnStyle }}">Private</button>
+            <button onClick="{{ setClubPublic }}" style="{{ clubPublicBtnStyle }}">Public</button>
+            <button onClick="{{ setClubPrivate }}" style="{{ clubPrivateBtnStyle }}">Private</button>
           </div>
         </div>
         <div style="margin-bottom:22px">
@@ -3953,6 +3953,8 @@ Yan Diomande|RB Leipzig|CM|21|4
       onClubCreateName:(e)=>this.setState({clubCreateName:e.target.value}),
       onClubCreateDesc:(e)=>this.setState({clubCreateDesc:e.target.value}),
       onClubCreatePublic:(v)=>this.setState({clubCreatePublic:v}),
+      setClubPublic:()=>this.setState({clubCreatePublic:true}),
+      setClubPrivate:()=>this.setState({clubCreatePublic:false}),
       onClubCreateMinNW:(e)=>this.setState({clubCreateMinNW:e.target.value}),
       clubCreateName:S.clubCreateName, clubCreateDesc:S.clubCreateDesc,
       clubCreatePublic:S.clubCreatePublic, clubCreateMinNW:S.clubCreateMinNW,
