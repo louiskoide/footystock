@@ -797,18 +797,24 @@
       <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Members</div>
       <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:30px">
         <sc-for list="{{ clubMembers }}" as="m" hint-placeholder-count="4">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid #f3f4f0">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid #f3f4f0;position:relative">
             <div style="display:flex;align-items:center;gap:11px">
               <div class="fs-avatar-badge" style="width:34px;height:34px;border-radius:999px;background:{{ m.avatarBg }};color:#fff;display:flex;align-items:center;justify-content:center;font:700 13px 'Space Grotesk';flex-shrink:0">{{ m.initials }}</div>
-              <div>
-                <div style="display:flex;align-items:center;gap:6px">
-                  <span style="font:600 14px 'Hanken Grotesk'">{{ m.display_name }}</span>
-                  <sc-if value="{{ m.isLeader }}"><span style="font:700 10px 'Hanken Grotesk';letter-spacing:.05em;background:#e7f6ec;color:#16a85f;padding:2px 8px;border-radius:999px;text-transform:uppercase">Manager</span></sc-if>
-                </div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font:600 14px 'Hanken Grotesk'">{{ m.display_name }}</span>
+                <sc-if value="{{ m.isLeader }}"><span style="font:700 10px 'Hanken Grotesk';letter-spacing:.05em;background:#e7f6ec;color:#16a85f;padding:2px 8px;border-radius:999px;text-transform:uppercase">Manager</span></sc-if>
               </div>
             </div>
-            <sc-if value="{{ m.canTransfer }}">
-              <button onClick="{{ m.onTransfer }}" style="font:600 12px 'Hanken Grotesk';background:none;border:1px solid #e1e4dd;color:#46504a;padding:6px 12px;border-radius:999px;cursor:pointer">Give ownership</button>
+            <sc-if value="{{ m.hasMenu }}">
+              <div style="position:relative">
+                <button onClick="{{ m.toggleMenu }}" style="background:none;border:none;cursor:pointer;font:700 16px 'Space Grotesk';color:#8a938c;padding:4px 8px;border-radius:8px;line-height:1">···</button>
+                <sc-if value="{{ m.menuOpen }}">
+                  <div style="position:absolute;right:0;top:100%;z-index:50;background:#fff;border:1px solid #e1e4dd;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.10);min-width:170px;overflow:hidden">
+                    <button onClick="{{ m.onTransfer }}" style="display:block;width:100%;text-align:left;padding:11px 16px;font:600 13px 'Hanken Grotesk';background:none;border:none;border-bottom:1px solid #f3f4f0;cursor:pointer;color:#16201a">Give ownership</button>
+                    <button onClick="{{ m.onRemove }}" style="display:block;width:100%;text-align:left;padding:11px 16px;font:600 13px 'Hanken Grotesk';background:none;border:none;cursor:pointer;color:#e03e3e">Remove from club</button>
+                  </div>
+                </sc-if>
+              </div>
             </sc-if>
           </div>
         </sc-for>
@@ -1195,7 +1201,7 @@ class Component extends DCLogic {
       streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
       joinDate: saved.joinDate, allTimeHigh: saved.allTimeHigh,
       clubLoading: false, myClub: null, clubMembers: [], clubPublicList: [],
-      clubView: 'home',
+      clubView: 'home', clubMenuOpenId: null,
       clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
       clubJoinCode: '', clubJoinSearch: '',
       clubError: '', clubSuccess: '',
@@ -3762,12 +3768,19 @@ Yan Diomande|RB Leipzig|CM|21|4
       clubLoading:S.clubLoading, myClub:S.myClub,
       clubMembers:(()=>{
         const uid=this.getUserId(); const leaderId=S.myClub?.leader_id;
+        const iAmLeader=uid===leaderId;
         const avatarColors=['#16a85f','#0c1f15','#2a6fdb','#b8543a','#7a4fbf','#c98a1e','#1f8a5b','#4a5568'];
         return S.clubMembers.map(m=>{
           const isLeader=m.user_id===leaderId; const isMe=m.user_id===uid;
           const initials=m.display_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'?';
           const avatarBg=isLeader?'#16a85f':avatarColors[this.hash(m.user_id)%avatarColors.length];
-          return{...m,isLeader,initials,avatarBg,canTransfer:isMe&&isLeader?false:(!isLeader&&uid===leaderId),onTransfer:()=>this.transferOwnership(m.user_id,m.display_name)};
+          const hasMenu=iAmLeader&&!isMe;
+          const menuOpen=S.clubMenuOpenId===m.user_id;
+          return{...m,isLeader,initials,avatarBg,hasMenu,menuOpen,
+            toggleMenu:()=>this.setState({clubMenuOpenId:menuOpen?null:m.user_id}),
+            onTransfer:()=>{ this.setState({clubMenuOpenId:null}); this.transferOwnership(m.user_id,m.display_name); },
+            onRemove:()=>{ this.setState({clubMenuOpenId:null}); this.removeMember(m.id); },
+          };
         });
       })(),
       clubPublicList:S.clubPublicList.map(c=>({...c,onJoin:()=>this.joinClubById(c.id)})),
