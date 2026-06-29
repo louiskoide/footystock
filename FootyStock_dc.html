@@ -649,6 +649,256 @@
   </div>
   </sc-if>
 
+  <!-- ============ CLUBS VIEW ============ -->
+  <sc-if value="{{ isClubs }}" hint-placeholder-val="{{ false }}">
+  <div class="fs-page-pad" style="padding:24px 26px 0">
+
+    <!-- error/success banner -->
+    <sc-if value="{{ clubError }}">
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;padding:12px 16px;margin-bottom:16px;font:500 13px 'Hanken Grotesk';color:#b91c1c">{{ clubError }}</div>
+    </sc-if>
+    <sc-if value="{{ clubSuccess }}">
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:12px 16px;margin-bottom:16px;font:500 13px 'Hanken Grotesk';color:#166534">{{ clubSuccess }}</div>
+    </sc-if>
+
+    <!-- loading -->
+    <sc-if value="{{ clubLoading }}">
+      <div style="text-align:center;padding:60px;font:500 14px 'Hanken Grotesk';color:#8a938c">Loading clubs...</div>
+    </sc-if>
+
+    <!-- NO CLUB: home chooser -->
+    <sc-if value="{{ noClub && isClubHome }}">
+      <div style="font:700 24px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 6px">Clubs</div>
+      <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 28px">Create or join a club to compete with friends in weekly competitions.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
+        <div onClick="{{ goClubCreate }}" style="background:#0c1f15;border-radius:18px;padding:28px 24px;cursor:pointer">
+          <div style="font:700 28px 'Space Grotesk';color:#3ddc8a;margin-bottom:6px">+</div>
+          <div style="font:700 16px 'Space Grotesk';color:#eaf3ed;margin-bottom:6px">Create a club</div>
+          <div style="font:500 12.5px 'Hanken Grotesk';color:#7fb89a">Start your own. Set the rules, invite your crew.</div>
+        </div>
+        <div onClick="{{ goClubJoin }}" style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:28px 24px;cursor:pointer">
+          <div style="font:700 28px 'Space Grotesk';color:#16a85f;margin-bottom:6px">&#x2192;</div>
+          <div style="font:700 16px 'Space Grotesk';margin-bottom:6px">Join a club</div>
+          <div style="font:500 12.5px 'Hanken Grotesk';color:#8a938c">Use an invite code or browse public clubs.</div>
+        </div>
+      </div>
+
+      <!-- public clubs list -->
+      <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Public clubs</div>
+      <sc-if value="{{ clubPublicList.length > 0 }}">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
+        <sc-for list="{{ clubPublicList }}" as="c" hint-placeholder-count="3">
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="min-width:0">
+              <div style="font:700 15px 'Space Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</div>
+              <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">by {{ c.leader_name }}</div>
+            </div>
+            <button onClick="{{ c.onJoin }}" style="flex-shrink:0;font:700 13px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:8px 16px;border-radius:999px;cursor:pointer">Join</button>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <sc-if value="{{ clubPublicList.length === 0 }}">
+        <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No public clubs yet. Be the first to create one.</div>
+      </sc-if>
+    </sc-if>
+
+    <!-- CREATE CLUB FORM -->
+    <sc-if value="{{ isClubCreate }}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
+        <button onClick="{{ goClubHome }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back</button>
+        <span style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Create a club</span>
+      </div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:26px;max-width:520px">
+        <div style="margin-bottom:16px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Club name *</label>
+          <input value="{{ clubCreateName }}" onInput="{{ onClubCreateName }}" placeholder="e.g. Sunday League FC" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none" />
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Description</label>
+          <input value="{{ clubCreateDesc }}" onInput="{{ onClubCreateDesc }}" placeholder="Optional tagline" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none" />
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px">Visibility</label>
+          <div style="display:flex;gap:10px">
+            <button onClick="{{ () => onClubCreatePublic(true) }}" style="flex:1;padding:10px;border-radius:10px;font:600 13px 'Hanken Grotesk';cursor:pointer;border:2px solid {{ clubCreatePublic ? '#16a85f' : '#e1e4dd' }};background:{{ clubCreatePublic ? '#f0fdf4' : '#fff' }};color:{{ clubCreatePublic ? '#16a85f' : '#46504a' }}">Public</button>
+            <button onClick="{{ () => onClubCreatePublic(false) }}" style="flex:1;padding:10px;border-radius:10px;font:600 13px 'Hanken Grotesk';cursor:pointer;border:2px solid {{ !clubCreatePublic ? '#16a85f' : '#e1e4dd' }};background:{{ !clubCreatePublic ? '#f0fdf4' : '#fff' }};color:{{ !clubCreatePublic ? '#16a85f' : '#46504a' }}">Private</button>
+          </div>
+        </div>
+        <div style="margin-bottom:22px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Min net worth to join (optional)</label>
+          <input value="{{ clubCreateMinNW }}" onInput="{{ onClubCreateMinNW }}" placeholder="e.g. 12000" type="number" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none" />
+        </div>
+        <button onClick="{{ submitCreateClub }}" style="width:100%;padding:13px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 15px 'Hanken Grotesk';cursor:pointer">Create club</button>
+      </div>
+    </sc-if>
+
+    <!-- JOIN CLUB FORM -->
+    <sc-if value="{{ isClubJoin }}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
+        <button onClick="{{ goClubHome }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back</button>
+        <span style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Join a club</span>
+      </div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:26px;max-width:520px;margin-bottom:24px">
+        <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Invite code</label>
+        <div style="display:flex;gap:10px">
+          <input value="{{ clubJoinCode }}" onInput="{{ onClubJoinCode }}" placeholder="e.g. XK7M2P" style="flex:1;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none;text-transform:uppercase;letter-spacing:.12em" />
+          <button onClick="{{ submitJoinClub }}" style="flex-shrink:0;padding:11px 20px;background:#16a85f;color:#fff;border:none;border-radius:10px;font:700 14px 'Hanken Grotesk';cursor:pointer">Join</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- MY CLUB -->
+    <sc-if value="{{ hasClub && isClubHome }}">
+      <!-- club header -->
+      <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:20px;padding:24px 28px;margin-bottom:20px;color:#eaf3ed">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font:700 26px 'Space Grotesk';letter-spacing:-.01em">{{ myClub.name }}</div>
+            <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-top:4px">{{ myClub.description }}</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+              <span style="font:600 11px 'Hanken Grotesk';background:rgba(61,220,138,.18);color:#3ddc8a;padding:4px 10px;border-radius:999px">{{ myClub.is_public ? 'Public' : 'Private' }}</span>
+              <span style="font:600 11px 'Hanken Grotesk';background:rgba(255,255,255,.12);color:#c5d9cc;padding:4px 10px;border-radius:999px">{{ clubMembers.length }} / 11 members</span>
+              <span style="font:600 11px 'Hanken Grotesk';background:rgba(255,255,255,.12);color:#c5d9cc;padding:4px 10px;border-radius:999px">Led by {{ myClub.leader_name }}</span>
+            </div>
+          </div>
+          <button onClick="{{ leaveClub }}" style="flex-shrink:0;background:rgba(255,255,255,.12);border:none;color:#c5d9cc;font:600 12px 'Hanken Grotesk';padding:8px 14px;border-radius:999px;cursor:pointer">Leave</button>
+        </div>
+        <!-- invite code (leader only) -->
+        <sc-if value="{{ isMyClubLeader }}">
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="font:500 12px 'Hanken Grotesk';color:#7fb89a">Invite code:</span>
+          <span style="font:700 18px 'Space Grotesk';letter-spacing:.15em;color:#fff">{{ clubInviteCode }}</span>
+          <button onClick="{{ copyInviteCode }}" style="background:rgba(61,220,138,.2);border:none;color:#3ddc8a;font:600 12px 'Hanken Grotesk';padding:6px 14px;border-radius:999px;cursor:pointer">Copy</button>
+        </div>
+        </sc-if>
+      </div>
+
+      <!-- members -->
+      <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Members</div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:24px">
+        <sc-for list="{{ clubMembers }}" as="m" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid #f3f4f0">
+            <div style="display:flex;align-items:center;gap:11px">
+              <div style="width:34px;height:34px;border-radius:999px;background:#eef1ec;display:flex;align-items:center;justify-content:center;font:700 13px 'Space Grotesk';color:#46504a;flex-shrink:0">{{ m.display_name.slice(0,2).toUpperCase() }}</div>
+              <div>
+                <div style="font:600 14px 'Hanken Grotesk'">{{ m.display_name }}</div>
+                <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ myClub.leader_id === m.user_id ? 'Leader' : 'Member' }}</div>
+              </div>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- competitions -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:0 2px 14px">
+        <span style="font:700 17px 'Space Grotesk'">Competitions</span>
+        <sc-if value="{{ isMyClubLeader }}">
+          <button onClick="{{ createComp }}" style="font:700 13px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:8px 16px;border-radius:999px;cursor:pointer">+ New</button>
+        </sc-if>
+      </div>
+      <sc-if value="{{ clubComps.length > 0 }}">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
+        <sc-for list="{{ clubComps }}" as="comp" hint-placeholder-count="2">
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+            <div>
+              <div style="font:700 15px 'Space Grotesk'">{{ comp.name }}</div>
+              <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:3px">{{ comp.timeLeft }}</div>
+            </div>
+            <button onClick="{{ comp.onEnter }}" style="flex-shrink:0;font:700 13px 'Hanken Grotesk';background:{{ comp.isActive ? '#16a85f' : '#eef1ec' }};color:{{ comp.isActive ? '#fff' : '#8a938c' }};border:none;padding:9px 18px;border-radius:999px;cursor:pointer">{{ comp.isActive ? 'Enter' : 'View results' }}</button>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <sc-if value="{{ clubComps.length === 0 }}">
+        <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No competitions yet.</div>
+      </sc-if>
+    </sc-if>
+
+    <!-- COMPETITION MODE -->
+    <sc-if value="{{ isClubComp }}">
+      <!-- header bar -->
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
+        <div style="display:flex;align-items:center;gap:12px">
+          <button onClick="{{ exitComp }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back to club</button>
+          <span style="font:700 18px 'Space Grotesk'">{{ activeCompName }}</span>
+          <span style="font:700 10px 'Hanken Grotesk';letter-spacing:.08em;background:#fef3c7;color:#d97706;padding:4px 9px;border-radius:6px;text-transform:uppercase">Competition Mode</span>
+        </div>
+      </div>
+
+      <!-- P&L summary -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
+        <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:16px;padding:18px 20px;color:#eaf3ed">
+          <div style="font:600 11px 'Hanken Grotesk';color:#7fb89a;letter-spacing:.08em;text-transform:uppercase">Portfolio value</div>
+          <div style="font:700 26px 'Space Grotesk';margin-top:4px">{{ compValue }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:18px 20px">
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">P&amp;L vs 10k start</div>
+          <div style="font:700 26px 'Space Grotesk';margin-top:4px;color:{{ compProfit.color }}">{{ compProfit.arrow }} {{ compProfit.fmt }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:18px 20px">
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Comp cash</div>
+          <div style="font:700 26px 'Space Grotesk';margin-top:4px">{{ compCash }}</div>
+        </div>
+      </div>
+
+      <!-- leaderboard + holdings side by side -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+        <div>
+          <div style="font:700 14px 'Space Grotesk';margin-bottom:10px">Club leaderboard</div>
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;overflow:hidden">
+            <sc-for list="{{ compLeaderboard }}" as="lb" hint-placeholder-count="3">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f3f4f0">
+                <span style="font:600 14px 'Hanken Grotesk'">{{ lb.display_name }}</span>
+                <span style="font:700 14px 'Space Grotesk';color:{{ lb.profit >= 0 ? '#16a85f' : '#e03e3e' }}">{{ lb.profit >= 0 ? '+' : '' }}{{ lb.profit.toFixed(0) }}</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+        <div>
+          <div style="font:700 14px 'Space Grotesk';margin-bottom:10px">My holdings</div>
+          <sc-if value="{{ compHoldings.length > 0 }}">
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;overflow:hidden">
+            <sc-for list="{{ compHoldings }}" as="h" hint-placeholder-count="2">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f3f4f0;cursor:pointer" onClick="{{ h.onClick }}">
+                <div>
+                  <div style="font:600 13px 'Hanken Grotesk'">{{ h.name }}</div>
+                  <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ h.qty }} shares · {{ h.price }}</div>
+                </div>
+                <span style="font:700 13px 'Space Grotesk'">{{ h.value }}</span>
+              </div>
+            </sc-for>
+          </div>
+          </sc-if>
+          <sc-if value="{{ compHoldings.length === 0 }}">
+            <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:24px;text-align:center;font:500 12px 'Hanken Grotesk';color:#8a938c">No holdings yet. Browse the market below to trade.</div>
+          </sc-if>
+        </div>
+      </div>
+
+      <!-- market list in comp mode -->
+      <div style="font:700 16px 'Space Grotesk';margin-bottom:12px">Market &middot; trade with competition funds</div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:30px">
+        <sc-for list="{{ marketList }}" as="p" hint-placeholder-count="8">
+          <div style="display:grid;grid-template-columns:minmax(0,1fr) 80px 80px 80px;gap:10px;align-items:center;padding:12px 18px;border-bottom:1px solid #f3f4f0">
+            <span onClick="{{ p.onClick }}" style="display:flex;flex-direction:column;cursor:pointer;min-width:0">
+              <b style="font:600 14px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</b>
+              <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ p.pos }} · {{ p.team }}</span>
+            </span>
+            <span style="text-align:right;font:700 14px 'Space Grotesk'">{{ p.price }}</span>
+            <span style="text-align:right;font:600 12px 'Hanken Grotesk';color:{{ p.wkColor }}">{{ p.wkArrow }}{{ p.wkAbs }}</span>
+            <span style="text-align:right;display:flex;gap:5px;justify-content:flex-end">
+              <button onClick="{{ () => compBuyPlayer(p.id, p.rawPrice) }}" style="font:700 11px 'Hanken Grotesk';background:#e8f7ef;color:#16a85f;border:none;padding:5px 9px;border-radius:7px;cursor:pointer">Buy</button>
+              <button onClick="{{ () => compSellPlayer(p.id, p.rawPrice) }}" style="font:700 11px 'Hanken Grotesk';background:#fef2f2;color:#e03e3e;border:none;padding:5px 9px;border-radius:7px;cursor:pointer">Sell</button>
+            </span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+
+  </div>
+  </sc-if>
+
   <!-- ============ ARTICLES VIEW ============ -->
   <sc-if value="{{ isArticles }}" hint-placeholder-val="{{ false }}">
   <div class="fs-page-pad" style="padding:24px 26px 0">
@@ -944,6 +1194,69 @@
 
 </x-dc>
 <script type="text/x-dc" data-dc-script>
+/*
+-- Run this in Supabase SQL editor before using Clubs:
+create table if not exists clubs (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  description text default '',
+  leader_id text not null,
+  leader_name text not null,
+  is_public boolean default true,
+  invite_code text not null unique,
+  min_net_worth numeric default 0,
+  created_at timestamptz default now()
+);
+create unique index if not exists clubs_name_lower_idx on clubs (lower(name));
+
+create table if not exists club_members (
+  id uuid default gen_random_uuid() primary key,
+  club_id uuid references clubs(id) on delete cascade not null,
+  user_id text not null,
+  display_name text not null,
+  joined_at timestamptz default now(),
+  unique(club_id, user_id)
+);
+
+create table if not exists competitions (
+  id uuid default gen_random_uuid() primary key,
+  club_id uuid references clubs(id) on delete cascade not null,
+  name text not null,
+  ends_at timestamptz not null,
+  status text default 'active',
+  created_at timestamptz default now()
+);
+
+create table if not exists comp_portfolios (
+  id uuid default gen_random_uuid() primary key,
+  competition_id uuid references competitions(id) on delete cascade not null,
+  club_id uuid not null,
+  user_id text not null,
+  display_name text not null,
+  cash numeric default 10000,
+  holdings jsonb default '{}',
+  updated_at timestamptz default now(),
+  unique(competition_id, user_id)
+);
+
+-- Allow public access (entertainment-only app, no real money)
+alter table clubs disable row level security;
+alter table club_members disable row level security;
+alter table competitions disable row level security;
+alter table comp_portfolios disable row level security;
+*/
+
+const SUPABASE_URL='https://pwlszzrvwhflijbjwnnf.supabase.co';
+const SUPABASE_KEY='sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_';
+class Supa{
+  static h(extra={}){return{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation',...extra};}
+  static async get(table,q=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${q}`,{headers:this.h()});if(!r.ok)throw new Error(await r.text());return r.json();}
+  static async post(table,body){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:this.h(),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
+  static async patch(table,q,body){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${q}`,{method:'PATCH',headers:this.h({'Prefer':'return=representation'}),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
+  static async del(table,q){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${q}`,{method:'DELETE',headers:this.h()});return r.ok;}
+  static async upsert(table,body,onConflict=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:this.h({'Prefer':'resolution=merge-duplicates,return=representation'}),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
+}
+
 class Component extends DCLogic {
   // ---------- lifecycle ----------
   constructor(props){
@@ -962,6 +1275,11 @@ class Component extends DCLogic {
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
       streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
       joinDate: saved.joinDate, allTimeHigh: saved.allTimeHigh,
+      clubLoading: false, myClub: null, clubMembers: [], clubComps: [], clubPublicList: [],
+      compPortfolio: null, compLeaderboard: [], activeCompId: null, clubView: 'home',
+      clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
+      clubJoinCode: '', clubJoinSearch: '',
+      clubError: '', clubSuccess: '',
     };
   }
   componentDidMount(){
@@ -2644,7 +2962,7 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
 
   // ---------- actions ----------
-  nav(v){ this.setState({view:v,selectedArticleId:null}); }
+  nav(v){ this.setState({view:v,selectedArticleId:null}); if(v==='clubs') this.loadMyClub(); }
   goHome(){ this.setState({view:'market'}); }
   openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90}); window.scrollTo(0,0); }
   goBack(){ this.setState({view:'market'}); }
@@ -2828,6 +3146,193 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
   myRank(){ const lb=this.leaderboardData(); return lb.findIndex(x=>x.me)+1; }
 
+  // ============ CLUBS ============
+  getUserId(){
+    let uid=localStorage.getItem('footystock_uid');
+    if(!uid){uid=([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));localStorage.setItem('footystock_uid',uid);}
+    return uid;
+  }
+  genCode(){return Math.random().toString(36).slice(2,8).toUpperCase();}
+
+  async loadMyClub(){
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const uid=this.getUserId();
+      const memberships=await Supa.get('club_members','user_id=eq.'+uid+'&select=club_id');
+      if(!memberships.length){
+        const pub=await Supa.get('clubs','is_public=eq.true&order=created_at.desc&limit=20&select=id,name,description,leader_name,is_public,min_net_worth,created_at');
+        this.setState({myClub:null,clubMembers:[],clubComps:[],clubPublicList:pub,clubLoading:false});
+        return;
+      }
+      const clubId=memberships[0].club_id;
+      const [clubs,members,comps]=await Promise.all([
+        Supa.get('clubs','id=eq.'+clubId),
+        Supa.get('club_members','club_id=eq.'+clubId+'&order=joined_at.asc'),
+        Supa.get('competitions','club_id=eq.'+clubId+'&order=created_at.desc&limit=10'),
+      ]);
+      this.setState({myClub:clubs[0]||null,clubMembers:members,clubComps:comps,clubLoading:false});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  async createClub(){
+    const{clubCreateName:name,clubCreateDesc:desc,clubCreatePublic:isPublic,clubCreateMinNW:minNW}=this.state;
+    if(!name.trim()){this.setState({clubError:'Club name is required.'});return;}
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const existing=await Supa.get('club_members','user_id=eq.'+uid+'&select=club_id');
+      if(existing.length){this.setState({clubLoading:false,clubError:'You are already in a club. Leave it first.'});return;}
+      const code=this.genCode();
+      const club=await Supa.post('clubs',{name:name.trim(),description:desc.trim(),leader_id:uid,leader_name:dname,is_public:isPublic,invite_code:code,min_net_worth:parseFloat(minNW)||0});
+      const c=Array.isArray(club)?club[0]:club;
+      await Supa.post('club_members',{club_id:c.id,user_id:uid,display_name:dname});
+      await this.loadMyClub();
+      this.setState({clubView:'home',clubCreateName:'',clubCreateDesc:'',clubSuccess:'Club created!'});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message.includes('unique')?'A club with that name already exists.':e.message});}
+  }
+
+  async joinClubByCode(){
+    const code=this.state.clubJoinCode.trim().toUpperCase();
+    if(!code){this.setState({clubError:'Enter an invite code.'});return;}
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const clubs=await Supa.get('clubs','invite_code=eq.'+code);
+      if(!clubs.length){this.setState({clubLoading:false,clubError:'Invalid invite code.'});return;}
+      const club=clubs[0];
+      const members=await Supa.get('club_members','club_id=eq.'+club.id);
+      if(members.length>=11){this.setState({clubLoading:false,clubError:'This club is full (max 11 members).'});return;}
+      if(members.find(m=>m.user_id===uid)){this.setState({clubLoading:false,clubError:'You are already in this club.'});return;}
+      const nw=this.netWorth();
+      if(nw<club.min_net_worth){this.setState({clubLoading:false,clubError:'This club requires a net worth of '+this.money(club.min_net_worth)+'.'});return;}
+      await Supa.post('club_members',{club_id:club.id,user_id:uid,display_name:dname});
+      await this.loadMyClub();
+      this.setState({clubView:'home',clubJoinCode:'',clubSuccess:'Joined '+club.name+'!'});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  async joinClubById(clubId){
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const existing=await Supa.get('club_members','user_id=eq.'+uid+'&select=club_id');
+      if(existing.length){this.setState({clubLoading:false,clubError:'Leave your current club first.'});return;}
+      const members=await Supa.get('club_members','club_id=eq.'+clubId);
+      if(members.length>=11){this.setState({clubLoading:false,clubError:'This club is full.'});return;}
+      const clubs=await Supa.get('clubs','id=eq.'+clubId);
+      const club=clubs[0];
+      const nw=this.netWorth();
+      if(nw<club.min_net_worth){this.setState({clubLoading:false,clubError:'Requires net worth of '+this.money(club.min_net_worth)+'.'});return;}
+      await Supa.post('club_members',{club_id:clubId,user_id:uid,display_name:dname});
+      await this.loadMyClub();
+      this.setState({clubSuccess:'Joined '+club.name+'!'});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  async leaveClub(){
+    if(!confirm('Leave your club? You will lose access to active competitions.'))return;
+    const uid=this.getUserId();
+    const{myClub}=this.state;
+    if(myClub&&myClub.leader_id===uid){
+      const others=this.state.clubMembers.filter(m=>m.user_id!==uid);
+      if(others.length>0){alert('Transfer leadership or remove all members before leaving.');return;}
+      await Supa.del('clubs','id=eq.'+myClub.id);
+    }else{
+      await Supa.del('club_members','club_id=eq.'+myClub.id+'&user_id=eq.'+uid);
+    }
+    this.setState({myClub:null,clubMembers:[],clubComps:[],clubView:'home'});
+    await this.loadMyClub();
+  }
+
+  async removeMember(memberId){
+    if(!confirm('Remove this member from the club?'))return;
+    await Supa.del('club_members','id=eq.'+memberId);
+    await this.loadMyClub();
+  }
+
+  async createCompetition(){
+    const{myClub}=this.state;
+    if(!myClub)return;
+    const name=prompt('Competition name (e.g. "Week 1"):');
+    if(!name)return;
+    const days=parseInt(prompt('Duration in days (e.g. 7):')||'7');
+    if(isNaN(days)||days<1)return;
+    const endsAt=new Date(Date.now()+days*86400000).toISOString();
+    this.setState({clubLoading:true});
+    try{
+      await Supa.post('competitions',{club_id:myClub.id,name:name.trim(),ends_at:endsAt,status:'active'});
+      await this.loadMyClub();
+    }catch(e){this.setState({clubError:e.message,clubLoading:false});}
+  }
+
+  async enterComp(compId){
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    const{myClub}=this.state;
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const rows=await Supa.get('comp_portfolios','competition_id=eq.'+compId+'&user_id=eq.'+uid);
+      let port=rows[0];
+      if(!port){
+        const res=await Supa.post('comp_portfolios',{competition_id:compId,club_id:myClub.id,user_id:uid,display_name:dname,cash:10000,holdings:{}});
+        port=Array.isArray(res)?res[0]:res;
+      }
+      const lb=await this.loadCompLb(compId);
+      this.setState({compPortfolio:port,activeCompId:compId,clubView:'comp',compLeaderboard:lb,clubLoading:false});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  async loadCompLb(compId){
+    const rows=await Supa.get('comp_portfolios','competition_id=eq.'+compId+'&select=display_name,cash,holdings');
+    return rows.map(r=>{
+      const h=r.holdings||{};
+      const hVal=Object.entries(h).reduce((sum,[id,qty])=>{
+        const p=this._lastDB?(this._lastDB.find(x=>x.id===id)||null):null;
+        return sum+((p?this.curPrice(p):0)*qty);
+      },0);
+      const total=(r.cash||0)+hVal;
+      return{display_name:r.display_name,value:total,profit:total-10000};
+    }).sort((a,b)=>b.profit-a.profit);
+  }
+
+  compPortfolioValue(){
+    const{compPortfolio}=this.state;
+    if(!compPortfolio)return 10000;
+    const h=compPortfolio.holdings||{};
+    const hVal=Object.entries(h).reduce((sum,[id,qty])=>{
+      const p=this._lastDB?(this._lastDB.find(x=>x.id===id)||null):null;
+      return sum+((p?this.curPrice(p):0)*qty);
+    },0);
+    return (compPortfolio.cash||0)+hVal;
+  }
+
+  async execCompTrade(side,playerId,qty,price){
+    const{compPortfolio,activeCompId}=this.state;
+    if(!compPortfolio)return;
+    const holdings=Object.assign({},compPortfolio.holdings||{});
+    let cash=compPortfolio.cash||0;
+    const total=price*qty;
+    if(side==='BUY'){
+      if(cash<total){this.setState({clubError:'Not enough competition cash.'});return;}
+      cash-=total;
+      holdings[playerId]=(holdings[playerId]||0)+qty;
+    }else{
+      const owned=holdings[playerId]||0;
+      if(owned<qty){this.setState({clubError:'Not enough shares in competition portfolio.'});return;}
+      cash+=total;
+      holdings[playerId]=owned-qty;
+      if(holdings[playerId]<=0)delete holdings[playerId];
+    }
+    const uid=this.getUserId();
+    const updated=await Supa.patch('comp_portfolios','competition_id=eq.'+activeCompId+'&user_id=eq.'+uid,{cash,holdings,updated_at:new Date().toISOString()});
+    const port=Array.isArray(updated)?updated[0]:updated;
+    const lb=await this.loadCompLb(activeCompId);
+    this.setState({compPortfolio:{...compPortfolio,cash,holdings},compLeaderboard:lb,clubError:''});
+  }
+
   // ============ RENDER ============
   renderVals(){
     const S=this.state;
@@ -2835,6 +3340,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     // live worker data is available — see the comment in componentDidMount.
     // This first, near-instant render just shows an empty/blank state.
     const DB=S.ready?this.getDB():[];
+    if(DB.length) this._lastDB=DB;
     const GREEN='#16a85f',RED='#d23b2c',GBG='#e7f6ec',RBG='#fbe9e7';
     const cd=(n)=>n>=0?'#3ddc8a':'#ff5d5d';
     // stdev of daily returns (annualized) + high/low over all available history,
@@ -2862,7 +3368,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       const {volPct,hiAll,loAll}=riskStats(p);
       return {
         id:p.id,name:p.name,last:p.name.split(' ').slice(-1)[0],team:p.team,abbr:p.abbr,lg:p.abbr,
-        league:p.lgName,pos:p.pos,rank:p.rank,price:this.money(price),
+        league:p.lgName,pos:p.pos,rank:p.rank,price:this.money(price),rawPrice:price,
         chg:this.pct(p.change7d),arrow:up7?'▲':'▼',cd:cd(p.change7d),
         wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',
         wkColor:up7?GREEN:RED,wkBg:up7?GBG:RBG,
@@ -2982,7 +3488,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     ];
 
     // nav tabs
-    const tabsDef=[['market','Market'],['articles','Articles'],['portfolio','Portfolio'],['watch','Watchlist'],['leaders','Leaderboard'],['profile','Profile']];
+    const tabsDef=[['market','Market'],['articles','Articles'],['portfolio','Portfolio'],['watch','Watchlist'],['clubs','Clubs'],['leaders','Leaderboard'],['profile','Profile']];
     const navTabs=tabsDef.map(([k,label])=>{ const on=S.view===k||(k==='market'&&S.view==='detail'); return {label,onClick:()=>this.nav(k),
       color:on?'#16201a':'#9aa39b',underline:on?'#16a85f':'transparent'}; });
 
@@ -3353,7 +3859,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       cashFmt:this.money(this.state.cash),
       rewardBtnLabel,rewardBtnColor,rewardBtnBg, openReward:()=>this.openReward(),
       // views
-      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders', isArticles:S.view==='articles', isProfile:S.view==='profile',
+      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders', isArticles:S.view==='articles', isProfile:S.view==='profile', isClubs:S.view==='clubs', isComp:S.clubView==='comp'&&S.view==='clubs',
       // articles
       articlesAll, hasSelectedArticle, noSelectedArticle, selectedArticle, backToArticles:()=>this.setState({selectedArticleId:null}),
       hasArticles:articlesAll.length>0, noArticles:articlesAll.length===0,
@@ -3400,6 +3906,61 @@ Yan Diomande|RB Leipzig|CM|21|4
       fbBtnBg:S.feedbackSending?'#8a938c':(S.feedbackText.trim()?'#16a85f':'#b6c4bb'),
       fbBtnCursor:S.feedbackSending||!S.feedbackText.trim()?'not-allowed':'pointer',
       fbBtnLabel:S.feedbackSending?'Sending…':'Send feedback',
+      // clubs
+      clubLoading:S.clubLoading, myClub:S.myClub, clubMembers:S.clubMembers,
+      clubComps:S.clubComps.map(c=>{
+        const now=new Date(); const ends=new Date(c.ends_at);
+        const diffMs=ends-now; const diffD=Math.ceil(diffMs/86400000);
+        const timeLeft=diffMs<0?'Ended':(diffD===0?'Ends today':`${diffD}d left`);
+        const isActive=c.status==='active'&&diffMs>0;
+        return{...c,timeLeft,isActive,onEnter:()=>this.enterComp(c.id)};
+      }),
+      clubPublicList:S.clubPublicList.map(c=>({...c,onJoin:()=>this.joinClubById(c.id)})),
+      isMyClubLeader:S.myClub&&S.myClub.leader_id===this.getUserId(),
+      clubInviteCode:S.myClub?S.myClub.invite_code:'',
+      clubError:S.clubError, clubSuccess:S.clubSuccess,
+      clubView:S.clubView,
+      noClub:!S.myClub&&!S.clubLoading,
+      hasClub:!!S.myClub,
+      isClubHome:S.clubView==='home',
+      isClubCreate:S.clubView==='create',
+      isClubJoin:S.clubView==='join',
+      isClubComp:S.clubView==='comp',
+      goClubHome:()=>this.setState({clubView:'home',clubError:'',clubSuccess:''}),
+      goClubCreate:()=>this.setState({clubView:'create',clubError:'',clubSuccess:''}),
+      goClubJoin:()=>this.setState({clubView:'join',clubError:'',clubSuccess:''}),
+      onClubCreateName:(e)=>this.setState({clubCreateName:e.target.value}),
+      onClubCreateDesc:(e)=>this.setState({clubCreateDesc:e.target.value}),
+      onClubCreatePublic:(v)=>this.setState({clubCreatePublic:v}),
+      onClubCreateMinNW:(e)=>this.setState({clubCreateMinNW:e.target.value}),
+      clubCreateName:S.clubCreateName, clubCreateDesc:S.clubCreateDesc,
+      clubCreatePublic:S.clubCreatePublic, clubCreateMinNW:S.clubCreateMinNW,
+      submitCreateClub:()=>this.createClub(),
+      onClubJoinCode:(e)=>this.setState({clubJoinCode:e.target.value}),
+      clubJoinCode:S.clubJoinCode,
+      submitJoinClub:()=>this.joinClubByCode(),
+      leaveClub:()=>this.leaveClub(),
+      createComp:()=>this.createCompetition(),
+      // comp mode
+      compPortfolio:S.compPortfolio,
+      compLeaderboard:S.compLeaderboard,
+      compValue:this.money(this.compPortfolioValue()),
+      compProfit:(()=>{const v=this.compPortfolioValue()-10000;return{fmt:(v>=0?'+':'')+this.money(Math.abs(v)),color:v>=0?'#16a85f':'#e03e3e',arrow:v>=0?'▲':'▼'}})(),
+      compCash:S.compPortfolio?this.money(S.compPortfolio.cash):'€10,000',
+      compHoldings:(()=>{
+        if(!S.compPortfolio)return[];
+        return Object.entries(S.compPortfolio.holdings||{}).map(([id,qty])=>{
+          const p=this._lastDB?(this._lastDB.find(x=>x.id===id)):null;
+          if(!p)return null;
+          const price=this.curPrice(p);
+          return{name:p.name,team:p.team,qty,price:this.money(price),value:this.money(price*qty),onClick:()=>this.openPlayer(id)};
+        }).filter(Boolean);
+      })(),
+      exitComp:()=>this.setState({clubView:'home',activeCompId:null,compPortfolio:null}),
+      compBuyPlayer:(id,price)=>this.execCompTrade('BUY',id,1,price),
+      compSellPlayer:(id,price)=>this.execCompTrade('SELL',id,1,price),
+      activeCompName:(()=>{const c=S.clubComps.find(x=>x.id===S.activeCompId);return c?c.name:'Competition';})(),
+      copyInviteCode:()=>{if(S.myClub)navigator.clipboard.writeText(S.myClub.invite_code).then(()=>this.setState({clubSuccess:'Invite code copied!'}));},
     };
   }
 }
