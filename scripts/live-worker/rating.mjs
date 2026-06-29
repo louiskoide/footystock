@@ -29,7 +29,7 @@ export function computeRating(stats, { knockout = false, result = 'draw', cleanS
   const dribblesSuccess = stats.dribbles?.success || 0;
   const keyPasses = stats.passes?.key || 0;
   const shotsOn = stats.shots?.on || 0;
-  const saves = stats.goals?.saved || 0;
+  const saves = stats.goals?.saves || 0; // API-Football field is 'saves', not 'saved'
   const yellow = stats.cards?.yellow || 0;
   const red = stats.cards?.red || 0;
   const position = stats.games?.position || '';
@@ -43,23 +43,20 @@ export function computeRating(stats, { knockout = false, result = 'draw', cleanS
   let rating = 6.0;
   // Nonlinear goal bonus: each goal is worth more than the last, so a
   // hat-trick alone (without even counting assists/result) clears 9.5.
-  rating += 0.9 * goals;
-  if (goals >= 2) rating += 0.3 * (goals - 1);
+  rating += 1.1 * goals;
+  if (goals >= 2) rating += 0.4 * (goals - 1);
   if (goals >= 3) rating += 0.5;
   // Multi-assist bonus mirrors the goal one: a playmaker setting up two or
-  // three goals is a genuine standout game, not a fraction of a scorer's —
-  // previously a flat 0.35/assist meant a 2-assist game (+0.7) couldn't even
-  // clear the World Cup form streak's 7.4 threshold, breaking the streak
-  // counter on a clearly good performance.
-  rating += 0.5 * assists;
-  if (assists >= 2) rating += 0.2 * (assists - 1);
+  // three goals is a genuine standout game, not a fraction of a scorer's.
+  rating += 0.8 * assists;
+  if (assists >= 2) rating += 0.4 * (assists - 1);
   rating += minuteScale * (0.05 * tackles + 0.05 * interceptions + 0.03 * duelsWon
     + 0.04 * dribblesSuccess + 0.03 * keyPasses + 0.03 * shotsOn);
 
   // Goalkeeper saves and clean sheets for the back line — real, available
   // fields (goals.saved; goals-against == 0), not fabricated.
-  if (isKeeper) rating += minuteScale * 0.18 * saves;
-  if (cleanSheet && (isKeeper || isDefender)) rating += minuteScale * 0.5;
+  if (isKeeper) rating += minuteScale * 0.35 * saves;
+  if (cleanSheet && (isKeeper || isDefender)) rating += minuteScale * 0.55;
 
   // Defenders and keepers also wear conceded goals: first couple cost a
   // bit, every goal from the 3rd onward (a defense that's been cut open)
