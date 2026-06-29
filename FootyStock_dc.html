@@ -3536,7 +3536,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     this.setState({loginError:'',loginSending:true});
     try{
       const res=await fetch(this._sbAuth()+'/otp',{method:'POST',headers:this._sbAuthHdr(),body:JSON.stringify({email:email.trim(),create_user:true})});
-      if(!res.ok){ const e=await res.json(); this.setState({loginError:e.error_description||e.msg||'Failed to send code.',loginSending:false}); return; }
+      if(!res.ok){ const e=await res.json(); console.error('OTP error',e); this.setState({loginError:(e.error_description||e.msg||e.message||JSON.stringify(e)||'Failed to send code.').slice(0,120),loginSending:false}); return; }
       this._pendingLoginEmail=email.trim();
       this._pendingLoginName=name.trim();
       this.setState({loginStep:'otp',loginEmail:email.trim(),loginError:'',loginSending:false});
