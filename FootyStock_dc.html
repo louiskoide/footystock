@@ -2567,18 +2567,20 @@ Yan Diomande|RB Leipzig|CM|21|4
       }
       const newsDelta = news?news.bias:0;
       let change7d, change30d;
+      // Day-seeded random for players with no WC/news data — different each
+      // calendar day so the base value isn't frozen between match events.
+      const rDay = this.mulberry(this.hash(id + ':base:' + dayKey));
       if(atWC||news){ change7d=sum(events.filter(e=>e.offset<=8).map(e=>e.delta))+((news&&offOf(news.d)<=8)?newsDelta:0);
         change30d=sum(events.map(e=>e.delta))+newsDelta; }
-      else { change7d=(r()-0.5)*1.4; change30d=(r()-0.5)*3; }
-      // Daily market wobble: add a small date-seeded drift so the change
-      // columns tick each calendar day even between match events. Magnitude
-      // is intentionally small (WC ±1.5%, others ±0.5%) so fundamentals
-      // still dominate — a hat-trick player stays near the top, but quiet
-      // days still show organic movement rather than a frozen leaderboard.
+      else { change7d=(rDay()-0.5)*3.5; change30d=(rDay()-0.5)*7; }
+      // Daily market wobble: date-seeded drift so the change columns shuffle
+      // each calendar day even between match events. Large enough (WC ±4%,
+      // others ±2%) to actually reorder the leaderboard on quiet days while
+      // still letting a hat-trick dominate when it happens.
       const dwR = this.mulberry(this.hash(id + ':dw:' + dayKey));
       const dw1R = this.mulberry(this.hash(id + ':d1:' + dayKey));
-      const dailyWobble7d = (dwR() - 0.5) * 2 * (atWC ? 1.5 : 0.5);
-      const dailyWobble1d = (dw1R() - 0.5) * 2 * (atWC ? 0.9 : 0.4);
+      const dailyWobble7d = (dwR() - 0.5) * 2 * (atWC ? 4.0 : 2.0);
+      const dailyWobble1d = (dw1R() - 0.5) * 2 * (atWC ? 1.5 : 0.8);
       change7d = parseFloat((change7d + dailyWobble7d).toFixed(1));
       change30d=parseFloat(change30d.toFixed(1));
       // WC form streak (consecutive most-recent matches rating >= 7.4) — kept
@@ -2757,7 +2759,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       // actual match performance. After 8/31 real days the hist is authoritative.
       const realDays = (this._histStore?.[id]?.r?.length) || 1;
       if (realDays >= 8)
-        change7d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-8)])/rHist[Math.max(0,RN-8)])*100).toFixed(1));
+        // Wobble is added on top of the hist-diff (not discarded) so the
+        // leaderboard order still shuffles on days with no new match events.
+        change7d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-8)])/rHist[Math.max(0,RN-8)])*100 + dailyWobble7d).toFixed(1));
       if (realDays >= 31)
         change30d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-31)])/rHist[Math.max(0,RN-31)])*100).toFixed(1));
 
