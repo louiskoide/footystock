@@ -2913,6 +2913,19 @@ Yan Diomande|RB Leipzig|CM|21|4
   shortsPnl(){ let v=0; const sh=this.state.shorts; for(const id in sh){ const p=this.byId(id); if(p) v+=(sh[id].avg-this.curPrice(p))*sh[id].qty; } return v; }
   netWorth(){ return this.state.cash + this.holdingsValue() - this.shortsLiability(); }
   allTimePL(){ return this.netWorth() - 10000; }
+  // Trading-only P&L: holdings value + proceeds from sells - cost of buys +
+  // short proceeds - cover costs - open short liability. Excludes daily login
+  // bonuses, referral cash, and anything else that isn't a trade.
+  tradingPnl(){
+    let buyTotal=0, sellTotal=0, hwTotal=0, coverTotal=0;
+    for(const t of (this.state.txns||[])){
+      if(t.side==='BUY') buyTotal+=t.total||0;
+      else if(t.side==='SELL') sellTotal+=t.total||0;
+      else if(t.side==='HATEWATCH') hwTotal+=t.total||0;
+      else if(t.side==='COVER') coverTotal+=t.total||0;
+    }
+    return this.holdingsValue() + sellTotal - buyTotal + hwTotal - coverTotal - this.shortsLiability();
+  }
 
   // ---------- daily reward ----------
   todayStr(){ return new Date().toISOString().slice(0,10); }
@@ -3082,7 +3095,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     const winRate=totalLong>0?Math.round(winCount/totalLong*100):null;
     // portfolio diversity: unique leagues in holdings
     const heldLeagues=new Set(Object.keys(h).map(id=>{ const p=this.byId(id); return p?p.lg:''; }).filter(Boolean));
-    const nw=this.netWorth(); const pl=nw-10000;
+    const nw=this.netWorth(); const pl=this.tradingPnl();
     return {
       nw, pl, plUp:pl>=0, ath:S.allTimeHigh||nw,
       totalTrades:txns.length, totalBuys:buys.length, totalSells:sells.length,
@@ -3104,18 +3117,17 @@ Yan Diomande|RB Leipzig|CM|21|4
   // ---------- leaderboard ----------
   submitScore(){
     const name=this.loadUsername(); if(!name||!this._sbUrl) return;
-    const nw=Math.round(this.netWorth());
+    const pnl=Math.round(this.tradingPnl());
     fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({token:this.loadToken(),name,net_worth:nw,updated_at:new Date().toISOString()})}).catch(()=>{});
+      body:JSON.stringify({token:this.loadToken(),name,net_worth:pnl,updated_at:new Date().toISOString()})}).catch(()=>{});
   }
   leaderboardData(){
     const myName=this.loadUsername()||'You';
-    const myNW=Math.round(this.netWorth());
+    const myPnl=Math.round(this.tradingPnl());
     const real=this._liveLeaderboard||[];
-    // Merge real entries with "you" — if user's name is already in the list
-    // (from a prior submission), update that entry so rank stays accurate.
+    // Merge real entries with "you" — net_worth column now stores trading P&L
     const arr=real.filter(e=>e.name!==myName).map(e=>({name:e.name,netWorth:e.netWorth}));
-    arr.push({name:myName,netWorth:myNW,me:true});
+    arr.push({name:myName,netWorth:myPnl,me:true});
     arr.sort((a,b)=>b.netWorth-a.netWorth);
     return arr;
   }
@@ -3404,7 +3416,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       color:on?'#16201a':'#9aa39b',underline:on?'#16a85f':'transparent'}; });
 
     // portfolio summary
-    const nw=this.netWorth(), pl=this.allTimePL(), plUp=pl>=0;
+    const nw=this.netWorth(), pl=this.tradingPnl(), plUp=pl>=0;
     const cost=this.costBasis(), hv=this.holdingsValue();
     const nwHistPts=(()=>{ // synthetic net-worth sparkline
       const pts=[]; for(let i=0;i<20;i++){ const t=i/19; const v=10000+(nw-10000)*Math.pow(t,1.1)+Math.sin(i)*40; pts.push(v);} 
@@ -3692,11 +3704,11 @@ Yan Diomande|RB Leipzig|CM|21|4
     // ---- leaderboard ----
     const lb=this.leaderboardData(); const medals={1:'🥇',2:'🥈',3:'🥉'};
     const avatarColors=['#16a85f','#0c1f15','#2a6fdb','#b8543a','#7a4fbf','#c98a1e','#1f8a5b','#4a5568'];
-    const leaderboard=lb.map((x,i)=>{ const rk=i+1; const profit=(x.netWorth||10000)-10000; const up=profit>=0;
+    const leaderboard=lb.map((x,i)=>{ const rk=i+1; const profit=x.netWorth||0; const up=profit>=0;
       const initials=x.me?'YOU':x.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       return { medal:medals[rk]||String(rk), rankColor:rk<=3?'#16201a':'#aab2ab', name:x.me?(x.name+' (you)'):x.name,
         initials, avatarBg:x.me?'#16a85f':avatarColors[this.hash(x.name)%avatarColors.length],
-        netWorth:this.money0(x.netWorth||10000), profit:this.money0(Math.abs(profit)), profitArrow:up?'▲':'▼', profitColor:up?GREEN:RED,
+        netWorth:this.money0(Math.abs(profit)), profit:this.money0(Math.abs(profit)), profitArrow:up?'▲':'▼', profitColor:up?GREEN:RED,
         rowBg:x.me?'#f0faf4':'transparent',
         onClick: x.me ? ()=>this.openProfileView(null) : ()=>this.setState({profileViewName:x.name,view:'profile'}) }; });
     const lbUsername=this.loadUsername();
