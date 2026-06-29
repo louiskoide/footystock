@@ -279,6 +279,30 @@
             <input type="number" value="{{ filterPriceMax }}" onInput="{{ onFilterPriceMax }}" placeholder="Max" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:82px;outline:none;color:#16201a;background:#fff" />
           </div>
         </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Volatility (%)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filterVolMin }}" onInput="{{ onFilterVolMin }}" placeholder="Min" min="0" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filterVolMax }}" onInput="{{ onFilterVolMax }}" placeholder="Max" min="0" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">1D change (%)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filter1dMin }}" onInput="{{ onFilter1dMin }}" placeholder="Min" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filter1dMax }}" onInput="{{ onFilter1dMax }}" placeholder="Max" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">7D change (%)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filter7dMin }}" onInput="{{ onFilter7dMin }}" placeholder="Min" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filter7dMax }}" onInput="{{ onFilter7dMax }}" placeholder="Max" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
         <sc-if value="{{ hasActiveFilters }}">
           <button onClick="{{ clearFilters }}" style="font:600 13px 'Hanken Grotesk';background:none;border:1px solid #e1e4dd;color:#8a938c;padding:8px 14px;border-radius:8px;cursor:pointer;align-self:flex-end">Clear all</button>
         </sc-if>
@@ -901,6 +925,7 @@ class Component extends DCLogic {
       view:'market', selectedId:null, selectedArticleId:null, league:'ALL', search:'', range:90,
       sortKey:'rank', sortDir:'asc',
       filterOpen:false, filterNation:'ALL', filterTeam:'ALL', filterAgeMin:'', filterAgeMax:'', filterPriceMin:'', filterPriceMax:'',
+      filterVolMin:'', filterVolMax:'', filter1dMin:'', filter1dMax:'', filter7dMin:'', filter7dMax:'',
       chartHoverIdx:null, chartDragStart:null,
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
       showReward:false, tick:0, pendingOrders:[], ready:false, recapDismissed:false,
@@ -2554,7 +2579,13 @@ Yan Diomande|RB Leipzig|CM|21|4
   onFilterAgeMax(e){ this.setState({filterAgeMax:e.target.value}); }
   onFilterPriceMin(e){ this.setState({filterPriceMin:e.target.value}); }
   onFilterPriceMax(e){ this.setState({filterPriceMax:e.target.value}); }
-  clearFilters(){ this.setState({filterNation:'ALL',filterTeam:'ALL',filterAgeMin:'',filterAgeMax:'',filterPriceMin:'',filterPriceMax:'',league:'ALL'}); }
+  onFilterVolMin(e){ this.setState({filterVolMin:e.target.value}); }
+  onFilterVolMax(e){ this.setState({filterVolMax:e.target.value}); }
+  onFilter1dMin(e){ this.setState({filter1dMin:e.target.value}); }
+  onFilter1dMax(e){ this.setState({filter1dMax:e.target.value}); }
+  onFilter7dMin(e){ this.setState({filter7dMin:e.target.value}); }
+  onFilter7dMax(e){ this.setState({filter7dMax:e.target.value}); }
+  clearFilters(){ this.setState({filterNation:'ALL',filterTeam:'ALL',filterAgeMin:'',filterAgeMax:'',filterPriceMin:'',filterPriceMax:'',filterVolMin:'',filterVolMax:'',filter1dMin:'',filter1dMax:'',filter7dMin:'',filter7dMax:'',league:'ALL'}); }
   setSort(key){
     const S=this.state;
     if(S.sortKey===key){ this.setState({sortDir:S.sortDir==='asc'?'desc':'asc'}); return; }
@@ -2809,6 +2840,12 @@ Yan Diomande|RB Leipzig|CM|21|4
     const fAgeMax=S.filterAgeMax!==''?parseInt(S.filterAgeMax):null;
     const fPrMin=S.filterPriceMin!==''?parseFloat(S.filterPriceMin):null;
     const fPrMax=S.filterPriceMax!==''?parseFloat(S.filterPriceMax):null;
+    const fVolMin=S.filterVolMin!==''?parseFloat(S.filterVolMin):null;
+    const fVolMax=S.filterVolMax!==''?parseFloat(S.filterVolMax):null;
+    const f1dMin=S.filter1dMin!==''?parseFloat(S.filter1dMin):null;
+    const f1dMax=S.filter1dMax!==''?parseFloat(S.filter1dMax):null;
+    const f7dMin=S.filter7dMin!==''?parseFloat(S.filter7dMin):null;
+    const f7dMax=S.filter7dMax!==''?parseFloat(S.filter7dMax):null;
     let list=DB.filter(p=>{
       if(S.league!=='ALL' && p.lg!==S.league) return false;
       if(S.filterNation!=='ALL' && p.nation!==S.filterNation) return false;
@@ -2816,6 +2853,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       if(fAgeMin!==null && p.age<fAgeMin) return false;
       if(fAgeMax!==null && p.age>fAgeMax) return false;
       if(fPrMin!==null || fPrMax!==null){ const pr=this.curPrice(p); if(fPrMin!==null && pr<fPrMin) return false; if(fPrMax!==null && pr>fPrMax) return false; }
+      if(fVolMin!==null || fVolMax!==null){ const {volPct}=riskStats(p); if(fVolMin!==null && volPct<fVolMin) return false; if(fVolMax!==null && volPct>fVolMax) return false; }
+      if(f1dMin!==null || f1dMax!==null){ const hN=p.hist.length; const dayChg=p.hist[hN-2]?((p.hist[hN-1]-p.hist[hN-2])/p.hist[hN-2])*100:0; if(f1dMin!==null && dayChg<f1dMin) return false; if(f1dMax!==null && dayChg>f1dMax) return false; }
+      if(f7dMin!==null || f7dMax!==null){ if(f7dMin!==null && p.change7d<f7dMin) return false; if(f7dMax!==null && p.change7d>f7dMax) return false; }
       if(q && !(fold(p.name).includes(q)||fold(p.team).includes(q))) return false;
       return true;
     });
@@ -2829,7 +2869,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     const teamSrcDB=S.filterNation==='ALL'?DB:DB.filter(p=>p.nation===S.filterNation);
     const allTeams=[...new Set(teamSrcDB.map(p=>p.team))].sort();
     const teamOptions=[{val:'ALL',label:'All Clubs',selected:sel(S.filterTeam==='ALL')},...allTeams.map(t=>({val:t,label:t,selected:sel(S.filterTeam===t)}))];
-    const activeFilterCount=[S.filterNation!=='ALL',S.filterTeam!=='ALL',S.league!=='ALL',S.filterAgeMin!=='',S.filterAgeMax!=='',S.filterPriceMin!=='',S.filterPriceMax!==''].filter(Boolean).length;
+    const activeFilterCount=[S.filterNation!=='ALL',S.filterTeam!=='ALL',S.league!=='ALL',S.filterAgeMin!=='',S.filterAgeMax!=='',S.filterPriceMin!=='',S.filterPriceMax!=='',S.filterVolMin!=='',S.filterVolMax!=='',S.filter1dMin!=='',S.filter1dMax!=='',S.filter7dMin!=='',S.filter7dMax!==''].filter(Boolean).length;
     const hasActiveFilters=activeFilterCount>0;
     const marketList=list.map(decorate);
     const sortFieldMap={name:'name',price:'priceNum',day:'dayChgNum',week:'wkChgNum',vol:'volNum',range:'hiAllNum',rank:'rank'};
@@ -3212,6 +3252,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       filterNation:S.filterNation, filterTeam:S.filterTeam,
       filterAgeMin:S.filterAgeMin, filterAgeMax:S.filterAgeMax,
       filterPriceMin:S.filterPriceMin, filterPriceMax:S.filterPriceMax,
+      filterVolMin:S.filterVolMin, filterVolMax:S.filterVolMax,
+      filter1dMin:S.filter1dMin, filter1dMax:S.filter1dMax,
+      filter7dMin:S.filter7dMin, filter7dMax:S.filter7dMax,
       onFilterNationChange:(e)=>this.onFilterNationChange(e),
       onFilterTeamChange:(e)=>this.onFilterTeamChange(e),
       onFilterAgeMin:(e)=>this.onFilterAgeMin(e), onFilterAgeMax:(e)=>this.onFilterAgeMax(e),
