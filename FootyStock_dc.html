@@ -2652,20 +2652,8 @@ Yan Diomande|RB Leipzig|CM|21|4
         atWC=true; wcStatus=wcEff.status+' (squad — no minutes yet)';
       }
       const newsDelta = news?news.bias:0;
-      // change7d for TABLE SORTING / market columns: event-delta sum + day-seeded
-      // wobble. This number changes each calendar day and reflects real performance,
-      // so the leaderboard/market table actually shuffles. It does NOT have to match
-      // the chart — histChg7d (below, from rHist) is used for the player-detail badge.
-      let change7d, change30d;
-      const rDay=this.mulberry(this.hash(id+':base:'+dayKey));
-      if(atWC||news){
-        change7d=sum(events.filter(e=>e.offset<=8).map(e=>e.delta))+((news&&offOf(news.d)<=8)?newsDelta:0);
-        change30d=sum(events.map(e=>e.delta))+newsDelta;
-      } else { change7d=(rDay()-0.5)*3.5; change30d=(rDay()-0.5)*7; }
-      const dwR=this.mulberry(this.hash(id+':dw:'+dayKey));
-      const dailyWobble7d=(dwR()-0.5)*2*(atWC?4.0:2.0);
-      change7d=parseFloat((change7d+dailyWobble7d).toFixed(1));
-      change30d=parseFloat(change30d.toFixed(1));
+      // change30d placeholder — will be overwritten from rHist below
+      let change30d = parseFloat((sum(events.map(e=>e.delta))+newsDelta).toFixed(1));
       // WC form streak (consecutive most-recent matches rating >= 7.4) — kept
       // purely as a display fact ("🔥 3-match streak"), no longer the main
       // driver of formSig (see below).
@@ -2836,11 +2824,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       const rHist = this.priceHistory(id, wobbledPrice, dayKey);
       const RN = rHist.length;
 
-      // histChg7d: chart-accurate 7D change from stored price history — used only
-      // on the player detail badge so badge matches the chart. change7d (above)
-      // drives the market table columns and sorting.
+      // All % changes come from rHist so they always match the chart.
       const realDays = (this._histStore?.[id]?.r?.length) || 1;
-      const histChg7d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-8)])/rHist[Math.max(0,RN-8)])*100).toFixed(1));
+      const change7d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-8)])/rHist[Math.max(0,RN-8)])*100).toFixed(1));
       if (realDays >= 31)
         change30d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-31)])/rHist[Math.max(0,RN-31)])*100).toFixed(1));
 
@@ -2849,7 +2835,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // recent rather than duplicated for every routine match.
       const playerArticles = D.ARTICLES.filter(a=>a.refs.includes(id));
       db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price:rHist[RN-1],anchor,
-        change7d,histChg7d,change30d,hist:rHist,events,streakLen,atWC,wcStatus,nation,news,mood,
+        change7d,change30d,hist:rHist,events,streakLen,atWC,wcStatus,nation,news,mood,
         signals:{fotmob,form:formSig,twitter:moodSig,transfermarkt:transferSig}, avgR,
         tmVal,tmTrendUp,articles:playerArticles });
     }
@@ -3563,7 +3549,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     if(S.view==='detail' && S.selectedId){
       const p=this.byId(S.selectedId);
       if(p){
-        const price=this.curPrice(p); const up7=(p.histChg7d??p.change7d)>=0; const cc=up7?GREEN:RED;
+        const price=this.curPrice(p); const up7=p.change7d>=0; const cc=up7?GREEN:RED;
         const today=new Date();
         const N=p.hist.length;
         // Real kickoff-relative minute marks (goals/cards), pulled from
@@ -3768,7 +3754,7 @@ Yan Diomande|RB Leipzig|CM|21|4
 
         d={ name:p.name,team:p.team,pos:p.pos,age:p.age,lg:p.abbr,price:this.money(price),
           relatedArticles, hasRelatedArticles:relatedArticles.length>0, noRelatedArticles:relatedArticles.length===0,
-          wkAbs:Math.abs(p.histChg7d??p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',wkColor:cc,wkBg:up7?GBG:RBG,
+          wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',wkColor:cc,wkBg:up7?GBG:RBG,
           volDisplay:dVolPct.toFixed(1)+'%',rangeDisplay:this.money(dLoAll)+' – '+this.money(dHiAll),
           chartColor:cc,linePath,areaPath,gridY,markers,axisLabels,signals,events:evDisp,driverSummary,
           hover,dragSel,tooltip,onChartMove,onChartDown,onChartUp,onChartLeave,
