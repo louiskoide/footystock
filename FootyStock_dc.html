@@ -2031,16 +2031,16 @@ Yan Diomande|RB Leipzig|CM|21|4
       // matches means no more spotlight. This is a hype-axis effect, not a
       // performance one, so it's applied here rather than to fotmob/formSig.
       const eliminated = atWC && !!wcEff && /^Eliminated/.test(wcEff.status);
-      const moodSig=Math.max(6,Math.min(99,(46+hypeRaw*1.4+(stars?14:0)) - (eliminated?30:0)));
+      const moodSig=Math.max(6,Math.min(99,(46+hypeRaw*0.75+(stars?14:0)) - (eliminated?30:0)));
       const tmVal=(mv!=null)?mv:Math.round((tierBase[tier]*(0.9+0.5*r())) * (youth?1.18:1) /10)*5;
       const tmTrendUp = change30d>=0;
-      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*1.4));
+      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*0.75));
 
       // ---- price = anchor + performance + form + hype, in log space (see
       // pricing-model.md). A player with no real signal trades flat at
       // the anchor; real output and real news move it, not raw market value.
       const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
-      const wPerf=0.5, wForm=0.3, wHype=0.35;
+      const wPerf=0.5, wForm=0.3, wHype=0.25;
       // perf/form only apply when we actually have a RATED appearance —
       // "no data" must stay neutral (0), never read as "bad". Note `atWC` is
       // also true for squad-confirmed players with no minutes yet (the inSquad
