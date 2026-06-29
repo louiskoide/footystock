@@ -897,7 +897,7 @@
 
       <!-- members -->
       <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Members</div>
-      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:30px">
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:28px">
         <sc-for list="{{ clubMembers }}" as="m" hint-placeholder-count="4">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid #f3f4f0;position:relative">
             <div style="display:flex;align-items:center;gap:11px">
@@ -920,6 +920,71 @@
             </sc-if>
           </div>
         </sc-for>
+      </div>
+
+      <!-- club chat -->
+      <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Club chat</div>
+      <!-- messages -->
+      <div id="club-chat-scroll" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:16px;min-height:180px;max-height:420px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:14px">
+        <sc-if value="{{ clubMessages.length === 0 }}">
+          <div style="text-align:center;padding:40px 0;font:500 13px 'Hanken Grotesk';color:#b0b8b4">No messages yet. Say hello!</div>
+        </sc-if>
+        <sc-for list="{{ clubMessages }}" as="msg" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:{{ msg.isMe ? 'row-reverse' : 'row' }};align-items:flex-end;gap:8px">
+            <!-- avatar (others only) -->
+            <sc-if value="{{ !msg.isMe }}">
+              <div style="width:28px;height:28px;border-radius:999px;background:{{ msg.avatarBg }};color:#fff;display:flex;align-items:center;justify-content:center;font:700 11px 'Space Grotesk';flex-shrink:0">{{ msg.initials }}</div>
+            </sc-if>
+            <div style="max-width:80%;display:flex;flex-direction:column;gap:3px;align-items:{{ msg.isMe ? 'flex-end' : 'flex-start' }}">
+              <!-- name + time (others only) -->
+              <sc-if value="{{ !msg.isMe }}">
+                <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-left:2px">{{ msg.name }} · {{ msg.timeStr }}</span>
+              </sc-if>
+              <!-- text bubble -->
+              <sc-if value="{{ msg.isText }}">
+                <div style="background:{{ msg.isMe ? '#16a85f' : '#f3f5f1' }};color:{{ msg.isMe ? '#fff' : '#16201a' }};border-radius:{{ msg.isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px' }};padding:10px 14px;font:500 14px 'Hanken Grotesk';line-height:1.45;word-break:break-word">{{ msg.body }}</div>
+              </sc-if>
+              <!-- portfolio card -->
+              <sc-if value="{{ msg.isPortfolio }}">
+                <div style="background:{{ msg.isMe ? '#0c1f15' : '#f3f5f1' }};border-radius:14px;padding:14px 16px;min-width:220px">
+                  <div style="font:700 12px 'Hanken Grotesk';letter-spacing:.05em;text-transform:uppercase;color:{{ msg.isMe ? '#3ddc8a' : '#16a85f' }};margin-bottom:8px">📊 Portfolio share</div>
+                  <sc-for list="{{ msg.portfolio.holdings }}" as="h" hint-placeholder-count="3">
+                    <div style="display:flex;justify-content:space-between;font:500 13px 'Hanken Grotesk';color:{{ msg.isMe ? '#c5d9cc' : '#46504a' }};padding:2px 0">
+                      <span>{{ h.name }} <span style="color:{{ msg.isMe ? '#7fb89a' : '#8a938c' }}">×{{ h.qty }}</span></span>
+                      <span style="font-weight:600">${{ h.price }}</span>
+                    </div>
+                  </sc-for>
+                  <div style="border-top:1px solid {{ msg.isMe ? 'rgba(255,255,255,.12)' : '#e8eae4' }};margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font:600 13px 'Hanken Grotesk';color:{{ msg.isMe ? '#fff' : '#16201a' }}">
+                    <span>Net worth</span>
+                    <span>${{ msg.portfolio.totalValue.toFixed(0) }}</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';color:{{ msg.portfolio.pnl >= 0 ? '#3ddc8a' : '#ff5d5d' }};margin-top:3px">
+                    <span>P&amp;L</span>
+                    <span>{{ msg.portfolio.pnl >= 0 ? '+' : '' }}${{ msg.portfolio.pnl.toFixed(2) }}</span>
+                  </div>
+                </div>
+              </sc-if>
+              <!-- trade card -->
+              <sc-if value="{{ msg.isTrade }}">
+                <div onClick="{{ msg.onViewPlayer }}" style="background:{{ msg.isMe ? '#0c1f15' : '#f3f5f1' }};border-radius:14px;padding:12px 16px;min-width:180px;cursor:pointer">
+                  <div style="font:700 12px 'Hanken Grotesk';letter-spacing:.05em;text-transform:uppercase;color:{{ msg.trade.action === 'buy' ? '#3ddc8a' : '#ff5d5d' }};margin-bottom:4px">{{ msg.trade.action === 'buy' ? '🟢 Bought' : msg.trade.action === 'sell' ? '🔴 Sold' : msg.trade.action === 'hatewatch' ? '👁 Shorting' : '✅ Covered' }}</div>
+                  <div style="font:600 14px 'Hanken Grotesk';color:{{ msg.isMe ? '#eaf3ed' : '#16201a' }}">{{ msg.trade.player }}</div>
+                  <div style="font:500 12px 'Hanken Grotesk';color:{{ msg.isMe ? '#7fb89a' : '#8a938c' }};margin-top:2px">{{ msg.trade.qty }}× @ ${{ msg.trade.price }}</div>
+                </div>
+              </sc-if>
+              <!-- timestamp (own messages) -->
+              <sc-if value="{{ msg.isMe }}">
+                <span style="font:500 11px 'Hanken Grotesk';color:#a7afa7">{{ msg.timeStr }}</span>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <!-- input row -->
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:30px">
+        <button onClick="{{ sharePortfolio }}" style="flex-shrink:0;background:#eef1ec;border:none;color:#16a85f;font:600 12px 'Hanken Grotesk';padding:10px 13px;border-radius:12px;cursor:pointer;white-space:nowrap">📊 Share portfolio</button>
+        <input id="club-chat-input" value="{{ clubChatInput }}" onInput="{{ onClubChatInput }}" onKeydown="{{ onClubChatKeydown }}" placeholder="Message your club…" style="flex:1;border:1px solid #e1e4dd;border-radius:12px;padding:10px 14px;font:500 14px 'Hanken Grotesk';outline:none;background:#fff" />
+        <button onClick="{{ submitClubChat }}" disabled="{{ clubChatSending }}" style="flex-shrink:0;background:#16a85f;border:none;color:#fff;font:700 13px 'Hanken Grotesk';padding:10px 16px;border-radius:12px;cursor:pointer">Send</button>
       </div>
     </sc-if>
 
@@ -1261,11 +1326,23 @@ create table if not exists comp_portfolios (
   unique(competition_id, user_id)
 );
 
+create table if not exists club_messages (
+  id uuid default gen_random_uuid() primary key,
+  club_id uuid references clubs(id) on delete cascade not null,
+  user_id text not null,
+  display_name text not null,
+  type text default 'text',
+  body text,
+  payload jsonb,
+  created_at timestamptz default now()
+);
+
 -- Allow public access (entertainment-only app, no real money)
 alter table clubs disable row level security;
 alter table club_members disable row level security;
 alter table competitions disable row level security;
 alter table comp_portfolios disable row level security;
+alter table club_messages disable row level security;
 */
 
 const SUPABASE_URL='https://pwlszzrvwhflijbjwnnf.supabase.co';
@@ -1303,6 +1380,7 @@ class Component extends DCLogic {
       clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
       clubJoinCode: '', clubJoinSearch: '',
       clubError: '', clubSuccess: '',
+      clubMessages: [], clubChatInput: '', clubChatSending: false,
     };
   }
   componentDidMount(){
@@ -1376,6 +1454,7 @@ class Component extends DCLogic {
     // Poll club data every 30s so new members, ownership changes, and
     // removals appear without a manual refresh.
     this.clubTimer = setInterval(()=>{ if(this.state.myClub) this.loadMyClub(); }, 30000);
+    this.chatTimer = setInterval(()=>{ if(this.state.myClub && this.state.view==='clubs') this.loadClubMessages(); }, 15000);
     this.timer = setInterval(()=>{
       const DB = this.getDB();
       // orders fill at the next price tick, not the price shown when confirmed —
@@ -3002,7 +3081,7 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
 
   // ---------- actions ----------
-  nav(v){ this.setState({view:v,selectedArticleId:null}); if(v==='clubs') this.loadMyClub(); }
+  nav(v){ this.setState({view:v,selectedArticleId:null}); if(v==='clubs'){ this.loadMyClub(); this.loadClubMessages(); } }
   goHome(){ this.setState({view:'market'}); }
   openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90,comments:[],commentsLoading:true,commentsPlayerId:id,commentInput:'',commentReplyTo:null,commentReplyInput:''}); window.scrollTo(0,0); this.fetchComments(id); }
   goBack(){ this.setState({view:'market'}); }
@@ -3112,6 +3191,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       // market price (same signal as virtual agents). Fire-and-forget: if the
       // worker is down, the trade still executes locally.
       if(this._liveWorkerBase){ fetch(this._liveWorkerBase+'/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:order.id,side:order.side})}).catch(()=>{}); }
+      // Share to club chat (fire-and-forget).
+      const p2=this.byId(order.id);
+      if(p2 && this.state.myClub){ this.shareTradeInChat(order.side,p2.name,order.id,order.qty,parseFloat(this.curPrice(p2).toFixed(2))); }
       didFill=true;
     }
     this.setState({holdings,txns,cash,shorts,pendingOrders:[]},()=>{ this.persist(); if(didFill) this.submitScore(); });
@@ -3263,7 +3345,46 @@ Yan Diomande|RB Leipzig|CM|21|4
         Supa.get('club_members','club_id=eq.'+clubId+'&order=joined_at.asc'),
       ]);
       this.setState({myClub:clubs[0]||null,clubMembers:members,clubLoading:false});
+      this.loadClubMessages();
     }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  async loadClubMessages(){
+    const clubId=this.state.myClub?.id; if(!clubId) return;
+    try{
+      const msgs=await Supa.get('club_messages','club_id=eq.'+clubId+'&order=created_at.asc&limit=100');
+      this.setState({clubMessages:msgs});
+      setTimeout(()=>{ const el=document.getElementById('club-chat-scroll'); if(el) el.scrollTop=el.scrollHeight; },50);
+    }catch(e){}
+  }
+
+  async sendChatMessage(type='text', payload=null){
+    const clubId=this.state.myClub?.id; if(!clubId) return;
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    const body=type==='text'?(this.state.clubChatInput||'').trim():'';
+    if(type==='text' && !body) return;
+    this.setState({clubChatSending:true,clubChatInput:''});
+    try{
+      await Supa.post('club_messages',{club_id:clubId,user_id:uid,display_name:dname,type,body,payload});
+      await this.loadClubMessages();
+    }catch(e){}
+    this.setState({clubChatSending:false});
+  }
+
+  sharePortfolio(){
+    const DB=this.getDB(); const S=this.state;
+    const holdings=Object.entries(S.holdings||{}).map(([id,h])=>{
+      const p=DB.find(x=>x.id===id); if(!p||!h.qty) return null;
+      return {id,name:p.name,team:p.team,qty:h.qty,price:parseFloat(this.curPrice(p).toFixed(2))};
+    }).filter(Boolean);
+    const totalValue=holdings.reduce((s,h)=>s+h.qty*h.price,0)+(S.cash||0);
+    const pnl=this.tradingPnl();
+    this.sendChatMessage('portfolio',{holdings,cash:S.cash||0,totalValue,pnl});
+  }
+
+  shareTradeInChat(action,playerName,playerId,qty,price){
+    this.sendChatMessage('trade',{action,player:playerName,playerId,qty,price});
   }
 
   async createClub(){
@@ -4068,6 +4189,30 @@ Yan Diomande|RB Leipzig|CM|21|4
       submitJoinClub:()=>this.joinClubByCode(),
       leaveClub:()=>this.leaveClub(),
       copyInviteCode:()=>{if(S.myClub)navigator.clipboard.writeText(S.myClub.invite_code).then(()=>this.setState({clubSuccess:'Invite code copied!'}));},
+      clubChatInput:S.clubChatInput,
+      onClubChatInput:(e)=>this.setState({clubChatInput:e.target.value}),
+      onClubChatKeydown:(e)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();this.sendChatMessage();}},
+      submitClubChat:()=>this.sendChatMessage(),
+      sharePortfolio:()=>this.sharePortfolio(),
+      clubChatSending:S.clubChatSending,
+      clubMessages:(()=>{
+        const uid=this.getUserId();
+        return (S.clubMessages||[]).map(m=>{
+          const isMe=m.user_id===uid;
+          const initials=(m.display_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+          const avatarColors=['#e05c5c','#e0a85c','#5c9ee0','#a85ce0','#5ce0b8','#e05ca8','#5ce05c'];
+          const avatarBg=avatarColors[this.hash(m.user_id)%avatarColors.length];
+          const ts=new Date(m.created_at);
+          const timeStr=ts.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+          const portfolio=m.type==='portfolio'?m.payload:null;
+          const trade=m.type==='trade'?m.payload:null;
+          return {id:m.id,isMe,name:m.display_name,initials,avatarBg,body:m.body,type:m.type,
+            portfolio,trade,timeStr,
+            isText:m.type==='text',isPortfolio:m.type==='portfolio',isTrade:m.type==='trade',
+            onViewPlayer:trade?()=>this.openPlayer(trade.playerId):()=>{},
+          };
+        });
+      })(),
     };
   }
 }
