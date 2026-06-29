@@ -3526,11 +3526,12 @@ Yan Diomande|RB Leipzig|CM|21|4
     if(!email.includes('@')){ this.setState({loginError:'Enter a valid email address.'}); return; }
     if(!name.trim()){ this.setState({loginError:'Enter a display name.'}); return; }
     if(name.trim().length<2){ this.setState({loginError:'Display name must be at least 2 characters.'}); return; }
-    // Check username uniqueness
+    // Check username uniqueness (skip empty/wiped names)
     try{
-      const existing=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name.trim())+'&select=token');
+      const existing=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name.trim())+'&select=token,name');
       const myToken=this.loadToken();
-      if(existing&&existing.length&&existing[0].token!==myToken){ this.setState({loginError:'That display name is taken. Choose another.'}); return; }
+      const conflict=existing&&existing.find(r=>r.name&&r.token!==myToken);
+      if(conflict){ this.setState({loginError:'That display name is taken. Choose another.'}); return; }
     }catch(e){}
     this.setState({loginError:'',loginSending:true});
     try{
