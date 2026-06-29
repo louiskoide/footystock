@@ -1695,7 +1695,8 @@ Yan Diomande|RB Leipzig|CM|21|4
       'erling-haaland-man-city':NW('MATCH RECAP','Haaland’s brace against Senegal finally delivers his first World Cup goals, ending years of tournament frustration with a bang',5.0,'06-17'),
       'matheus-cunha-man-utd':NW('MATCH RECAP','Cunha’s first-half brace against Haiti has reporters noting his third goal of the tournament and his growing influence for Brazil',4.0,'06-20'),
       'jamal-musiala-bayern':NW('MATCH RECAP','Germany’s 7-1 demolition of Curaçao was one of the tournament’s most one-sided scorelines, with Musiala among the standout performers',4.0,'06-16'),
-      'mohammed-kudus-tottenham':NW('MATCH RECAP','Kudus was an unused substitute as Ghana ground out a 0-0 draw with England to advance, with Lawrence Ati-Zigi the standout performer pulling off a series of sharp saves',2.0,'06-24')
+      'mohammed-kudus-tottenham':NW('MATCH RECAP','Kudus was an unused substitute as Ghana ground out a 0-0 draw with England to advance, with Lawrence Ati-Zigi the standout performer pulling off a series of sharp saves',2.0,'06-24'),
+      'yan-diomande-rb-leipzig':NW('TRANSFER','Verbal agreement reached with PSG — Diomande set to become one of the most expensive midfielders in history',9.5,'06-29')
     };
     const MOOD={
       'kylian-mbappe-real-madrid':'\u201cMr World Cup\u201d trending after the Iraq brace',
@@ -2001,16 +2002,16 @@ Yan Diomande|RB Leipzig|CM|21|4
       // matches means no more spotlight. This is a hype-axis effect, not a
       // performance one, so it's applied here rather than to fotmob/formSig.
       const eliminated = atWC && !!wcEff && /^Eliminated/.test(wcEff.status);
-      const moodSig=Math.max(6,Math.min(99,(46+hypeRaw*0.6+(stars?14:0)) - (eliminated?30:0)));
+      const moodSig=Math.max(6,Math.min(99,(46+hypeRaw*1.4+(stars?14:0)) - (eliminated?30:0)));
       const tmVal=(mv!=null)?mv:Math.round((tierBase[tier]*(0.9+0.5*r())) * (youth?1.18:1) /10)*5;
       const tmTrendUp = change30d>=0;
-      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*0.6));
+      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*1.4));
 
       // ---- price = anchor + performance + form + hype, in log space (see
       // pricing-model.md). A player with no real signal trades flat at
       // the anchor; real output and real news move it, not raw market value.
       const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
-      const wPerf=0.5, wForm=0.3, wHype=0.2;
+      const wPerf=0.5, wForm=0.3, wHype=0.35;
       // perf/form only apply when we actually have a RATED appearance —
       // "no data" must stay neutral (0), never read as "bad". Note `atWC` is
       // also true for squad-confirmed players with no minutes yet (the inSquad
@@ -2033,7 +2034,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // fair value, so genuine hype bubbles and sell-offs are visible but
       // fundamentals still anchor the price.
       const demandScore = (live && live.demand) ? (live.demand[id] || 0) : 0;
-      const price = fairValue * Math.exp(0.15 * demandScore);
+      const price = fairValue * Math.exp(0.28 * demandScore);
 
       // history 90d ending at current price. A player with a real signal
       // (WC performance or curated news) actually drifted to get here, so
@@ -2064,7 +2065,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // (same 0.6 multiplier) instead of quietly burying ~75% of it in a
       // multi-day ease-in the live chart never reflected.
       for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N){ e._impactPct=0; continue; }
-        const bump=(e.delta/100)*price*0.6, ramp=1, halfLife=6;
+        const bump=(e.delta/100)*price*0.9, ramp=1, halfLife=6;
         for(let j=idx;j<N;j++){ const daysIn=j-idx+1; // +1: the match day itself is already day 1, not day 0 — otherwise a same-day event (idx===N-1) eases in at 0 and never visibly moves today's price.
           const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
           const decay=Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);

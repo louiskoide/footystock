@@ -10,8 +10,8 @@
 //
 // The frontend applies it as: price = fairValue * exp(0.15 * demand)
 
-const DECAY_HALF_LIFE_MS = 4 * 60 * 60 * 1000; // pressure fades in ~4h
-const MOMENTUM_IMPULSE   = 0.008; // max agent push per tick from match quality
+const DECAY_HALF_LIFE_MS = 10 * 60 * 60 * 1000; // pressure fades in ~10h
+const MOMENTUM_IMPULSE   = 0.012; // max agent push per tick from match quality
 const NOISE_IMPULSE      = 0.003; // random walk per tick for quiet players
 
 // Fast deterministic hash: uint32 -> [0, 1)
@@ -65,6 +65,6 @@ export function tickDemand(state, crosswalk, elapsedMs) {
 // one user dominate a deep market.
 export function recordTrade(state, id, side) {
   if (!state.demand) state.demand = {};
-  const impulse = side === 'buy' ? 0.04 : -0.04;
+  const impulse = side === 'buy' ? 0.12 : -0.12;
   state.demand[id] = Math.max(-1, Math.min(1, (state.demand[id] || 0) + impulse));
 }
