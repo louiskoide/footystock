@@ -3093,21 +3093,6 @@ Yan Diomande|RB Leipzig|CM|21|4
       // realDays: how many real (non-synthetic) closes are stored for this player.
       const realDays = (this._histStore?.[id]?.r?.length) || 1;
 
-      // Recompute each event's impact from rHist (the actual chart data) so
-      // the event card % matches what the chart visually shows. For a match at
-      // offset K, compare rHist[RN-1-K] (match day close) vs rHist[RN-2-K]
-      // (day before). Falls back to the model-computed _impactPct if history
-      // is too short (e.g. first visit).
-      for(const e of events){
-        const k = e.offset;
-        const matchIdx = RN-1-k;
-        const prevIdx  = RN-2-k;
-        if(matchIdx>0 && prevIdx>=0 && rHist[prevIdx]>0){
-          e._impactPct = ((rHist[matchIdx]-rHist[prevIdx])/rHist[prevIdx])*100;
-        }
-        // else keep the model-computed _impactPct from the bump loop above
-      }
-
       // Articles mentioning this player — only elite/notable performances get
       // a writeup (see DATA().ARTICLES), shown under the player page when
       // recent rather than duplicated for every routine match.
