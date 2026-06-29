@@ -530,6 +530,91 @@
           </sc-for>
         </div>
         </sc-if>
+
+        <!-- discussion / comments -->
+        <div class="fs-card-pad" style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px 26px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div style="font:700 16px 'Space Grotesk';letter-spacing:-.01em">Discussion <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">{{ cmtCount }}</span></div>
+            <div style="display:flex;gap:5px">
+              <button onClick="{{ cmtSortTop }}" style="font:600 12px 'Hanken Grotesk';background: {{ cmtSortTopBg }};color: {{ cmtSortTopColor }};border:1px solid {{ cmtSortTopBorder }};padding:6px 12px;border-radius:999px;cursor:pointer">▲ Top</button>
+              <button onClick="{{ cmtSortNew }}" style="font:600 12px 'Hanken Grotesk';background: {{ cmtSortNewBg }};color: {{ cmtSortNewColor }};border:1px solid {{ cmtSortNewBorder }};padding:6px 12px;border-radius:999px;cursor:pointer">🕐 New</button>
+            </div>
+          </div>
+
+          <!-- composer (requires username) -->
+          <sc-if value="{{ cmtHasUser }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #f1f3ef">
+            <textarea onInput="{{ cmtOnInput }}" placeholder="Share your thoughts on this stock…" maxlength="500" rows="3" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;resize:none;line-height:1.5;background:#fafbf8"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:7px">
+              <button onClick="{{ cmtSubmit }}" style="font:600 13px 'Hanken Grotesk';background: {{ cmtSubmitBg }};color:#fff;border:none;padding:9px 18px;border-radius:10px;cursor: {{ cmtSubmitCursor }}">Post</button>
+            </div>
+          </div>
+          </sc-if>
+          <sc-if value="{{ cmtNoUser }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-bottom:18px;padding:12px 14px;background:#f5f6f3;border-radius:10px;font:500 13px 'Hanken Grotesk';color:#8a938c">Set a display name on the <button onClick="{{ goLeaders }}" style="background:none;border:none;padding:0;color:#16a85f;font:600 13px 'Hanken Grotesk';cursor:pointer">Leaderboard</button> tab to join the discussion.</div>
+          </sc-if>
+
+          <!-- loading -->
+          <sc-if value="{{ cmtLoading }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:20px 0;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c">Loading comments…</div>
+          </sc-if>
+
+          <!-- empty -->
+          <sc-if value="{{ cmtEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:16px 0;font:500 13px 'Hanken Grotesk';color:#8a938c">No comments yet. Be the first!</div>
+          </sc-if>
+
+          <!-- comment list -->
+          <sc-for list="{{ cmtList }}" as="c" hint-placeholder-count="3">
+          <div style="padding:14px 0;border-top:1px solid #f1f3ef">
+            <!-- top-level comment -->
+            <div style="display:flex;gap:10px">
+              <div style="width:30px;height:30px;border-radius:999px;background: {{ c.avatarBg }};color:#fff;font:700 11px 'Space Grotesk';display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ c.initials }}</div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <span style="font:700 13px 'Hanken Grotesk'">{{ c.username }}</span>
+                  <span style="font:500 11.5px 'Hanken Grotesk';color:#a7afa7">{{ c.timeAgo }}</span>
+                </div>
+                <div style="font:500 14px 'Hanken Grotesk';color:#1f2a23;line-height:1.55;margin-top:4px;word-break:break-word">{{ c.body }}</div>
+                <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+                  <button onClick="{{ c.upvote }}" style="display:inline-flex;align-items:center;gap:5px;background: {{ c.upvoteBg }};border:1px solid {{ c.upvoteBorder }};border-radius:999px;padding:4px 10px;cursor:pointer;font:600 12px 'Hanken Grotesk';color: {{ c.upvoteColor }}">▲ {{ c.upvotes }}</button>
+                  <button onClick="{{ c.replyToggle }}" style="background:none;border:none;cursor:pointer;font:600 12px 'Hanken Grotesk';color:#8a938c;padding:0">↩ Reply</button>
+                </div>
+
+                <!-- reply composer -->
+                <sc-if value="{{ c.replyOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:10px">
+                  <textarea onInput="{{ c.replyOnInput }}" placeholder="Write a reply…" maxlength="500" rows="2" style="width:100%;box-sizing:border-box;font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 11px;outline:none;color:#16201a;resize:none;line-height:1.5;background:#fafbf8"></textarea>
+                  <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:6px">
+                    <button onClick="{{ c.replyCancel }}" style="font:600 12px 'Hanken Grotesk';background:none;border:1px solid #e1e4dd;color:#8a938c;padding:7px 14px;border-radius:8px;cursor:pointer">Cancel</button>
+                    <button onClick="{{ c.replySubmit }}" style="font:600 12px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:7px 14px;border-radius:8px;cursor:pointer">Reply</button>
+                  </div>
+                </div>
+                </sc-if>
+
+                <!-- replies -->
+                <sc-if value="{{ c.hasReplies }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:12px;padding-left:14px;border-left:2px solid #eef1ec;display:flex;flex-direction:column;gap:10px">
+                  <sc-for list="{{ c.replies }}" as="r" hint-placeholder-count="1">
+                  <div style="display:flex;gap:8px">
+                    <div style="width:24px;height:24px;border-radius:999px;background: {{ r.avatarBg }};color:#fff;font:700 10px 'Space Grotesk';display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ r.initials }}</div>
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                        <span style="font:700 12.5px 'Hanken Grotesk'">{{ r.username }}</span>
+                        <span style="font:500 11px 'Hanken Grotesk';color:#a7afa7">{{ r.timeAgo }}</span>
+                      </div>
+                      <div style="font:500 13.5px 'Hanken Grotesk';color:#1f2a23;line-height:1.5;margin-top:3px;word-break:break-word">{{ r.body }}</div>
+                      <button onClick="{{ r.upvote }}" style="display:inline-flex;align-items:center;gap:5px;background: {{ r.upvoteBg }};border:1px solid {{ r.upvoteBorder }};border-radius:999px;padding:3px 9px;cursor:pointer;font:600 11.5px 'Hanken Grotesk';color: {{ r.upvoteColor }};margin-top:6px">▲ {{ r.upvotes }}</button>
+                    </div>
+                  </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+          </sc-for>
+        </div>
       </div>
 
       <!-- right: trade panel -->
@@ -1209,6 +1294,7 @@ class Component extends DCLogic {
       showReward:false, tick:0, pendingOrders:[], ready:false, recapDismissed:false,
       feedbackOpen:false, feedbackText:'', feedbackName:'', feedbackSending:false, feedbackSent:false, feedbackError:'',
       profileViewName: null,
+      comments:[], commentSort:'top', commentInput:'', commentReplyTo:null, commentReplyInput:'', commentsLoading:false, commentsPlayerId:null,
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
       streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
       joinDate: saved.joinDate, allTimeHigh: saved.allTimeHigh,
@@ -2942,7 +3028,7 @@ Yan Diomande|RB Leipzig|CM|21|4
   // ---------- actions ----------
   nav(v){ this.setState({view:v,selectedArticleId:null}); if(v==='clubs') this.loadMyClub(); }
   goHome(){ this.setState({view:'market'}); }
-  openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90}); window.scrollTo(0,0); }
+  openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90,comments:[],commentsLoading:true,commentsPlayerId:id,commentInput:'',commentReplyTo:null,commentReplyInput:''}); window.scrollTo(0,0); this.fetchComments(id); }
   goBack(){ this.setState({view:'market'}); }
   openArticle(id){ this.setState({view:'articles',selectedArticleId:id}); }
   setLeague(lg){ this.setState({league:lg}); }
@@ -3107,6 +3193,40 @@ Yan Diomande|RB Leipzig|CM|21|4
       streak:S.streak||0, cash:S.cash,
       joinDate:S.joinDate||'—',
     };
+  }
+
+  // ---------- comments ----------
+  // Supabase table setup (run once in Supabase SQL editor):
+  // create table if not exists comments (id uuid default gen_random_uuid() primary key, player_id text not null, token text not null, username text not null, body text not null, upvotes int default 0, parent_id uuid references comments(id) on delete cascade, created_at timestamptz default now());
+  // create index if not exists idx_comments_player on comments(player_id, created_at desc);
+  // alter table comments enable row level security;
+  // create policy "read" on comments for select using (true);
+  // create policy "insert" on comments for insert with check (true);
+  // create policy "upvote" on comments for update using (true);
+  // create or replace function inc_comment_upvote(cid uuid) returns void language sql security definer as $$ update comments set upvotes = upvotes + 1 where id = cid; $$;
+  loadUpvoted(){ try{ return new Set(JSON.parse(localStorage.getItem('fs_upvoted')||'[]')); }catch(e){ return new Set(); } }
+  saveUpvoted(set){ try{ localStorage.setItem('fs_upvoted',JSON.stringify([...set])); }catch(e){} }
+  fetchComments(playerId){
+    if(!this._sbUrl) return;
+    fetch(this._sbUrl.replace('/leaderboard','/comments')+'?player_id=eq.'+encodeURIComponent(playerId)+'&order=created_at.desc&limit=200',{headers:this._sbHdr})
+      .then(r=>r.ok?r.json():[]).then(data=>{ if(this.state.commentsPlayerId===playerId) this.setState({comments:Array.isArray(data)?data:[],commentsLoading:false}); })
+      .catch(()=>{ if(this.state.commentsPlayerId===playerId) this.setState({commentsLoading:false}); });
+  }
+  postComment(playerId, body, parentId){
+    if(!body.trim()||!this._sbUrl) return;
+    const username=this.loadUsername(); if(!username) return;
+    const token=this.loadToken();
+    const payload={player_id:playerId,token,username,body:body.trim().slice(0,500),upvotes:0};
+    if(parentId) payload.parent_id=parentId;
+    fetch(this._sbUrl.replace('/leaderboard','/comments'),{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(payload)})
+      .then(r=>r.ok?r.json():null).then(rows=>{ if(rows&&rows[0]) this.setState(s=>({comments:[rows[0],...s.comments],commentInput:'',commentReplyTo:null,commentReplyInput:''})); })
+      .catch(()=>{});
+  }
+  upvoteComment(commentId){
+    const upvoted=this.loadUpvoted(); if(upvoted.has(commentId)) return;
+    upvoted.add(commentId); this.saveUpvoted(upvoted);
+    this.setState(s=>({comments:s.comments.map(c=>c.id===commentId?{...c,upvotes:(c.upvotes||0)+1}:c)}));
+    fetch(this._sbUrl.replace('/leaderboard','/rpc/inc_comment_upvote'),{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({cid:commentId})}).catch(()=>{});
   }
 
   // ---------- identity (leaderboard) ----------
@@ -3830,6 +3950,47 @@ Yan Diomande|RB Leipzig|CM|21|4
       profileIsOther: S.profileViewName !== null,
       goProfile:()=>this.openProfileView(null),
       closeProfile:()=>this.closeProfileView(),
+      // comments
+      ...(()=>{
+        const upvoted=this.loadUpvoted();
+        const avatarColors=['#16a85f','#0c1f15','#2a6fdb','#b8543a','#7a4fbf','#c98a1e','#1f8a5b','#4a5568'];
+        const cmtAvatarBg=(name)=>avatarColors[this.hash(name||'?')%avatarColors.length];
+        const cmtInitials=(name)=>(name||'?').slice(0,2).toUpperCase();
+        const timeAgo=(iso)=>{ const s=Math.floor((Date.now()-new Date(iso))/1000); if(s<60) return s+'s ago'; if(s<3600) return Math.floor(s/60)+'m ago'; if(s<86400) return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; };
+        const allComments=S.comments||[];
+        const roots=allComments.filter(c=>!c.parent_id);
+        const replies=allComments.filter(c=>!!c.parent_id);
+        const sorted=[...roots].sort(S.commentSort==='top'?(a,b)=>(b.upvotes||0)-(a.upvotes||0):(a,b)=>new Date(b.created_at)-new Date(a.created_at));
+        const lbUsername=this.loadUsername();
+        const cmtVM=(c,isReply)=>{ const voted=upvoted.has(c.id); return {
+          id:c.id, username:c.username, body:c.body, upvotes:c.upvotes||0, timeAgo:timeAgo(c.created_at),
+          avatarBg:cmtAvatarBg(c.username), initials:cmtInitials(c.username),
+          upvoteBg:voted?'#e8f7ef':'transparent', upvoteColor:voted?'#16a85f':'#8a938c', upvoteBorder:voted?'#b6e8cc':'#e1e4dd',
+          upvote:()=>this.upvoteComment(c.id),
+          replyOpen:!isReply&&S.commentReplyTo===c.id,
+          replyToggle:()=>this.setState(st=>({commentReplyTo:st.commentReplyTo===c.id?null:c.id,commentReplyInput:''})),
+          replyCancel:()=>this.setState({commentReplyTo:null,commentReplyInput:''}),
+          replyOnInput:(e)=>this.setState({commentReplyInput:e.target.value}),
+          replySubmit:()=>{ this.postComment(S.commentsPlayerId,S.commentReplyInput,c.id); },
+          replies:!isReply?replies.filter(r=>r.parent_id===c.id).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).map(r=>cmtVM(r,true)):[],
+          hasReplies:!isReply&&replies.filter(r=>r.parent_id===c.id).length>0,
+        };};
+        const cmtList=sorted.map(c=>cmtVM(c,false));
+        const isTop=S.commentSort==='top';
+        return {
+          cmtCount:roots.length?'('+roots.length+')':'',
+          cmtLoading:S.commentsLoading, cmtEmpty:!S.commentsLoading&&cmtList.length===0,
+          cmtList, cmtHasUser:!!lbUsername, cmtNoUser:!lbUsername,
+          cmtOnInput:(e)=>this.setState({commentInput:e.target.value}),
+          cmtSubmit:()=>this.postComment(S.commentsPlayerId,S.commentInput,null),
+          cmtSubmitBg:S.commentInput.trim()?'#16a85f':'#b6c4bb',
+          cmtSubmitCursor:S.commentInput.trim()?'pointer':'not-allowed',
+          cmtSortTop:()=>this.setState({commentSort:'top'}),
+          cmtSortNew:()=>this.setState({commentSort:'new'}),
+          cmtSortTopBg:isTop?'#16201a':'#fff', cmtSortTopColor:isTop?'#fff':'#46504a', cmtSortTopBorder:isTop?'#16201a':'#e3e6e0',
+          cmtSortNewBg:!isTop?'#16201a':'#fff', cmtSortNewColor:!isTop?'#fff':'#46504a', cmtSortNewBorder:!isTop?'#16201a':'#e3e6e0',
+        };
+      })(),
       // trade modal
       tradeOpen:S.tradeOpen, tr, closeTrade:()=>this.closeTrade(), stop:(e)=>this.stop(e), shortsList,hasShorts,noShorts,
       // reward modal
