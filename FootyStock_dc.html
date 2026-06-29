@@ -795,121 +795,21 @@
 
       <!-- members -->
       <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Members</div>
-      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:24px">
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:30px">
         <sc-for list="{{ clubMembers }}" as="m" hint-placeholder-count="4">
           <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid #f3f4f0">
             <div style="display:flex;align-items:center;gap:11px">
-              <div style="width:34px;height:34px;border-radius:999px;background:#eef1ec;display:flex;align-items:center;justify-content:center;font:700 13px 'Space Grotesk';color:#46504a;flex-shrink:0">{{ m.display_name.slice(0,2).toUpperCase() }}</div>
+              <div class="fs-avatar-badge" style="width:34px;height:34px;border-radius:999px;background:{{ m.avatarBg }};color:#fff;display:flex;align-items:center;justify-content:center;font:700 13px 'Space Grotesk';flex-shrink:0">{{ m.initials }}</div>
               <div>
-                <div style="font:600 14px 'Hanken Grotesk'">{{ m.display_name }}</div>
-                <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ myClub.leader_id === m.user_id ? 'Leader' : 'Member' }}</div>
-              </div>
-            </div>
-          </div>
-        </sc-for>
-      </div>
-
-      <!-- competitions -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin:0 2px 14px">
-        <span style="font:700 17px 'Space Grotesk'">Competitions</span>
-        <sc-if value="{{ isMyClubLeader }}">
-          <button onClick="{{ createComp }}" style="font:700 13px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:8px 16px;border-radius:999px;cursor:pointer">+ New</button>
-        </sc-if>
-      </div>
-      <sc-if value="{{ clubComps.length > 0 }}">
-      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
-        <sc-for list="{{ clubComps }}" as="comp" hint-placeholder-count="2">
-          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:18px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
-            <div>
-              <div style="font:700 15px 'Space Grotesk'">{{ comp.name }}</div>
-              <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:3px">{{ comp.timeLeft }}</div>
-            </div>
-            <button onClick="{{ comp.onEnter }}" style="flex-shrink:0;font:700 13px 'Hanken Grotesk';background:{{ comp.isActive ? '#16a85f' : '#eef1ec' }};color:{{ comp.isActive ? '#fff' : '#8a938c' }};border:none;padding:9px 18px;border-radius:999px;cursor:pointer">{{ comp.isActive ? 'Enter' : 'View results' }}</button>
-          </div>
-        </sc-for>
-      </div>
-      </sc-if>
-      <sc-if value="{{ clubComps.length === 0 }}">
-        <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No competitions yet.</div>
-      </sc-if>
-    </sc-if>
-
-    <!-- COMPETITION MODE -->
-    <sc-if value="{{ isClubComp }}">
-      <!-- header bar -->
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;flex-wrap:wrap;gap:10px">
-        <div style="display:flex;align-items:center;gap:12px">
-          <button onClick="{{ exitComp }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back to club</button>
-          <span style="font:700 18px 'Space Grotesk'">{{ activeCompName }}</span>
-          <span style="font:700 10px 'Hanken Grotesk';letter-spacing:.08em;background:#fef3c7;color:#d97706;padding:4px 9px;border-radius:6px;text-transform:uppercase">Competition Mode</span>
-        </div>
-      </div>
-
-      <!-- P&L summary -->
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:20px">
-        <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:16px;padding:18px 20px;color:#eaf3ed">
-          <div style="font:600 11px 'Hanken Grotesk';color:#7fb89a;letter-spacing:.08em;text-transform:uppercase">Portfolio value</div>
-          <div style="font:700 26px 'Space Grotesk';margin-top:4px">{{ compValue }}</div>
-        </div>
-        <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:18px 20px">
-          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">P&amp;L vs 10k start</div>
-          <div style="font:700 26px 'Space Grotesk';margin-top:4px;color:{{ compProfit.color }}">{{ compProfit.arrow }} {{ compProfit.fmt }}</div>
-        </div>
-        <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:18px 20px">
-          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Comp cash</div>
-          <div style="font:700 26px 'Space Grotesk';margin-top:4px">{{ compCash }}</div>
-        </div>
-      </div>
-
-      <!-- leaderboard + holdings side by side -->
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
-        <div>
-          <div style="font:700 14px 'Space Grotesk';margin-bottom:10px">Club leaderboard</div>
-          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;overflow:hidden">
-            <sc-for list="{{ compLeaderboard }}" as="lb" hint-placeholder-count="3">
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f3f4f0">
-                <span style="font:600 14px 'Hanken Grotesk'">{{ lb.display_name }}</span>
-                <span style="font:700 14px 'Space Grotesk';color:{{ lb.profit >= 0 ? '#16a85f' : '#e03e3e' }}">{{ lb.profit >= 0 ? '+' : '' }}{{ lb.profit.toFixed(0) }}</span>
-              </div>
-            </sc-for>
-          </div>
-        </div>
-        <div>
-          <div style="font:700 14px 'Space Grotesk';margin-bottom:10px">My holdings</div>
-          <sc-if value="{{ compHoldings.length > 0 }}">
-          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;overflow:hidden">
-            <sc-for list="{{ compHoldings }}" as="h" hint-placeholder-count="2">
-              <div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f3f4f0;cursor:pointer" onClick="{{ h.onClick }}">
-                <div>
-                  <div style="font:600 13px 'Hanken Grotesk'">{{ h.name }}</div>
-                  <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ h.qty }} shares · {{ h.price }}</div>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <span style="font:600 14px 'Hanken Grotesk'">{{ m.display_name }}</span>
+                  <sc-if value="{{ m.isLeader }}"><span style="font:700 10px 'Hanken Grotesk';letter-spacing:.05em;background:#e7f6ec;color:#16a85f;padding:2px 8px;border-radius:999px;text-transform:uppercase">Manager</span></sc-if>
                 </div>
-                <span style="font:700 13px 'Space Grotesk'">{{ h.value }}</span>
               </div>
-            </sc-for>
-          </div>
-          </sc-if>
-          <sc-if value="{{ compHoldings.length === 0 }}">
-            <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:24px;text-align:center;font:500 12px 'Hanken Grotesk';color:#8a938c">No holdings yet. Browse the market below to trade.</div>
-          </sc-if>
-        </div>
-      </div>
-
-      <!-- market list in comp mode -->
-      <div style="font:700 16px 'Space Grotesk';margin-bottom:12px">Market &middot; trade with competition funds</div>
-      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:30px">
-        <sc-for list="{{ marketList }}" as="p" hint-placeholder-count="8">
-          <div style="display:grid;grid-template-columns:minmax(0,1fr) 80px 80px 80px;gap:10px;align-items:center;padding:12px 18px;border-bottom:1px solid #f3f4f0">
-            <span onClick="{{ p.onClick }}" style="display:flex;flex-direction:column;cursor:pointer;min-width:0">
-              <b style="font:600 14px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ p.name }}</b>
-              <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ p.pos }} · {{ p.team }}</span>
-            </span>
-            <span style="text-align:right;font:700 14px 'Space Grotesk'">{{ p.price }}</span>
-            <span style="text-align:right;font:600 12px 'Hanken Grotesk';color:{{ p.wkColor }}">{{ p.wkArrow }}{{ p.wkAbs }}</span>
-            <span style="text-align:right;display:flex;gap:5px;justify-content:flex-end">
-              <button onClick="{{ () => compBuyPlayer(p.id, p.rawPrice) }}" style="font:700 11px 'Hanken Grotesk';background:#e8f7ef;color:#16a85f;border:none;padding:5px 9px;border-radius:7px;cursor:pointer">Buy</button>
-              <button onClick="{{ () => compSellPlayer(p.id, p.rawPrice) }}" style="font:700 11px 'Hanken Grotesk';background:#fef2f2;color:#e03e3e;border:none;padding:5px 9px;border-radius:7px;cursor:pointer">Sell</button>
-            </span>
+            </div>
+            <sc-if value="{{ m.canTransfer }}">
+              <button onClick="{{ m.onTransfer }}" style="font:600 12px 'Hanken Grotesk';background:none;border:1px solid #e1e4dd;color:#46504a;padding:6px 12px;border-radius:999px;cursor:pointer">Give ownership</button>
+            </sc-if>
           </div>
         </sc-for>
       </div>
@@ -1294,8 +1194,8 @@ class Component extends DCLogic {
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
       streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
       joinDate: saved.joinDate, allTimeHigh: saved.allTimeHigh,
-      clubLoading: false, myClub: null, clubMembers: [], clubComps: [], clubPublicList: [],
-      compPortfolio: null, compLeaderboard: [], activeCompId: null, clubView: 'home',
+      clubLoading: false, myClub: null, clubMembers: [], clubPublicList: [],
+      clubView: 'home',
       clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
       clubJoinCode: '', clubJoinSearch: '',
       clubError: '', clubSuccess: '',
@@ -3180,16 +3080,15 @@ Yan Diomande|RB Leipzig|CM|21|4
       const memberships=await Supa.get('club_members','user_id=eq.'+uid+'&select=club_id');
       if(!memberships.length){
         const pub=await Supa.get('clubs','is_public=eq.true&order=created_at.desc&limit=20&select=id,name,description,leader_name,is_public,min_net_worth,created_at');
-        this.setState({myClub:null,clubMembers:[],clubComps:[],clubPublicList:pub,clubLoading:false});
+        this.setState({myClub:null,clubMembers:[],clubPublicList:pub,clubLoading:false});
         return;
       }
       const clubId=memberships[0].club_id;
-      const [clubs,members,comps]=await Promise.all([
+      const [clubs,members]=await Promise.all([
         Supa.get('clubs','id=eq.'+clubId),
         Supa.get('club_members','club_id=eq.'+clubId+'&order=joined_at.asc'),
-        Supa.get('competitions','club_id=eq.'+clubId+'&order=created_at.desc&limit=10'),
       ]);
-      this.setState({myClub:clubs[0]||null,clubMembers:members,clubComps:comps,clubLoading:false});
+      this.setState({myClub:clubs[0]||null,clubMembers:members,clubLoading:false});
     }catch(e){this.setState({clubLoading:false,clubError:e.message});}
   }
 
@@ -3265,7 +3164,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     }else{
       await Supa.del('club_members','club_id=eq.'+myClub.id+'&user_id=eq.'+uid);
     }
-    this.setState({myClub:null,clubMembers:[],clubComps:[],clubView:'home'});
+    this.setState({myClub:null,clubMembers:[],clubView:'home'});
     await this.loadMyClub();
   }
 
@@ -3275,84 +3174,15 @@ Yan Diomande|RB Leipzig|CM|21|4
     await this.loadMyClub();
   }
 
-  async createCompetition(){
+  async transferOwnership(toUserId, toName){
     const{myClub}=this.state;
     if(!myClub)return;
-    const name=prompt('Competition name (e.g. "Week 1"):');
-    if(!name)return;
-    const days=parseInt(prompt('Duration in days (e.g. 7):')||'7');
-    if(isNaN(days)||days<1)return;
-    const endsAt=new Date(Date.now()+days*86400000).toISOString();
-    this.setState({clubLoading:true});
-    try{
-      await Supa.post('competitions',{club_id:myClub.id,name:name.trim(),ends_at:endsAt,status:'active'});
-      await this.loadMyClub();
-    }catch(e){this.setState({clubError:e.message,clubLoading:false});}
-  }
-
-  async enterComp(compId){
-    const uid=this.getUserId();
-    const dname=this.loadUsername()||'Anonymous';
-    const{myClub}=this.state;
+    if(!confirm(`Make ${toName} the new manager of ${myClub.name}?`))return;
     this.setState({clubLoading:true,clubError:''});
     try{
-      const rows=await Supa.get('comp_portfolios','competition_id=eq.'+compId+'&user_id=eq.'+uid);
-      let port=rows[0];
-      if(!port){
-        const res=await Supa.post('comp_portfolios',{competition_id:compId,club_id:myClub.id,user_id:uid,display_name:dname,cash:10000,holdings:{}});
-        port=Array.isArray(res)?res[0]:res;
-      }
-      const lb=await this.loadCompLb(compId);
-      this.setState({compPortfolio:port,activeCompId:compId,clubView:'comp',compLeaderboard:lb,clubLoading:false});
+      await Supa.patch('clubs','id=eq.'+myClub.id,{leader_id:toUserId,leader_name:toName});
+      await this.loadMyClub();
     }catch(e){this.setState({clubLoading:false,clubError:e.message});}
-  }
-
-  async loadCompLb(compId){
-    const rows=await Supa.get('comp_portfolios','competition_id=eq.'+compId+'&select=display_name,cash,holdings');
-    return rows.map(r=>{
-      const h=r.holdings||{};
-      const hVal=Object.entries(h).reduce((sum,[id,qty])=>{
-        const p=this._lastDB?(this._lastDB.find(x=>x.id===id)||null):null;
-        return sum+((p?this.curPrice(p):0)*qty);
-      },0);
-      const total=(r.cash||0)+hVal;
-      return{display_name:r.display_name,value:total,profit:total-10000};
-    }).sort((a,b)=>b.profit-a.profit);
-  }
-
-  compPortfolioValue(){
-    const{compPortfolio}=this.state;
-    if(!compPortfolio)return 10000;
-    const h=compPortfolio.holdings||{};
-    const hVal=Object.entries(h).reduce((sum,[id,qty])=>{
-      const p=this._lastDB?(this._lastDB.find(x=>x.id===id)||null):null;
-      return sum+((p?this.curPrice(p):0)*qty);
-    },0);
-    return (compPortfolio.cash||0)+hVal;
-  }
-
-  async execCompTrade(side,playerId,qty,price){
-    const{compPortfolio,activeCompId}=this.state;
-    if(!compPortfolio)return;
-    const holdings=Object.assign({},compPortfolio.holdings||{});
-    let cash=compPortfolio.cash||0;
-    const total=price*qty;
-    if(side==='BUY'){
-      if(cash<total){this.setState({clubError:'Not enough competition cash.'});return;}
-      cash-=total;
-      holdings[playerId]=(holdings[playerId]||0)+qty;
-    }else{
-      const owned=holdings[playerId]||0;
-      if(owned<qty){this.setState({clubError:'Not enough shares in competition portfolio.'});return;}
-      cash+=total;
-      holdings[playerId]=owned-qty;
-      if(holdings[playerId]<=0)delete holdings[playerId];
-    }
-    const uid=this.getUserId();
-    const updated=await Supa.patch('comp_portfolios','competition_id=eq.'+activeCompId+'&user_id=eq.'+uid,{cash,holdings,updated_at:new Date().toISOString()});
-    const port=Array.isArray(updated)?updated[0]:updated;
-    const lb=await this.loadCompLb(activeCompId);
-    this.setState({compPortfolio:{...compPortfolio,cash,holdings},compLeaderboard:lb,clubError:''});
   }
 
   // ============ RENDER ============
@@ -3881,7 +3711,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       cashFmt:this.money(this.state.cash),
       rewardBtnLabel,rewardBtnColor,rewardBtnBg, openReward:()=>this.openReward(),
       // views
-      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders', isArticles:S.view==='articles', isProfile:S.view==='profile', isClubs:S.view==='clubs', isComp:S.clubView==='comp'&&S.view==='clubs',
+      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders', isArticles:S.view==='articles', isProfile:S.view==='profile', isClubs:S.view==='clubs',
       // articles
       articlesAll, hasSelectedArticle, noSelectedArticle, selectedArticle, backToArticles:()=>this.setState({selectedArticleId:null}),
       hasArticles:articlesAll.length>0, noArticles:articlesAll.length===0,
@@ -3929,14 +3759,17 @@ Yan Diomande|RB Leipzig|CM|21|4
       fbBtnCursor:S.feedbackSending||!S.feedbackText.trim()?'not-allowed':'pointer',
       fbBtnLabel:S.feedbackSending?'Sending…':'Send feedback',
       // clubs
-      clubLoading:S.clubLoading, myClub:S.myClub, clubMembers:S.clubMembers,
-      clubComps:S.clubComps.map(c=>{
-        const now=new Date(); const ends=new Date(c.ends_at);
-        const diffMs=ends-now; const diffD=Math.ceil(diffMs/86400000);
-        const timeLeft=diffMs<0?'Ended':(diffD===0?'Ends today':`${diffD}d left`);
-        const isActive=c.status==='active'&&diffMs>0;
-        return{...c,timeLeft,isActive,onEnter:()=>this.enterComp(c.id)};
-      }),
+      clubLoading:S.clubLoading, myClub:S.myClub,
+      clubMembers:(()=>{
+        const uid=this.getUserId(); const leaderId=S.myClub?.leader_id;
+        const avatarColors=['#16a85f','#0c1f15','#2a6fdb','#b8543a','#7a4fbf','#c98a1e','#1f8a5b','#4a5568'];
+        return S.clubMembers.map(m=>{
+          const isLeader=m.user_id===leaderId; const isMe=m.user_id===uid;
+          const initials=m.display_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'?';
+          const avatarBg=isLeader?'#16a85f':avatarColors[this.hash(m.user_id)%avatarColors.length];
+          return{...m,isLeader,initials,avatarBg,canTransfer:isMe&&isLeader?false:(!isLeader&&uid===leaderId),onTransfer:()=>this.transferOwnership(m.user_id,m.display_name)};
+        });
+      })(),
       clubPublicList:S.clubPublicList.map(c=>({...c,onJoin:()=>this.joinClubById(c.id)})),
       isMyClubLeader:S.myClub&&S.myClub.leader_id===this.getUserId(),
       clubInviteCode:S.myClub?S.myClub.invite_code:'',
@@ -3947,7 +3780,6 @@ Yan Diomande|RB Leipzig|CM|21|4
       isClubHome:S.clubView==='home',
       isClubCreate:S.clubView==='create',
       isClubJoin:S.clubView==='join',
-      isClubComp:S.clubView==='comp',
       noClubHome:!S.myClub&&!S.clubLoading&&S.clubView==='home',
       hasClubHome:!!S.myClub&&S.clubView==='home',
       goClubHome:()=>this.setState({clubView:'home',clubError:'',clubSuccess:''}),
@@ -3968,26 +3800,6 @@ Yan Diomande|RB Leipzig|CM|21|4
       clubJoinCode:S.clubJoinCode,
       submitJoinClub:()=>this.joinClubByCode(),
       leaveClub:()=>this.leaveClub(),
-      createComp:()=>this.createCompetition(),
-      // comp mode
-      compPortfolio:S.compPortfolio,
-      compLeaderboard:S.compLeaderboard,
-      compValue:this.money(this.compPortfolioValue()),
-      compProfit:(()=>{const v=this.compPortfolioValue()-10000;return{fmt:(v>=0?'+':'')+this.money(Math.abs(v)),color:v>=0?'#16a85f':'#e03e3e',arrow:v>=0?'▲':'▼'}})(),
-      compCash:S.compPortfolio?this.money(S.compPortfolio.cash):'€10,000',
-      compHoldings:(()=>{
-        if(!S.compPortfolio)return[];
-        return Object.entries(S.compPortfolio.holdings||{}).map(([id,qty])=>{
-          const p=this._lastDB?(this._lastDB.find(x=>x.id===id)):null;
-          if(!p)return null;
-          const price=this.curPrice(p);
-          return{name:p.name,team:p.team,qty,price:this.money(price),value:this.money(price*qty),onClick:()=>this.openPlayer(id)};
-        }).filter(Boolean);
-      })(),
-      exitComp:()=>this.setState({clubView:'home',activeCompId:null,compPortfolio:null}),
-      compBuyPlayer:(id,price)=>this.execCompTrade('BUY',id,1,price),
-      compSellPlayer:(id,price)=>this.execCompTrade('SELL',id,1,price),
-      activeCompName:(()=>{const c=S.clubComps.find(x=>x.id===S.activeCompId);return c?c.name:'Competition';})(),
       copyInviteCode:()=>{if(S.myClub)navigator.clipboard.writeText(S.myClub.invite_code).then(()=>this.setState({clubSuccess:'Invite code copied!'}));},
     };
   }
