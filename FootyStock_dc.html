@@ -1182,7 +1182,7 @@
         <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:14px;line-height:1.5">Link a phone number for account recovery. Never shared publicly.</div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
           <input id="fs-phone-input" placeholder="{{ myPhone }}" maxlength="30" style="flex:1;min-width:180px;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff">
-          <button onClick="{{ savePhone }}" style="font:600 13px 'Hanken Grotesk';background:#16201a;color:#eaf3ed;border:none;border-radius:10px;padding:10px 18px;cursor:pointer">{{ phoneSaved ? 'Saved ✓' : 'Save' }}</button>
+          <button onClick="{{ savePhone }}" style="font:600 13px 'Hanken Grotesk';background:#16201a;color:#eaf3ed;border:none;border-radius:10px;padding:10px 18px;cursor:pointer">{{ phoneBtnLabel }}</button>
         </div>
       </div>
     </sc-if>
@@ -3523,15 +3523,32 @@ Yan Diomande|RB Leipzig|CM|21|4
     }catch(e){}
   }
   async savePhone(){
-    this.setState({phoneSaving:true,phoneSaved:false});
     const val=(document.getElementById("fs-phone-input")||{}).value||"";
+    if(!val.trim()){ return; }
+    this.setState({phoneSaving:true,phoneSaved:false});
     const token=this.loadToken();
+    const name=this.loadUsername()||'Anonymous';
     try{
-      await Supa.patch("leaderboard","token=eq."+token,{phone:val});
-      this._myPhone=val;
+      // Try patch first; if no row exists yet, upsert to create it
+      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{
+        method:'PATCH',
+        headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'return=representation'},
+        body:JSON.stringify({phone:val.trim()})
+      });
+      if(!res.ok) throw new Error(await res.text());
+      const rows=await res.json();
+      if(!rows||rows.length===0){
+        // No row yet — upsert to create it
+        await fetch(this._sbUrl,{
+          method:'POST',
+          headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+          body:JSON.stringify({token,name,net_worth:0,phone:val.trim()})
+        });
+      }
+      this._myPhone=val.trim();
       this.setState({phoneSaving:false,phoneSaved:true});
-      setTimeout(()=>this.setState({phoneSaved:false}),2500);
-    }catch(e){ this.setState({phoneSaving:false}); }
+      setTimeout(()=>this.setState({phoneSaved:false}),3000);
+    }catch(e){ this.setState({phoneSaving:false}); alert('Could not save phone number. Make sure the phone column exists in Supabase (run the SQL migration).'); }
   }
 
   // ============ CLUBS ============
@@ -4442,6 +4459,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       isFounder: this.isFounder(),
       myPhone: this._myPhone||'',
       phoneSaving: S.phoneSaving, phoneSaved: S.phoneSaved,
+      phoneBtnLabel: S.phoneSaved ? 'Saved ✓' : (S.phoneSaving ? 'Saving…' : 'Save'),
       savePhone:()=>this.savePhone(),
       recoverOpen: S.recoverOpen, closeRecover:()=>this.setState({recoverOpen:false}),
       stopRecover:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
