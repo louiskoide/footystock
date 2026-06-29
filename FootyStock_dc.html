@@ -544,7 +544,7 @@
           <!-- composer (requires username) -->
           <sc-if value="{{ cmtHasUser }}" hint-placeholder-val="{{ true }}">
           <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #f1f3ef">
-            <textarea onInput="{{ cmtOnInput }}" placeholder="Share your thoughts on this stock…" maxlength="500" rows="3" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;resize:none;line-height:1.5;background:#fafbf8"></textarea>
+            <textarea id="fs-cmt-input" placeholder="Share your thoughts on this stock…" maxlength="500" rows="3" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;resize:none;line-height:1.5;background:#fafbf8"></textarea>
             <div style="display:flex;justify-content:flex-end;margin-top:7px">
               <button onClick="{{ cmtSubmit }}" style="font:600 13px 'Hanken Grotesk';background: {{ cmtSubmitBg }};color:#fff;border:none;padding:9px 18px;border-radius:10px;cursor: {{ cmtSubmitCursor }}">Post</button>
             </div>
@@ -584,7 +584,7 @@
                 <!-- reply composer -->
                 <sc-if value="{{ c.replyOpen }}" hint-placeholder-val="{{ false }}">
                 <div style="margin-top:10px">
-                  <textarea onInput="{{ c.replyOnInput }}" placeholder="Write a reply…" maxlength="500" rows="2" style="width:100%;box-sizing:border-box;font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 11px;outline:none;color:#16201a;resize:none;line-height:1.5;background:#fafbf8"></textarea>
+                  <textarea id="fs-reply-input" placeholder="Write a reply…" maxlength="500" rows="2" style="width:100%;box-sizing:border-box;font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 11px;outline:none;color:#16201a;resize:none;line-height:1.5;background:#fafbf8"></textarea>
                   <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:6px">
                     <button onClick="{{ c.replyCancel }}" style="font:600 12px 'Hanken Grotesk';background:none;border:1px solid #e1e4dd;color:#8a938c;padding:7px 14px;border-radius:8px;cursor:pointer">Cancel</button>
                     <button onClick="{{ c.replySubmit }}" style="font:600 12px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:7px 14px;border-radius:8px;cursor:pointer">Reply</button>
@@ -1205,8 +1205,8 @@
     </sc-if>
     <sc-if value="{{ fbNotSent }}" hint-placeholder-val="{{ true }}">
       <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:18px">Got a bug, suggestion, or thought? We read everything.</div>
-      <input onInput="{{ fbOnName }}" placeholder="Your name (optional)" maxlength="60" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff;margin-bottom:10px">
-      <textarea onInput="{{ fbOnText }}" placeholder="What's on your mind?" maxlength="1000" rows="5" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff;resize:vertical;line-height:1.5"></textarea>
+      <input id="fs-fb-name" placeholder="Your name (optional)" maxlength="60" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff;margin-bottom:10px">
+      <textarea id="fs-fb-text" placeholder="What's on your mind?" maxlength="1000" rows="5" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff;resize:vertical;line-height:1.5"></textarea>
       <div style="font:500 12px 'Hanken Grotesk';color:#e03e3e;margin-top:6px;min-height:16px">{{ fbError }}</div>
       <button onClick="{{ fbSubmit }}" style="width:100%;margin-top:10px;font:700 15px 'Hanken Grotesk';background: {{ fbBtnBg }};color:#fff;border:none;padding:14px;border-radius:13px;cursor: {{ fbBtnCursor }}">{{ fbBtnLabel }}</button>
     </sc-if>
@@ -3061,14 +3061,17 @@ Yan Diomande|RB Leipzig|CM|21|4
   openFeedback(){ this.setState({feedbackOpen:true,feedbackSent:false,feedbackError:'',feedbackText:'',feedbackName:''}); }
   closeFeedback(){ this.setState({feedbackOpen:false}); }
   async submitFeedback(){
-    const S=this.state;
-    if(!S.feedbackText.trim()) return;
+    const nameEl=document.getElementById('fs-fb-name');
+    const textEl=document.getElementById('fs-fb-text');
+    const name=(nameEl&&nameEl.value)||'';
+    const text=(textEl&&textEl.value)||'';
+    if(!text.trim()) return;
     this.setState({feedbackSending:true,feedbackError:''});
     try{
       const res=await fetch(this._feedbackEndpoint,{
         method:'POST',
         headers:{'Content-Type':'application/json','Accept':'application/json'},
-        body:JSON.stringify({name:S.feedbackName||'Anonymous',message:S.feedbackText}),
+        body:JSON.stringify({name:name||'Anonymous',message:text}),
       });
       if(res.ok){ this.setState({feedbackSent:true,feedbackSending:false}); }
       else{ this.setState({feedbackError:'Submission failed — please try again.',feedbackSending:false}); }
@@ -3212,14 +3215,18 @@ Yan Diomande|RB Leipzig|CM|21|4
       .then(r=>r.ok?r.json():[]).then(data=>{ if(this.state.commentsPlayerId===playerId) this.setState({comments:Array.isArray(data)?data:[],commentsLoading:false}); })
       .catch(()=>{ if(this.state.commentsPlayerId===playerId) this.setState({commentsLoading:false}); });
   }
-  postComment(playerId, body, parentId){
+  postComment(playerId, parentId){
+    const elId=parentId?'fs-reply-input':'fs-cmt-input';
+    const el=document.getElementById(elId);
+    const body=(el&&el.value)||'';
     if(!body.trim()||!this._sbUrl) return;
     const username=this.loadUsername(); if(!username) return;
     const token=this.loadToken();
     const payload={player_id:playerId,token,username,body:body.trim().slice(0,500),upvotes:0};
     if(parentId) payload.parent_id=parentId;
+    if(el) el.value='';
     fetch(this._sbUrl.replace('/leaderboard','/comments'),{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(payload)})
-      .then(r=>r.ok?r.json():null).then(rows=>{ if(rows&&rows[0]) this.setState(s=>({comments:[rows[0],...s.comments],commentInput:'',commentReplyTo:null,commentReplyInput:''})); })
+      .then(r=>r.ok?r.json():null).then(rows=>{ if(rows&&rows[0]) this.setState(s=>({comments:[rows[0],...s.comments],commentReplyTo:null})); })
       .catch(()=>{});
   }
   upvoteComment(commentId){
@@ -3970,8 +3977,7 @@ Yan Diomande|RB Leipzig|CM|21|4
           replyOpen:!isReply&&S.commentReplyTo===c.id,
           replyToggle:()=>this.setState(st=>({commentReplyTo:st.commentReplyTo===c.id?null:c.id,commentReplyInput:''})),
           replyCancel:()=>this.setState({commentReplyTo:null,commentReplyInput:''}),
-          replyOnInput:(e)=>this.setState({commentReplyInput:e.target.value}),
-          replySubmit:()=>{ this.postComment(S.commentsPlayerId,S.commentReplyInput,c.id); },
+          replySubmit:()=>{ this.postComment(S.commentsPlayerId,c.id); },
           replies:!isReply?replies.filter(r=>r.parent_id===c.id).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).map(r=>cmtVM(r,true)):[],
           hasReplies:!isReply&&replies.filter(r=>r.parent_id===c.id).length>0,
         };};
@@ -3981,10 +3987,9 @@ Yan Diomande|RB Leipzig|CM|21|4
           cmtCount:roots.length?'('+roots.length+')':'',
           cmtLoading:S.commentsLoading, cmtEmpty:!S.commentsLoading&&cmtList.length===0,
           cmtList, cmtHasUser:!!lbUsername, cmtNoUser:!lbUsername,
-          cmtOnInput:(e)=>this.setState({commentInput:e.target.value}),
-          cmtSubmit:()=>this.postComment(S.commentsPlayerId,S.commentInput,null),
-          cmtSubmitBg:S.commentInput.trim()?'#16a85f':'#b6c4bb',
-          cmtSubmitCursor:S.commentInput.trim()?'pointer':'not-allowed',
+          cmtSubmit:()=>this.postComment(S.commentsPlayerId,null),
+          cmtSubmitBg:'#16a85f',
+          cmtSubmitCursor:'pointer',
           cmtSortTop:()=>this.setState({commentSort:'top'}),
           cmtSortNew:()=>this.setState({commentSort:'new'}),
           cmtSortTopBg:isTop?'#16201a':'#fff', cmtSortTopColor:isTop?'#fff':'#46504a', cmtSortTopBorder:isTop?'#16201a':'#e3e6e0',
@@ -4002,11 +4007,11 @@ Yan Diomande|RB Leipzig|CM|21|4
       stopFeedback:(e)=>{ e && e.stopPropagation && e.stopPropagation(); },
       fbSent:S.feedbackSent, fbNotSent:!S.feedbackSent,
       fbOnName:(e)=>this.setState({feedbackName:e.target.value}),
-      fbOnText:(e)=>this.setState({feedbackText:e.target.value}),
+
       fbSubmit:()=>this.submitFeedback(),
       fbError:S.feedbackError,
-      fbBtnBg:S.feedbackSending?'#8a938c':(S.feedbackText.trim()?'#16a85f':'#b6c4bb'),
-      fbBtnCursor:S.feedbackSending||!S.feedbackText.trim()?'not-allowed':'pointer',
+      fbBtnBg:S.feedbackSending?'#8a938c':'#16a85f',
+      fbBtnCursor:S.feedbackSending?'not-allowed':'pointer',
       fbBtnLabel:S.feedbackSending?'Sending…':'Send feedback',
       // clubs
       clubLoading:S.clubLoading, myClub:S.myClub,
