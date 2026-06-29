@@ -3388,7 +3388,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       const hN=p.hist.length;
       const todayClose=p.hist[hN-1];
       const prev1=p.hist[hN-2]??todayClose;
-      const prev7=p.hist[Math.max(0,hN-8)]??p.hist[0];
+      const prev7=p.hist[Math.max(0,hN-7)]??p.hist[0];
       const dayChg=((todayClose-prev1)/prev1)*100;
       const wkChg=((todayClose-prev7)/prev7)*100;
       const up7=wkChg>=0;
@@ -3550,9 +3550,11 @@ Yan Diomande|RB Leipzig|CM|21|4
     if(S.view==='detail' && S.selectedId){
       const p=this.byId(S.selectedId);
       if(p){
-        const price=this.curPrice(p); const up7=p.change7d>=0; const cc=up7?GREEN:RED;
+        const price=this.curPrice(p);
         const today=new Date();
         const N=p.hist.length;
+        const detailWkChg=((p.hist[N-1]-(p.hist[Math.max(0,N-7)]??p.hist[0]))/(p.hist[Math.max(0,N-7)]??p.hist[0]))*100;
+        const up7=detailWkChg>=0; const cc=up7?GREEN:RED;
         // Real kickoff-relative minute marks (goals/cards), pulled from
         // API-Football's fixture events by the live worker — when present,
         // the 90' chart steps at the actual minute each happened instead of
@@ -3748,14 +3750,14 @@ Yan Diomande|RB Leipzig|CM|21|4
         else if(p.atWC) driverSummary='Live at the 2026 World Cup with '+p.nation+(recentNote?(' — '+recentNote):'')+'.';
         else if(p.news) driverSummary=p.news.text+'.';
         else driverSummary='The club season is over and '+lastName+' is not at the World Cup — the price stays quiet until transfer news moves it.';
-        const moodText = p.mood || (p.change7d>3?'Search interest spiking — fans piling in':p.change7d>0?'Mild positive buzz':p.change7d<-3?'Sentiment souring online':'Quiet search interest right now');
+        const moodText = p.mood || (detailWkChg>3?'Search interest spiking — fans piling in':detailWkChg>0?'Mild positive buzz':detailWkChg<-3?'Sentiment souring online':'Quiet search interest right now');
         const relatedArticles = p.articles.slice().sort((a,b)=>offOf(a.d)-offOf(b.d)).map(a=>({
           id:a.d+'|'+a.headline, date:this.dateShort(new Date(today.getTime()-offOf(a.d)*86400000)),
           tag:a.tag, headline:a.headline, dek:a.dek, onClick:()=>this.openArticle(a.d+'|'+a.headline) }));
 
         d={ name:p.name,team:p.team,pos:p.pos,age:p.age,lg:p.abbr,price:this.money(price),
           relatedArticles, hasRelatedArticles:relatedArticles.length>0, noRelatedArticles:relatedArticles.length===0,
-          wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',wkColor:cc,wkBg:up7?GBG:RBG,
+          wkAbs:Math.abs(detailWkChg).toFixed(1)+'%',wkArrow:up7?'▲':'▼',wkColor:cc,wkBg:up7?GBG:RBG,
           volDisplay:dVolPct.toFixed(1)+'%',rangeDisplay:this.money(dLoAll)+' – '+this.money(dHiAll),
           chartColor:cc,linePath,areaPath,gridY,markers,axisLabels,signals,events:evDisp,driverSummary,
           hover,dragSel,tooltip,onChartMove,onChartDown,onChartUp,onChartLeave,
