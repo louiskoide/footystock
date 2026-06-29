@@ -1600,6 +1600,8 @@ class Component extends DCLogic {
     pollLeaderboard();
     this.leaderboardTimer = setInterval(()=>{ if(this.state.view==='leaders') pollLeaderboard(); }, 60000);
     setTimeout(()=>this.submitScore(), 3000);
+    // sync portfolio from cloud (handles cross-device and cross-domain merge)
+    setTimeout(()=>this.syncFromCloud(), 1000);
     // auto-open reward if claimable on first load
     if(this.isClaimable()) this.setState({showReward:true});
     // charge daily margin interest on load
@@ -1627,6 +1629,36 @@ class Component extends DCLogic {
   persist(extra){
     const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim, shorts:this.state.shorts, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh }, extra||{});
     try{ localStorage.setItem('footystock_v3', JSON.stringify(s)); }catch(e){}
+    // also push to Supabase so portfolio syncs across devices/domains
+    this._persistToCloud(s);
+  }
+  _persistToCloud(s){
+    if(!this._sbUrl) return;
+    const token=this.loadToken(); if(!token||token==='anon') return;
+    const payload={ token, cash:s.cash, holdings:s.holdings, txns:(s.txns||[]).slice(0,500), shorts:s.shorts||{}, streak:s.streak||0, last_claim:s.lastClaim||null, join_date:s.joinDate||null, all_time_high:s.allTimeHigh||10000, updated_at:new Date().toISOString() };
+    fetch(this._sbUrl.replace('/leaderboard','/portfolios'),{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload)}).catch(()=>{});
+  }
+  async syncFromCloud(){
+    if(!this._sbUrl) return;
+    const token=this.loadToken(); if(!token||token==='anon') return;
+    try{
+      const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(token));
+      if(!rows||!rows.length) {
+        // No cloud data yet — push local data up (migration)
+        this._persistToCloud({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, shorts:this.state.shorts, streak:this.state.streak, lastClaim:this.state.lastClaim, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh });
+        return;
+      }
+      const r=rows[0];
+      // Compare cloud vs local by transaction count — take whichever has more data
+      const cloudTxns=(r.txns||[]).length, localTxns=(this.state.txns||[]).length;
+      if(cloudTxns>=localTxns){
+        const today=new Date().toISOString().slice(0,10);
+        this.setState({ cash:r.cash??10000, holdings:r.holdings||{}, txns:r.txns||[], shorts:r.shorts||{}, streak:r.streak||0, lastClaim:r.last_claim||null, joinDate:r.join_date||today, allTimeHigh:r.all_time_high||10000 }, ()=>{ this.persist(); });
+      } else {
+        // Local is richer — push it up
+        this._persistToCloud({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, shorts:this.state.shorts, streak:this.state.streak, lastClaim:this.state.lastClaim, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh });
+      }
+    }catch(e){}
   }
 
   // ---------- deterministic rng ----------
