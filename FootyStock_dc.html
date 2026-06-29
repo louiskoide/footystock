@@ -741,6 +741,39 @@
   </div>
 </div>
 </sc-if>
+
+<!-- ============ FEEDBACK BUTTON ============ -->
+<button onClick="{{ openFeedback }}" style="position:fixed;bottom:28px;right:24px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
+  <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13a2 2 0 0 1-2 2H6l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/></svg>
+  Feedback
+</button>
+
+<!-- ============ FEEDBACK MODAL ============ -->
+<sc-if value="{{ feedbackOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:100;background:rgba(12,20,15,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeFeedback }}">
+  <div onClick="{{ stopFeedback }}" class="fs-modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:440px;padding:28px;box-shadow:0 30px 80px rgba(10,20,14,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Send feedback</span>
+      <button onClick="{{ closeFeedback }}" style="background:none;border:none;cursor:pointer;font:400 22px 'Hanken Grotesk';color:#aab2ab;line-height:1">×</button>
+    </div>
+    <sc-if value="{{ fbSent }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;padding:30px 0">
+        <div style="font:700 28px 'Space Grotesk'">Thanks! 🙏</div>
+        <div style="font:500 13.5px 'Hanken Grotesk';color:#8a938c;margin-top:8px">Your feedback has been received.</div>
+        <button onClick="{{ closeFeedback }}" style="margin-top:20px;font:700 14px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:12px 28px;border-radius:12px;cursor:pointer">Close</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ fbNotSent }}" hint-placeholder-val="{{ true }}">
+      <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:18px">Got a bug, suggestion, or thought? We read everything.</div>
+      <input onInput="{{ fbOnName }}" placeholder="Your name (optional)" maxlength="60" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff;margin-bottom:10px">
+      <textarea onInput="{{ fbOnText }}" placeholder="What's on your mind?" maxlength="1000" rows="5" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff;resize:vertical;line-height:1.5"></textarea>
+      <div style="font:500 12px 'Hanken Grotesk';color:#e03e3e;margin-top:6px;min-height:16px">{{ fbError }}</div>
+      <button onClick="{{ fbSubmit }}" style="width:100%;margin-top:10px;font:700 15px 'Hanken Grotesk';background: {{ fbBtnBg }};color:#fff;border:none;padding:14px;border-radius:13px;cursor: {{ fbBtnCursor }}">{{ fbBtnLabel }}</button>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
 </x-dc>
 <script type="text/x-dc" data-dc-script>
 class Component extends DCLogic {
@@ -755,6 +788,7 @@ class Component extends DCLogic {
       chartHoverIdx:null, chartDragStart:null,
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
       showReward:false, tick:0, pendingOrders:[], ready:false, recapDismissed:false,
+      feedbackOpen:false, feedbackText:'', feedbackName:'', feedbackSending:false, feedbackSent:false, feedbackError:'',
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
       streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
     };
@@ -796,6 +830,9 @@ class Component extends DCLogic {
     // price, not two racing each other.
     const cachedLive = this.loadCachedLive();
     if(cachedLive){ this._wcLive = cachedLive; }
+    // Feedback submissions go here — sign up at formspree.io (free), create a
+    // form targeting your email, then paste the endpoint below.
+    this._feedbackEndpoint = 'https://formspree.io/f/YOUR_FORM_ID';
     this._liveWorkerBase = 'https://footystock.fly.dev';
     const LIVE_WORKER_URL = this._liveWorkerBase + '/prices.json';
     // Only adopt a fetched snapshot if it isn't OLDER than the one we already
@@ -2410,6 +2447,22 @@ Yan Diomande|RB Leipzig|CM|21|4
 
   openTrade(id,side){ const p=this.byId(id); const held=this.state.holdings[id]; const shorted=this.state.shorts[id]; if(side==='sell'&&(!held||held.qty<1))return; if(side==='cover'&&(!shorted||shorted.qty<1))return; this.setState({tradeOpen:true,tradeId:id,tradeSide:side,tradeQty:1}); }
   closeTrade(){ this.setState({tradeOpen:false}); }
+  openFeedback(){ this.setState({feedbackOpen:true,feedbackSent:false,feedbackError:'',feedbackText:'',feedbackName:''}); }
+  closeFeedback(){ this.setState({feedbackOpen:false}); }
+  async submitFeedback(){
+    const S=this.state;
+    if(!S.feedbackText.trim()) return;
+    this.setState({feedbackSending:true,feedbackError:''});
+    try{
+      const res=await fetch(this._feedbackEndpoint,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({name:S.feedbackName||'Anonymous',message:S.feedbackText}),
+      });
+      if(res.ok){ this.setState({feedbackSent:true,feedbackSending:false}); }
+      else{ this.setState({feedbackError:'Submission failed — please try again.',feedbackSending:false}); }
+    }catch(e){ this.setState({feedbackError:'Network error — please try again.',feedbackSending:false}); }
+  }
   setTradeQty(q){ this.setState({tradeQty:Math.max(1,q)}); }
   confirmTrade(){
     const id=this.state.tradeId, side=this.state.tradeSide, qty=this.state.tradeQty;
@@ -3021,6 +3074,19 @@ Yan Diomande|RB Leipzig|CM|21|4
       tradeOpen:S.tradeOpen, tr, closeTrade:()=>this.closeTrade(), stop:(e)=>this.stop(e), shortsList,hasShorts,noShorts,
       // reward modal
       showReward:S.showReward, rw, closeReward:()=>this.closeReward(),
+      // feedback
+      openFeedback:()=>this.openFeedback(),
+      feedbackOpen:S.feedbackOpen,
+      closeFeedback:()=>this.closeFeedback(),
+      stopFeedback:(e)=>{ e && e.stopPropagation && e.stopPropagation(); },
+      fbSent:S.feedbackSent, fbNotSent:!S.feedbackSent,
+      fbOnName:(e)=>this.setState({feedbackName:e.target.value}),
+      fbOnText:(e)=>this.setState({feedbackText:e.target.value}),
+      fbSubmit:()=>this.submitFeedback(),
+      fbError:S.feedbackError,
+      fbBtnBg:S.feedbackSending?'#8a938c':(S.feedbackText.trim()?'#16a85f':'#b6c4bb'),
+      fbBtnCursor:S.feedbackSending||!S.feedbackText.trim()?'not-allowed':'pointer',
+      fbBtnLabel:S.feedbackSending?'Sending…':'Send feedback',
     };
   }
 }
