@@ -667,7 +667,7 @@
     </sc-if>
 
     <!-- NO CLUB: home chooser -->
-    <sc-if value="{{ noClub && isClubHome }}">
+    <sc-if value="{{ noClubHome }}">
       <div style="font:700 24px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 6px">Clubs</div>
       <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 28px">Create or join a club to compete with friends in weekly competitions.</div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
@@ -749,7 +749,7 @@
     </sc-if>
 
     <!-- MY CLUB -->
-    <sc-if value="{{ hasClub && isClubHome }}">
+    <sc-if value="{{ hasClubHome }}">
       <!-- club header -->
       <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:20px;padding:24px 28px;margin-bottom:20px;color:#eaf3ed">
         <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
@@ -3926,6 +3926,8 @@ Yan Diomande|RB Leipzig|CM|21|4
       isClubCreate:S.clubView==='create',
       isClubJoin:S.clubView==='join',
       isClubComp:S.clubView==='comp',
+      noClubHome:!S.myClub&&!S.clubLoading&&S.clubView==='home',
+      hasClubHome:!!S.myClub&&S.clubView==='home',
       goClubHome:()=>this.setState({clubView:'home',clubError:'',clubSuccess:''}),
       goClubCreate:()=>this.setState({clubView:'create',clubError:'',clubSuccess:''}),
       goClubJoin:()=>this.setState({clubView:'join',clubError:'',clubSuccess:''}),
