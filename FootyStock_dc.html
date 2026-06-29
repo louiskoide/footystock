@@ -2650,22 +2650,9 @@ Yan Diomande|RB Leipzig|CM|21|4
         atWC=true; wcStatus=wcEff.status+' (squad — no minutes yet)';
       }
       const newsDelta = news?news.bias:0;
-      let change7d, change30d;
-      // Day-seeded random for players with no WC/news data — different each
-      // calendar day so the base value isn't frozen between match events.
-      const rDay = this.mulberry(this.hash(id + ':base:' + dayKey));
-      if(atWC||news){ change7d=sum(events.filter(e=>e.offset<=8).map(e=>e.delta))+((news&&offOf(news.d)<=8)?newsDelta:0);
-        change30d=sum(events.map(e=>e.delta))+newsDelta; }
-      else { change7d=(rDay()-0.5)*3.5; change30d=(rDay()-0.5)*7; }
-      // Daily market wobble: date-seeded drift so the change columns shuffle
-      // each calendar day even between match events. Large enough (WC ±4%,
-      // others ±2%) to actually reorder the leaderboard on quiet days while
-      // still letting a hat-trick dominate when it happens.
-      const dwR = this.mulberry(this.hash(id + ':dw:' + dayKey));
-      const dw1R = this.mulberry(this.hash(id + ':d1:' + dayKey));
-      const dailyWobble7d = (dwR() - 0.5) * 2 * (atWC ? 4.0 : 2.0);
-      const dailyWobble1d = (dw1R() - 0.5) * 2 * (atWC ? 1.5 : 0.8);
-      change7d = parseFloat((change7d + dailyWobble7d).toFixed(1));
+      let change30d;
+      if(atWC||news){ change30d=sum(events.map(e=>e.delta))+newsDelta; }
+      else { const rDay=this.mulberry(this.hash(id+':base:'+dayKey)); change30d=(rDay()-0.5)*7; }
       change30d=parseFloat(change30d.toFixed(1));
       // WC form streak (consecutive most-recent matches rating >= 7.4) — kept
       // purely as a display fact ("🔥 3-match streak"), no longer the main
@@ -2837,15 +2824,11 @@ Yan Diomande|RB Leipzig|CM|21|4
       const rHist = this.priceHistory(id, wobbledPrice, dayKey);
       const RN = rHist.length;
 
-      // Only replace the event-driven change7d/30d with hist-diff once we have
-      // enough REAL calendar days stored — before that, rHist[RN-8] is still
-      // synthetic backfill and produces a near-zero frozen signal regardless of
-      // actual match performance. After 8/31 real days the hist is authoritative.
+      // change7d/change30d always come from the actual stored price history so
+      // the badge matches the chart. Event deltas already move the price (via
+      // the bump loops above), so rHist captures them correctly.
       const realDays = (this._histStore?.[id]?.r?.length) || 1;
-      if (realDays >= 8)
-        // Wobble is added on top of the hist-diff (not discarded) so the
-        // leaderboard order still shuffles on days with no new match events.
-        change7d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-8)])/rHist[Math.max(0,RN-8)])*100 + dailyWobble7d).toFixed(1));
+      const change7d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-8)])/rHist[Math.max(0,RN-8)])*100).toFixed(1));
       if (realDays >= 31)
         change30d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-31)])/rHist[Math.max(0,RN-31)])*100).toFixed(1));
 
@@ -2854,7 +2837,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // recent rather than duplicated for every routine match.
       const playerArticles = D.ARTICLES.filter(a=>a.refs.includes(id));
       db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price:rHist[RN-1],anchor,
-        change7d,change30d,hist:rHist,events,streakLen,atWC,wcStatus,nation,news,mood,_dw1d:dailyWobble1d,
+        change7d,change30d,hist:rHist,events,streakLen,atWC,wcStatus,nation,news,mood,
         signals:{fotmob,form:formSig,twitter:moodSig,transfermarkt:transferSig}, avgR,
         tmVal,tmTrendUp,articles:playerArticles });
     }
@@ -3414,7 +3397,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // Add the same per-player-per-day wobble that was baked into change7d at
       // build time, so 1D ticks each calendar day even when stored history hasn't
       // rolled over yet. p._dw1d is set on the player object during buildDB.
-      const dayChg=(prevClose?((todayClose-prevClose)/prevClose)*100:0)+(p._dw1d||0);
+      const dayChg=(prevClose?((todayClose-prevClose)/prevClose)*100:0);
       const upDay=dayChg>=0;
       const {volPct,hiAll,loAll}=riskStats(p);
       return {
