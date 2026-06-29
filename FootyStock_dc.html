@@ -160,6 +160,9 @@
         <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Invested</div>
         <div style="font:700 28px 'Space Grotesk';letter-spacing:-.02em;margin-top:5px">{{ investedFmt }}</div>
         <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-top:4px">{{ holdingCount }} positions</div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f0;font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Buying power</div>
+        <div style="font:700 16px 'Space Grotesk';letter-spacing:-.01em;margin-top:3px">{{ buyingPowerFmt }}</div>
+        <sc-if value="{{ hasMarginUsed }}"><div style="font:500 11px 'Hanken Grotesk';color:#e07a1a;margin-top:2px">{{ marginUsedFmt }} margin</div></sc-if>
       </div>
       <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px 22px;display:flex;flex-direction:column;justify-content:center;cursor:pointer" onClick="{{ goLeaders }}">
         <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Global rank</div>
@@ -638,7 +641,7 @@
             <button onClick="{{ d.onBuy }}" style="flex:1;font:700 14px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:13px;border-radius:11px;cursor:pointer">Buy</button>
             <button onClick="{{ d.onSell }}" style="flex:1;font:700 14px 'Hanken Grotesk';background: {{ d.sellBg }};color: {{ d.sellColor }};border:1px solid {{ d.sellBorder }};padding:13px;border-radius:11px;cursor: {{ d.sellCursor }}">Sell</button>
           </div>
-          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;text-align:center;margin-top:12px">Buying power · {{ cashFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;text-align:center;margin-top:12px">Buying power · {{ buyingPowerFmt }}<sc-if value="{{ hasMarginUsed }}" hint-placeholder-val="{{ false }}"> <span style="color:#e07a1a">({{ marginUsedFmt }} margin)</span></sc-if></div>
           <div style="margin-top:14px;padding-top:14px;border-top:1px solid #eef1ec">
             <sc-if value="{{ d.hasShort }}" hint-placeholder-val="{{ false }}">
               <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';margin-bottom:6px"><span style="color:#8a938c">Hatewatching</span><span style="font-family:'Space Grotesk';font-weight:600">{{ d.shortQty }} shares</span></div>
@@ -1083,7 +1086,7 @@
       <sc-for list="{{ leaderboard }}" as="l" hint-placeholder-count="12">
         <div onClick="{{ l.onClick }}" class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }};cursor:pointer" style-hover="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background:#fafbf8;cursor:pointer">
           <span style="font:700 15px 'Space Grotesk';color: {{ l.rankColor }}">{{ l.medal }}</span>
-          <span style="display:flex;align-items:center;gap:10px"><span class="fs-avatar-badge" style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk'">{{ l.name }}</b></span>
+          <span style="display:flex;align-items:center;gap:10px"><span class="fs-avatar-badge" style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk'">{{ l.name }}</b><sc-if value="{{ l.showFounder }}"><span style="font-size:14px;line-height:1" title="Founder">🏅</span></sc-if></span>
           <span style="text-align:right;font:700 14px 'Space Grotesk';color: {{ l.profitColor }}">{{ l.profitArrow }}{{ l.profit }}</span>
         </div>
       </sc-for>
@@ -1103,7 +1106,7 @@
         <div style="width:64px;height:64px;border-radius:999px;background:#16a85f;display:flex;align-items:center;justify-content:center;font:700 22px 'Space Grotesk';color:#fff;flex-shrink:0">{{ profileInitials }}</div>
         <div style="flex:1;min-width:0">
           <div style="font:700 24px 'Space Grotesk';letter-spacing:-.01em">{{ profileName }}</div>
-          <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-top:3px">Member since {{ profileStats.joinDate }} · #{{ profileStats.streak }} day streak 🔥</div>
+          <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-top:3px">Member since {{ profileStats.joinDate }} · #{{ profileStats.streak }} day streak 🔥<sc-if value="{{ isFounder }}"> · 🏅 Founder</sc-if></div>
         </div>
         <div style="text-align:right">
           <div style="font:600 11px 'Hanken Grotesk';color:#7fb89a;letter-spacing:.08em;text-transform:uppercase">Net worth</div>
@@ -1172,6 +1175,16 @@
           <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">buying power</div>
         </div>
       </div>
+
+      <!-- phone number / account recovery -->
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:20px 22px;margin-bottom:28px">
+        <div style="font:700 13px 'Hanken Grotesk';margin-bottom:4px">Phone number</div>
+        <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:14px;line-height:1.5">Link a phone number for account recovery. Never shared publicly.</div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <input id="fs-phone-input" placeholder="{{ myPhone }}" maxlength="30" style="flex:1;min-width:180px;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff">
+          <button onClick="{{ savePhone }}" style="font:600 13px 'Hanken Grotesk';background:#16201a;color:#eaf3ed;border:none;border-radius:10px;padding:10px 18px;cursor:pointer">{{ phoneSaved ? 'Saved ✓' : 'Save' }}</button>
+        </div>
+      </div>
     </sc-if>
 
     <!-- other user's profile: limited public view -->
@@ -1227,7 +1240,11 @@
     </div>
 
     <div style="display:flex;justify-content:space-between;font:500 14px 'Hanken Grotesk';padding:4px 0"><span style="color:#8a938c">Order total</span><b style="font-family:'Space Grotesk'">{{ tr.total }}</b></div>
+    <div style="display:flex;justify-content:space-between;font:500 14px 'Hanken Grotesk';padding:4px 0"><span style="color:#8a938c">Buying power</span><b style="font-family:'Space Grotesk'">{{ tr.buyingPower }}</b></div>
     <div style="display:flex;justify-content:space-between;font:500 14px 'Hanken Grotesk';padding:4px 0"><span style="color:#8a938c">{{ tr.balanceLabel }}</span><b style="font-family:'Space Grotesk';color: {{ tr.balanceColor }}">{{ tr.balanceAfter }}</b></div>
+    <sc-if value="{{ tr.marginWarning }}" hint-placeholder-val="{{ false }}">
+    <div style="font:500 12px 'Hanken Grotesk';color:#e07a1a;margin-top:6px;padding:8px 12px;background:#fff8f0;border-radius:8px;border:1px solid #fcdcb0">{{ tr.marginWarning }}</div>
+    </sc-if>
 
     <div style="font:600 12.5px 'Hanken Grotesk';color:#d23b2c;margin-top:10px;min-height:16px">{{ tr.error }}</div>
 
@@ -1260,6 +1277,12 @@
 </div>
 </sc-if>
 
+<!-- ============ SHARE BUTTON ============ -->
+<button onClick="{{ openShare }}" style="position:fixed;bottom:28px;right:130px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#0a4a2f;color:#3ddc8a;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
+  <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2"/><circle cx="18" cy="15" r="2"/><circle cx="3" cy="10" r="2"/><line x1="3" y1="10" x2="16" y2="5"/><line x1="3" y1="10" x2="16" y2="15"/></svg>
+  Share
+</button>
+
 <!-- ============ FEEDBACK BUTTON ============ -->
 <button onClick="{{ openFeedback }}" style="position:fixed;bottom:28px;right:24px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
   <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13a2 2 0 0 1-2 2H6l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/></svg>
@@ -1288,6 +1311,70 @@
       <div style="font:500 12px 'Hanken Grotesk';color:#e03e3e;margin-top:6px;min-height:16px">{{ fbError }}</div>
       <button onClick="{{ fbSubmit }}" style="width:100%;margin-top:10px;font:700 15px 'Hanken Grotesk';background: {{ fbBtnBg }};color:#fff;border:none;padding:14px;border-radius:13px;cursor: {{ fbBtnCursor }}">{{ fbBtnLabel }}</button>
     </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ SHARE MODAL ============ -->
+<sc-if value="{{ shareOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:100;background:rgba(12,20,15,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeShare }}">
+  <div onClick="{{ stopShare }}" class="fs-modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:440px;padding:28px;box-shadow:0 30px 80px rgba(10,20,14,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Invite friends</span>
+      <button onClick="{{ closeShare }}" style="background:none;border:none;cursor:pointer;font:400 22px 'Hanken Grotesk';color:#aab2ab;line-height:1">×</button>
+    </div>
+    <sc-if value="{{ isFounder }}">
+      <div style="display:inline-flex;align-items:center;gap:6px;background:#fff8ec;border:1px solid #f5c842;border-radius:8px;padding:6px 12px;font:600 12px 'Hanken Grotesk';color:#7a5c00;margin-bottom:14px">🏅 Founder — joined early</div>
+    </sc-if>
+    <div style="font:500 13px 'Hanken Grotesk';color:#46504a;margin-bottom:16px;line-height:1.5">Invite friends. Each person who joins using your link gets 3 Mystery Stocks. So do you (up to 5 referrals).</div>
+    <div style="background:#f5f6f3;border-radius:12px;padding:12px 14px;margin-bottom:10px">
+      <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Your referral link</div>
+      <div style="font:500 12.5px 'Hanken Grotesk';color:#16201a;word-break:break-all;margin-bottom:10px">{{ shareLink }}</div>
+      <button onClick="{{ copyShareLink }}" style="font:600 13px 'Hanken Grotesk';background:#16201a;color:#eaf3ed;border:none;border-radius:8px;padding:9px 16px;cursor:pointer">{{ shareCopiedLabel }}</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;background:#f5f6f3;border-radius:12px;padding:12px 14px;margin-bottom:14px">
+      <span style="font:500 13px 'Hanken Grotesk';color:#46504a">Referrals used</span>
+      <span style="font:700 14px 'Space Grotesk'">{{ referralCount }} / 5</span>
+    </div>
+    <a href="{{ whatsappShareLink }}" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25d366;color:#fff;border-radius:12px;padding:12px 16px;font:600 13px 'Hanken Grotesk';text-decoration:none;margin-bottom:4px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.556 4.118 1.528 5.849L.057 23.25a.75.75 0 0 0 .92.92l5.4-1.47A11.953 11.953 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.937 0-3.75-.52-5.309-1.43l-.38-.22-3.203.871.888-3.108-.243-.395A9.956 9.956 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+      Share on WhatsApp
+    </a>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ MYSTERY STOCKS MODAL ============ -->
+<sc-if value="{{ mysteryOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:100;background:rgba(12,20,15,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeMystery }}">
+  <div onClick="{{ stopMystery }}" class="fs-modal-card" style="background:#fff;border-radius:24px;width:100%;max-width:440px;padding:30px;text-align:center;box-shadow:0 30px 80px rgba(10,20,14,.32)">
+    <div style="font:600 12px 'Hanken Grotesk';letter-spacing:.14em;text-transform:uppercase;color:#16a85f">Mystery reward</div>
+    <div style="font:700 26px 'Space Grotesk';letter-spacing:-.02em;margin-top:8px">🎁 3 Mystery Stocks!</div>
+    <div style="font:500 13.5px 'Hanken Grotesk';color:#8a938c;margin-top:6px;margin-bottom:22px">You joined via a referral link. Here are your free shares!</div>
+    <sc-for list="{{ mysteryPacks }}" as="mp">
+      <div style="background:#f5f6f3;border-radius:14px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        <div style="text-align:left">
+          <div style="font:700 15px 'Space Grotesk'">{{ mp.name }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ mp.team }} · {{ mp.qty }} shares free</div>
+        </div>
+        <div style="font:700 16px 'Space Grotesk';color:#16a85f">{{ mp.price }}</div>
+      </div>
+    </sc-for>
+    <button onClick="{{ closeMystery }}" style="width:100%;margin-top:10px;font:700 15px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:15px;border-radius:13px;cursor:pointer">Start trading!</button>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ ACCOUNT RECOVERY MODAL ============ -->
+<sc-if value="{{ recoverOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:100;background:rgba(12,20,15,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeRecover }}">
+  <div onClick="{{ stopRecover }}" class="fs-modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:420px;padding:28px;box-shadow:0 30px 80px rgba(10,20,14,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Account recovery</span>
+      <button onClick="{{ closeRecover }}" style="background:none;border:none;cursor:pointer;font:400 22px 'Hanken Grotesk';color:#aab2ab;line-height:1">×</button>
+    </div>
+    <div style="font:500 13px 'Hanken Grotesk';color:#46504a;line-height:1.5;margin-bottom:18px">To recover your account, enter the phone number you saved under your profile. Contact support at gmensports11@gmail.com with your phone number and username.</div>
+    <button onClick="{{ closeRecover }}" style="width:100%;font:700 14px 'Hanken Grotesk';background:#16201a;color:#fff;border:none;padding:13px;border-radius:12px;cursor:pointer">Got it</button>
   </div>
 </div>
 </sc-if>
@@ -1394,6 +1481,8 @@ class Component extends DCLogic {
       clubJoinCode: '', clubJoinSearch: '',
       clubError: '', clubSuccess: '',
       clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null,
+      shareOpen: false, shareCopied: false, mysteryOpen: false, mysteryPacks: [], recoverOpen: false,
+      phoneVal: '', phoneSaving: false, phoneSaved: false,
     };
   }
   componentDidMount(){
@@ -1491,6 +1580,18 @@ class Component extends DCLogic {
     setTimeout(()=>this.submitScore(), 3000);
     // auto-open reward if claimable on first load
     if(this.isClaimable()) this.setState({showReward:true});
+    // charge daily margin interest on load
+    this.applyMarginInterest();
+    // handle ?ref= referral param
+    const refParam=new URLSearchParams(window.location.search).get('ref');
+    if(refParam){ localStorage.setItem('fs_pending_ref',refParam); history.replaceState(null,'',window.location.pathname); }
+    if(this.loadUsername()) this.checkPendingRef();
+    // handle ?recover= param
+    const recoverParam=new URLSearchParams(window.location.search).get('recover');
+    if(recoverParam){ this.setState({recoverOpen:true}); history.replaceState(null,'',window.location.pathname); }
+    // load referral count and phone
+    this.getReferralCount();
+    this.loadMyPhone();
   }
   componentWillUnmount(){ clearInterval(this.timer); clearInterval(this.liveTimer); clearInterval(this.leaderboardTimer); clearInterval(this.clubTimer); }
 
@@ -3064,6 +3165,14 @@ Yan Diomande|RB Leipzig|CM|21|4
 
   // ---------- portfolio math ----------
   holdingsValue(){ let v=0; const h=this.state.holdings; for(const id in h){ const p=this.byId(id); if(p) v+=this.curPrice(p)*h[id].qty; } return v; }
+  marginLimit(){ return Math.floor(this.holdingsValue()*0.5); }
+  buyingPower(){ return Math.max(0, this.state.cash + this.marginLimit()); }
+  marginUsed(){ return Math.max(0, -this.state.cash); }
+  applyMarginInterest(){
+    const used=this.marginUsed(); if(used<=0) return;
+    const interest=used*0.005; // 0.5%/day
+    this.setState(s=>({cash:s.cash-interest}),()=>this.persist());
+  }
   costBasis(){ let v=0; const h=this.state.holdings; for(const id in h){ v+=h[id].qty*h[id].avg; } return v; }
   shortsLiability(){ let v=0; const sh=this.state.shorts; for(const id in sh){ const p=this.byId(id); if(p) v+=this.curPrice(p)*sh[id].qty; } return v; }
   shortsPnl(){ let v=0; const sh=this.state.shorts; for(const id in sh){ const p=this.byId(id); if(p) v+=(sh[id].avg-this.curPrice(p))*sh[id].qty; } return v; }
@@ -3335,6 +3444,80 @@ Yan Diomande|RB Leipzig|CM|21|4
     return arr;
   }
   myRank(){ const lb=this.leaderboardData(); return lb.findIndex(x=>x.me)+1; }
+
+  // ============ REFERRAL / SHARE ============
+  getRefCode(){
+    const token=this.loadToken();
+    const b64=btoa(token).replace(/[^A-Z0-9]/gi,"").toUpperCase();
+    return b64.slice(0,8);
+  }
+  async checkPendingRef(){
+    const pending=localStorage.getItem("fs_pending_ref");
+    if(!pending) return;
+    if(pending===this.getRefCode()){ localStorage.removeItem("fs_pending_ref"); return; }
+    if(localStorage.getItem("fs_ref_claimed")) return;
+    const token=this.loadToken();
+    try{
+      await Supa.post("referrals",{ref_code:pending,referred_token:token});
+      localStorage.setItem("fs_ref_claimed","1");
+      localStorage.removeItem("fs_pending_ref");
+      await this.awardMysteryStocks();
+    }catch(e){ /* already claimed */ }
+  }
+  async awardMysteryStocks(){
+    const DB=this.getDB(); if(!DB||!DB.length) return;
+    const token=this.loadToken();
+    const eligible=DB.filter(p=>this.curPrice(p)>=5).sort((a,b)=>this.curPrice(b)-this.curPrice(a)).slice(0,30);
+    if(!eligible.length) return;
+    const picks=[];
+    for(let i=0;i<3;i++){
+      const r=this.rand01(token+"mystery"+i);
+      const idx=Math.floor(r*eligible.length);
+      picks.push(eligible[idx]);
+    }
+    const holdings={...this.state.holdings};
+    const txns=[...this.state.txns];
+    const packs=[];
+    for(const p of picks){
+      const price=this.curPrice(p);
+      if(!holdings[p.id]) holdings[p.id]={qty:0,avg:0};
+      const prev=holdings[p.id];
+      holdings[p.id]={qty:prev.qty+5,avg:(prev.qty*prev.avg+0)/(prev.qty+5)||0};
+      txns.push({id:p.id,name:p.name,side:"BUY",qty:5,price:0,total:0,date:new Date().toISOString(),label:"MYSTERY"});
+      packs.push({name:p.name,team:p.team,qty:5,price:this.money(price)});
+    }
+    this.setState({holdings,txns,mysteryOpen:true,mysteryPacks:packs},()=>{ this.persist(); });
+  }
+  async getReferralCount(){
+    try{
+      const code=this.getRefCode();
+      const rows=await Supa.get("referrals","ref_code=eq."+code+"&select=id");
+      this._referralCount=rows.length;
+      this.setState(s=>({tick:s.tick+1}));
+    }catch(e){ this._referralCount=0; }
+  }
+  // ============ FOUNDER ============
+  isFounder(){ return (this.state.joinDate||"9999") < "2026-07-10"; }
+  // ============ PHONE ============
+  async loadMyPhone(){
+    const token=this.loadToken(); if(!token||!this._sbUrl) return;
+    try{
+      const rows=await Supa.get("leaderboard","token=eq."+token+"&select=phone");
+      if(rows&&rows.length) this._myPhone=rows[0].phone||"";
+      this.setState(s=>({tick:s.tick+1}));
+    }catch(e){}
+  }
+  async savePhone(){
+    this.setState({phoneSaving:true,phoneSaved:false});
+    const val=(document.getElementById("fs-phone-input")||{}).value||"";
+    const token=this.loadToken();
+    try{
+      await Supa.patch("leaderboard","token=eq."+token,{phone:val});
+      this._myPhone=val;
+      this.setState({phoneSaving:false,phoneSaved:true});
+      setTimeout(()=>this.setState({phoneSaved:false}),2500);
+    }catch(e){ this.setState({phoneSaving:false}); }
+  }
 
   // ============ CLUBS ============
   getUserId(){
@@ -3979,10 +4162,10 @@ Yan Diomande|RB Leipzig|CM|21|4
       return { medal:medals[rk]||String(rk), rankColor:rk<=3?'#16201a':'#aab2ab', name:x.me?(x.name+' (you)'):x.name,
         initials, avatarBg:x.me?'#16a85f':avatarColors[this.hash(x.name)%avatarColors.length],
         netWorth:this.money0(Math.abs(profit)), profit:this.money0(Math.abs(profit)), profitArrow:up?'▲':'▼', profitColor:up?GREEN:RED,
-        rowBg:x.me?'#f0faf4':'transparent',
+        rowBg:x.me?'#f0faf4':'transparent', showFounder:x.me&&this.isFounder(),
         onClick: x.me ? ()=>this.openProfileView(null) : ()=>this.setState({profileViewName:x.name,view:'profile'}) }; });
     const lbUsername=this.loadUsername();
-    const lbNameSave=()=>{ const n=(this._lbNameDraft||'').trim(); if(!n) return; this.saveUsername(n); this._lbNameDraft=''; setTimeout(()=>this.submitScore(),100); this.setState(s=>({tick:s.tick+1})); };
+    const lbNameSave=()=>{ const n=(this._lbNameDraft||'').trim(); if(!n) return; this.saveUsername(n); this._lbNameDraft=''; setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); },100); this.setState(s=>({tick:s.tick+1})); };
     const lbNameData={ showPrompt:!lbUsername, showEdit:!!lbUsername, current:lbUsername,
       onInput:(e)=>{ this._lbNameDraft=e.target.value; },
       onKeyDown:(e)=>{ if(e.key==='Enter') lbNameSave(); },
@@ -3994,22 +4177,25 @@ Yan Diomande|RB Leipzig|CM|21|4
       const buy=S.tradeSide==='buy'; const isHW=S.tradeSide==='hatewatch'; const isCover=S.tradeSide==='cover';
       const held=S.holdings[p.id]; const heldQty=held?held.qty:0;
       const shorted=S.shorts[p.id]; const shortedQty=shorted?shorted.qty:0;
+      const bp=this.buyingPower(); const marginUsed=this.marginUsed(); const marginLimit=this.marginLimit();
       const cashAfter=(buy||isCover)?this.state.cash-total:this.state.cash+total;
+      const onMargin=buy&&cashAfter<0;
       let error='';
-      if(buy&&total>this.state.cash) error='Not enough buying power.';
+      if(buy&&total>bp) error='Not enough buying power (cash + 50% of holdings).';
       if(S.tradeSide==='sell'&&qty>heldQty) error='You only hold '+heldQty+' shares.';
-      if(isHW&&total>this.state.cash) error='Need collateral equal to position size.';
+      if(isHW&&total>bp) error='Need collateral equal to position size.';
       if(isCover&&qty>shortedQty) error='You only have '+shortedQty+' shares hatewatched.';
       const ok=!error;
       const HW_RED='#b91c1c';
-      const maxBuy=Math.floor(this.state.cash/price);
+      const maxBuy=Math.floor(bp/price);
       const quickQtys=(buy||isHW?[1,5,10,'Max']:isCover?[1,5,'Half','All']:[1,5,'Half','All']).map(label=>{ let q; if(label==='Max')q=Math.max(1,maxBuy); else if(label==='All')q=isCover?shortedQty:heldQty; else if(label==='Half')q=Math.max(1,Math.floor((isCover?shortedQty:heldQty)/2)); else q=label; return {label:String(label),onClick:()=>this.setTradeQty(q)}; });
       const sideLabel=buy?'Buy order':isHW?'Hatewatch':isCover?'Cover hatewatch':'Sell order';
       const sideColor=isHW||isCover?HW_RED:buy?GREEN:RED;
       const confirmLabel=isHW?('Hatewatch '+qty+' · '+this.money(total)):isCover?('Cover '+qty+' · '+this.money(total)):buy?('Buy '+qty+' · '+this.money(total)):('Sell '+qty+' · '+this.money(total));
       tr={ name:p.name,team:p.team,pos:p.pos,price:this.money(price),qty,
         sideLabel,sideColor,
-        total:this.money(total),balanceLabel:'Cash after',balanceAfter:this.money(cashAfter),balanceColor:cashAfter<0?RED:'#16201a',
+        total:this.money(total),balanceLabel:onMargin?'On margin':'Cash after',balanceAfter:this.money(cashAfter),balanceColor:cashAfter<0?'#e07a1a':'#16201a',
+        buyingPower:this.money(bp),showMargin:marginUsed>0||onMargin,marginUsed:this.money(marginUsed),marginLimit:this.money(marginLimit),marginWarning:onMargin?'⚠ Using margin — 0.5%/day interest on borrowed amount.':'',
         inc:()=>this.setTradeQty(qty+1),dec:()=>this.setTradeQty(qty-1),quickQtys,error,
         confirm:()=>this.confirmTrade(),confirmLabel,
         confirmBg:ok?(isHW||isCover?HW_RED:buy?GREEN:RED):'#c4ccc3',confirmCursor:ok?'pointer':'not-allowed',confirmOpacity:ok?'1':'0.7' }; }
@@ -4050,6 +4236,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       clearFilters:()=>this.clearFilters(),
       goHome:()=>this.goHome(), goLeaders:()=>this.nav('leaders'),
       cashFmt:this.money(this.state.cash),
+      buyingPowerFmt:this.money(this.buyingPower()),
+      marginUsedFmt:this.money(this.marginUsed()),
+      hasMarginUsed:this.marginUsed()>0,
       rewardBtnLabel,rewardBtnColor,rewardBtnBg, openReward:()=>this.openReward(),
       // views
       isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders', isArticles:S.view==='articles', isProfile:S.view==='profile', isClubs:S.view==='clubs',
@@ -4223,6 +4412,24 @@ Yan Diomande|RB Leipzig|CM|21|4
           };
         });
       })(),
+      // share / referral / founder / phone
+      shareOpen: S.shareOpen, openShare:()=>this.setState({shareOpen:true}), closeShare:()=>this.setState({shareOpen:false}),
+      stopShare:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
+      shareLink: window.location.origin+window.location.pathname+'?ref='+this.getRefCode(),
+      copyShareLink:()=>{ const link=window.location.origin+window.location.pathname+'?ref='+this.getRefCode(); navigator.clipboard.writeText(link).then(()=>this.setState({shareCopied:true}),()=>{}); setTimeout(()=>this.setState({shareCopied:false}),2000); },
+      shareCopied: S.shareCopied,
+      shareCopiedLabel: S.shareCopied ? 'Copied!' : 'Copy link',
+      whatsappShareLink: 'https://wa.me/?text='+encodeURIComponent('Join me on FootyStock — the football stock market game! Use my link: '+window.location.origin+window.location.pathname+'?ref='+this.getRefCode()),
+      referralCount: this._referralCount||0,
+      mysteryOpen: S.mysteryOpen, closeMystery:()=>this.setState({mysteryOpen:false}),
+      stopMystery:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
+      mysteryPacks: S.mysteryPacks||[],
+      isFounder: this.isFounder(),
+      myPhone: this._myPhone||'',
+      phoneSaving: S.phoneSaving, phoneSaved: S.phoneSaved,
+      savePhone:()=>this.savePhone(),
+      recoverOpen: S.recoverOpen, closeRecover:()=>this.setState({recoverOpen:false}),
+      stopRecover:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
     };
   }
 }
