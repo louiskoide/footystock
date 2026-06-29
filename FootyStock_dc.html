@@ -924,6 +924,10 @@
 
       <!-- club chat -->
       <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Club chat</div>
+      <!-- loading -->
+      <sc-if value="{{ clubChatLoading }}">
+        <div style="text-align:center;padding:30px;font:500 13px 'Hanken Grotesk';color:#8a938c">Loading chat…</div>
+      </sc-if>
       <!-- setup needed banner -->
       <sc-if value="{{ clubChatSetupNeeded }}">
         <div style="background:#fef9ec;border:1px solid #f5d87a;border-radius:14px;padding:18px 20px;margin-bottom:16px">
@@ -1474,7 +1478,7 @@ class Component extends DCLogic {
     // Poll club data every 30s so new members, ownership changes, and
     // removals appear without a manual refresh.
     this.clubTimer = setInterval(()=>{ if(this.state.myClub) this.loadMyClub(); }, 30000);
-    this.chatTimer = setInterval(()=>{ if(this.state.myClub && this.state.view==='clubs') this.loadClubMessages(); }, 15000);
+    this.chatTimer = setInterval(()=>{ if(this.state.myClub && this.state.view==='clubs') this.loadClubMessages(this.state.myClub.id); }, 15000);
     this.timer = setInterval(()=>{
       const DB = this.getDB();
       // orders fill at the next price tick, not the price shown when confirmed —
@@ -3364,19 +3368,20 @@ Yan Diomande|RB Leipzig|CM|21|4
         Supa.get('clubs','id=eq.'+clubId),
         Supa.get('club_members','club_id=eq.'+clubId+'&order=joined_at.asc'),
       ]);
-      this.setState({myClub:clubs[0]||null,clubMembers:members,clubLoading:false});
-      this.loadClubMessages();
+      const club=clubs[0]||null;
+      this.setState({myClub:club,clubMembers:members,clubLoading:false});
+      // Pass clubId directly — setState may not flush before loadClubMessages runs.
+      this.loadClubMessages(club?.id);
     }catch(e){this.setState({clubLoading:false,clubError:e.message});}
   }
 
-  async loadClubMessages(){
-    const clubId=this.state.myClub?.id; if(!clubId) return;
+  async loadClubMessages(clubId){
+    const id=clubId||this.state.myClub?.id; if(!id) return;
     try{
-      const msgs=await Supa.get('club_messages','club_id=eq.'+clubId+'&order=created_at.asc&limit=100');
+      const msgs=await Supa.get('club_messages','club_id=eq.'+id+'&order=created_at.asc&limit=100');
       this.setState({clubMessages:msgs,clubChatReady:true});
       setTimeout(()=>{ const el=document.getElementById('club-chat-scroll'); if(el) el.scrollTop=el.scrollHeight; },50);
     }catch(e){
-      // Table likely doesn't exist yet — flag it so the UI shows setup instructions.
       this.setState({clubChatReady:false});
     }
   }
