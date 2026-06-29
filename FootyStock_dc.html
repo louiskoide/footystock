@@ -2904,7 +2904,14 @@ Yan Diomande|RB Leipzig|CM|21|4
           const goalPart = g*1.0 + (g>=2 ? Math.pow(g-1,1.6)*0.9 : 0);
           const assistPart = a*0.6 + (a>=2 ? Math.pow(a-1,1.4)*0.4 : 0);
           const ratingExcess = Math.max(0, s.rating-8.0);
-          const ratingPart = (s.rating-6.0)*1.3 + Math.pow(ratingExcess,1.8)*1.5;
+          // Defenders and GKs are rated against a higher baseline (6.5 vs 6.0)
+          // because API-Football's algorithm systematically drags them down whenever
+          // goals are conceded, even when they personally made 8 clearances. Using
+          // the same 6.0 baseline as attackers made a CB in a 1-0 loss look terrible
+          // even with a solid individual game.
+          const isDefPos = /^(CB|LB|RB|WB|GK|DEF|SW)$/i.test(pos);
+          const ratingBase = isDefPos ? 6.5 : 6.0;
+          const ratingPart = (s.rating-ratingBase)*1.3 + Math.pow(ratingExcess,1.8)*1.5;
           const delta=bench?0:parseFloat((ratingPart+goalPart+assistPart).toFixed(2));
           const st=[]; if(g)st.push(g+'G'); if(a)st.push(a+'A'); if(!g&&!a)st.push('—');
           events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,goals:g,assists:a,yellow:!!s.yellow,red:!!s.red,min:(s.min==null?null:s.min),bench,delta,statLine:st.join(' '),note:s.note,marks:s.marks||[],live:!!s.live,elapsed:(s.elapsed==null?null:s.elapsed)}); } }
@@ -2969,7 +2976,10 @@ Yan Diomande|RB Leipzig|CM|21|4
       // pricing-model.md). A player with no real signal trades flat at
       // the anchor; real output and real news move it, not raw market value.
       const clamp=(x,lo,hi)=>Math.max(lo,Math.min(hi,x));
-      const wPerf=0.5, wForm=0.3, wHype=0.35;
+      // Calibrated so a single good-but-not-exceptional match (rating~8.5 + 1 goal,
+      // perfScore≈1.0) moves the price ~6-8%. wPerf=0.5 previously caused 70%+
+      // swings because perfScore jumped from 0 (no data) to ~1.2 on a first WC app.
+      const wPerf=0.06, wForm=0.10, wHype=0.35;
       // perf/form only apply when we actually have a RATED appearance —
       // "no data" must stay neutral (0), never read as "bad". Note `atWC` is
       // also true for squad-confirmed players with no minutes yet (the inSquad
@@ -3005,7 +3015,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // fair value, so genuine hype bubbles and sell-offs are visible but
       // fundamentals still anchor the price.
       const demandScore = (live && live.demand) ? (live.demand[id] || 0) : 0;
-      const price = fairValue * Math.exp(0.28 * demandScore);
+      const price = fairValue * Math.exp(0.15 * demandScore);
 
       // history 90d ending at current price. A player with a real signal
       // (WC performance or curated news) actually drifted to get here, so
@@ -3036,7 +3046,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // (same 0.6 multiplier) instead of quietly burying ~75% of it in a
       // multi-day ease-in the live chart never reflected.
       for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N){ e._impactPct=0; continue; }
-        const bump=(e.delta/100)*price*0.9, ramp=1, halfLife=6;
+        const bump=(e.delta/100)*price*0.4, ramp=1, halfLife=6;
         for(let j=idx;j<N;j++){ const daysIn=j-idx+1; // +1: the match day itself is already day 1, not day 0 — otherwise a same-day event (idx===N-1) eases in at 0 and never visibly moves today's price.
           const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
           const decay=Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);
@@ -3173,8 +3183,8 @@ Yan Diomande|RB Leipzig|CM|21|4
   // and re-seed cleanly: the backfill joins smoothly onto today's correct close,
   // so 1D starts near 0 and real daily movement re-accumulates under the fixed
   // formula instead of inheriting a phantom step.
-  loadHist(){ try{ localStorage.removeItem('footystock_pricehist_v1'); localStorage.removeItem('footystock_pricehist_v2'); localStorage.removeItem('footystock_pricehist_v3'); localStorage.removeItem('footystock_pricehist_v4'); return JSON.parse(localStorage.getItem('footystock_pricehist_v5'))||{}; }catch(e){ return {}; } }
-  saveHist(){ if(!this._histDirty||!this._histStore) return; try{ localStorage.setItem('footystock_pricehist_v5',JSON.stringify(this._histStore)); this._histDirty=false; }catch(e){} }
+  loadHist(){ try{ localStorage.removeItem('footystock_pricehist_v1'); localStorage.removeItem('footystock_pricehist_v2'); localStorage.removeItem('footystock_pricehist_v3'); localStorage.removeItem('footystock_pricehist_v4'); localStorage.removeItem('footystock_pricehist_v5'); return JSON.parse(localStorage.getItem('footystock_pricehist_v6'))||{}; }catch(e){ return {}; } }
+  saveHist(){ if(!this._histDirty||!this._histStore) return; try{ localStorage.setItem('footystock_pricehist_v6',JSON.stringify(this._histStore)); this._histDirty=false; }catch(e){} }
   // smooth, deterministic pre-history filler of `count` points for the days
   // BEFORE the oldest real close. It leads smoothly UP TO `anchor` but its last
   // point is the natural "day before" value, NOT anchor exactly — otherwise the
