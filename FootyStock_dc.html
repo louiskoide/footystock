@@ -2927,7 +2927,7 @@ Yan Diomande|RB Leipzig|CM|21|4
   todayStr(){ return new Date().toISOString().slice(0,10); }
   yesterdayStr(){ return new Date(Date.now()-86400000).toISOString().slice(0,10); }
   isClaimable(){ return this.state.lastClaim !== this.todayStr(); }
-  rewardSchedule(){ return [250,300,350,400,500,600,1000]; }
+  rewardSchedule(){ return [200,200,200,200,200,200,1000]; }
   nextStreakDay(){ // what day in cycle this claim will be
     if(!this.isClaimable()) return ((this.state.streak-1)%7)+1;
     const continues = this.state.lastClaim===this.yesterdayStr();
