@@ -407,6 +407,17 @@
             <button onClick="{{ d.onSell }}" style="flex:1;font:700 14px 'Hanken Grotesk';background: {{ d.sellBg }};color: {{ d.sellColor }};border:1px solid {{ d.sellBorder }};padding:13px;border-radius:11px;cursor: {{ d.sellCursor }}">Sell</button>
           </div>
           <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;text-align:center;margin-top:12px">Buying power · {{ cashFmt }}</div>
+          <div style="margin-top:14px;padding-top:14px;border-top:1px solid #eef1ec">
+            <sc-if value="{{ d.hasShort }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';margin-bottom:6px"><span style="color:#8a938c">Hatewatching</span><span style="font-family:'Space Grotesk';font-weight:600">{{ d.shortQty }} shares</span></div>
+              <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';margin-bottom:6px"><span style="color:#8a938c">Shorted at</span><span style="font-family:'Space Grotesk';font-weight:600">{{ d.shortAvg }}</span></div>
+              <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';margin-bottom:10px"><span style="color:#8a938c">Unrealised P/L</span><span style="font:700 13px 'Space Grotesk';color: {{ d.shortPlColor }}">{{ d.shortPl }}</span></div>
+            </sc-if>
+            <div style="display:flex;gap:10px">
+              <button onClick="{{ d.onHatewatch }}" style="flex:1;font:700 13px 'Hanken Grotesk';background:#fff;color:#b91c1c;border:1.5px solid #b91c1c;padding:11px;border-radius:11px;cursor:pointer">Hatewatch</button>
+              <button onClick="{{ d.onCover }}" style="flex:1;font:700 13px 'Hanken Grotesk';background: {{ d.hasShort ? '#b91c1c' : '#f5f6f3' }};color: {{ d.hasShort ? '#fff' : '#bfc6be' }};border:1.5px solid {{ d.hasShort ? '#b91c1c' : '#eef1ec' }};padding:11px;border-radius:11px;cursor: {{ d.hasShort ? 'pointer' : 'not-allowed' }}">Cover</button>
+            </div>
+          </div>
         </div>
       </div>
     </div>
@@ -449,6 +460,24 @@
       </div>
     </sc-if>
 
+    <div style="font:700 18px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 13px">Hatewatch positions</div>
+    <sc-if value="{{ hasShorts }}" hint-placeholder-val="{{ false }}">
+    <div class="fs-scrollx" style="background:#fff;border:1px solid #fcd9d6;border-radius:16px;overflow:hidden;margin-bottom:30px">
+      <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 90px 110px 110px 110px;gap:12px;padding:12px 22px;border-bottom:1px solid #fcd9d6;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Player</span><span style="text-align:right">Shares</span><span style="text-align:right">Shorted at</span><span style="text-align:right">Current</span><span style="text-align:right">P/L</span></div>
+      <sc-for list="{{ shortsList }}" as="h" hint-placeholder-count="2">
+        <div onClick="{{ h.onClick }}" class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 90px 110px 110px 110px;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #fde8e7;cursor:pointer" style-hover="display:grid;grid-template-columns:1fr 90px 110px 110px 110px;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #fde8e7;cursor:pointer;background:#fff8f7">
+          <span style="display:flex;flex-direction:column"><b style="font:600 15px 'Hanken Grotesk'">{{ h.name }}</b><span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ h.lg }} · {{ h.pos }} · {{ h.price }}</span></span>
+          <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ h.qty }}</span>
+          <span style="text-align:right;font:500 13px 'Space Grotesk';color:#46504a">{{ h.avg }}</span>
+          <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ h.value }}</span>
+          <span style="text-align:right;display:flex;flex-direction:column"><b style="font:700 14px 'Space Grotesk';color: {{ h.plColor }}">{{ h.pl }}</b><span style="font:600 11px 'Hanken Grotesk';color: {{ h.plColor }}">{{ h.plPct }}</span></span>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+    <sc-if value="{{ noShorts }}" hint-placeholder-val="{{ true }}">
+      <div style="background:#fff;border:1px dashed #fcd9d6;border-radius:16px;padding:30px;text-align:center;margin-bottom:30px;font:500 13px 'Hanken Grotesk';color:#b91c1c">No hatewatch positions. Find a player you think is overvalued and bet against them.</div>
+    </sc-if>
     <div style="font:700 18px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 13px">Transaction history</div>
     <sc-if value="{{ hasTxns }}" hint-placeholder-val="{{ false }}">
     <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
@@ -651,7 +680,7 @@ class Component extends DCLogic {
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
       showReward:false, tick:0, pendingOrders:[], ready:false,
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
-      streak: saved.streak, lastClaim: saved.lastClaim,
+      streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
     };
   }
   componentDidMount(){
@@ -746,11 +775,11 @@ class Component extends DCLogic {
   // ---------- persistence ----------
   load(){
     let s=null; try{ s = JSON.parse(localStorage.getItem('footystock_v3')); }catch(e){}
-    if(!s) return { cash:10000, holdings:{}, txns:[], watch:['lamine-yamal','desire-doue','mika-godts','florian-wirtz'], streak:0, lastClaim:null };
-    return { cash:s.cash??10000, holdings:s.holdings||{}, txns:s.txns||[], watch:s.watch||[], streak:s.streak||0, lastClaim:s.lastClaim||null };
+    if(!s) return { cash:10000, holdings:{}, txns:[], watch:['lamine-yamal','desire-doue','mika-godts','florian-wirtz'], streak:0, lastClaim:null, shorts:{} };
+    return { cash:s.cash??10000, holdings:s.holdings||{}, txns:s.txns||[], watch:s.watch||[], streak:s.streak||0, lastClaim:s.lastClaim||null, shorts:s.shorts||{} };
   }
   persist(extra){
-    const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim }, extra||{});
+    const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim, shorts:this.state.shorts }, extra||{});
     try{ localStorage.setItem('footystock_v3', JSON.stringify(s)); }catch(e){}
   }
 
@@ -2261,7 +2290,9 @@ Yan Diomande|RB Leipzig|CM|21|4
   // ---------- portfolio math ----------
   holdingsValue(){ let v=0; const h=this.state.holdings; for(const id in h){ const p=this.byId(id); if(p) v+=this.curPrice(p)*h[id].qty; } return v; }
   costBasis(){ let v=0; const h=this.state.holdings; for(const id in h){ v+=h[id].qty*h[id].avg; } return v; }
-  netWorth(){ return this.state.cash + this.holdingsValue(); }
+  shortsLiability(){ let v=0; const sh=this.state.shorts; for(const id in sh){ const p=this.byId(id); if(p) v+=this.curPrice(p)*sh[id].qty; } return v; }
+  shortsPnl(){ let v=0; const sh=this.state.shorts; for(const id in sh){ const p=this.byId(id); if(p) v+=(sh[id].avg-this.curPrice(p))*sh[id].qty; } return v; }
+  netWorth(){ return this.state.cash + this.holdingsValue() - this.shortsLiability(); }
   allTimePL(){ return this.netWorth() - 10000; }
 
   // ---------- daily reward ----------
@@ -2301,7 +2332,7 @@ Yan Diomande|RB Leipzig|CM|21|4
   onSearch(e){ this.setState({search:e.target.value}); }
   toggleWatch(id){ const w=this.state.watch.slice(); const i=w.indexOf(id); if(i>=0)w.splice(i,1); else w.push(id); this.setState({watch:w},()=>this.persist()); }
 
-  openTrade(id,side){ const p=this.byId(id); const held=this.state.holdings[id]; if(side==='sell'&&(!held||held.qty<1))return; this.setState({tradeOpen:true,tradeId:id,tradeSide:side,tradeQty:1}); }
+  openTrade(id,side){ const p=this.byId(id); const held=this.state.holdings[id]; const shorted=this.state.shorts[id]; if(side==='sell'&&(!held||held.qty<1))return; if(side==='cover'&&(!shorted||shorted.qty<1))return; this.setState({tradeOpen:true,tradeId:id,tradeSide:side,tradeQty:1}); }
   closeTrade(){ this.setState({tradeOpen:false}); }
   setTradeQty(q){ this.setState({tradeQty:Math.max(1,q)}); }
   confirmTrade(){
@@ -2315,23 +2346,38 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
   fillPendingOrders(DB){
     if(!this.state.pendingOrders.length) return;
-    const holdings=Object.assign({},this.state.holdings); const txns=this.state.txns.slice();
+    const holdings=Object.assign({},this.state.holdings); const shorts=Object.assign({},this.state.shorts); const txns=this.state.txns.slice();
     let cash=this.state.cash; let didFill=false;
     for(const order of this.state.pendingOrders){
       const p=this.byId(order.id); if(!p) continue;
       const price=this.curPrice(p); const qty=order.qty; const total=price*qty;
       if(order.side==='buy'){
-        if(total>cash+1e-9) continue; // can't afford at the fill price — order lapses
+        if(total>cash+1e-9) continue;
         const cur=holdings[order.id]||{qty:0,avg:0};
         const newQty=cur.qty+qty; const newAvg=(cur.qty*cur.avg+qty*price)/newQty;
         holdings[order.id]={qty:newQty,avg:newAvg};
         txns.unshift({side:'BUY',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
         cash-=total;
-      } else {
-        const cur=holdings[order.id]; if(!cur||cur.qty<qty) continue; // no longer holds enough — order lapses
+      } else if(order.side==='sell'){
+        const cur=holdings[order.id]; if(!cur||cur.qty<qty) continue;
         const newQty=cur.qty-qty; if(newQty<=0) delete holdings[order.id]; else holdings[order.id]={qty:newQty,avg:cur.avg};
         txns.unshift({side:'SELL',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
         cash+=total;
+      } else if(order.side==='hatewatch'){
+        // Short: receive cash now, owe shares at current price later
+        if(total>cash+1e-9) continue; // require 1x collateral to cap downside
+        const cur=shorts[order.id]||{qty:0,avg:0};
+        const newQty=cur.qty+qty; const newAvg=(cur.qty*cur.avg+qty*price)/newQty;
+        shorts[order.id]={qty:newQty,avg:newAvg};
+        txns.unshift({side:'HATEWATCH',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
+        cash+=total; // receive short-sale proceeds
+      } else if(order.side==='cover'){
+        // Cover: buy back shorted shares
+        const cur=shorts[order.id]; if(!cur||cur.qty<qty) continue;
+        if(total>cash+1e-9) continue;
+        const newQty=cur.qty-qty; if(newQty<=0) delete shorts[order.id]; else shorts[order.id]={qty:newQty,avg:cur.avg};
+        txns.unshift({side:'COVER',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
+        cash-=total;
       }
       // Tell the worker about this trade so real user demand moves the shared
       // market price (same signal as virtual agents). Fire-and-forget: if the
@@ -2339,7 +2385,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       if(this._liveWorkerBase){ fetch(this._liveWorkerBase+'/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:order.id,side:order.side})}).catch(()=>{}); }
       didFill=true;
     }
-    this.setState({holdings,txns,cash,pendingOrders:[]},()=>{ this.persist(); if(didFill) this.submitScore(); });
+    this.setState({holdings,txns,cash,shorts,pendingOrders:[]},()=>{ this.persist(); if(didFill) this.submitScore(); });
   }
   openReward(){ this.setState({showReward:true}); }
   closeReward(){ this.setState({showReward:false}); }
@@ -2721,7 +2767,15 @@ Yan Diomande|RB Leipzig|CM|21|4
           posValue:this.money(posValue),posPl:(posUp?'+':'−')+this.money(Math.abs(posPl)).slice(1),posPlColor:posUp?GREEN:RED,
           watchLabel:watched?'★ Watching':'☆ Watch',watchColor:watched?'#e2a32b':'#8a938c',
           onToggleWatch:()=>this.toggleWatch(p.id),onBuy:()=>this.openTrade(p.id,'buy'),onSell:()=>this.openTrade(p.id,'sell'),
-          sellBg:hasPos?'#fff':'#f5f6f3',sellColor:hasPos?'#16201a':'#bfc6be',sellBorder:hasPos?'#e1e4dd':'#eef1ec',sellCursor:hasPos?'pointer':'not-allowed' };
+          sellBg:hasPos?'#fff':'#f5f6f3',sellColor:hasPos?'#16201a':'#bfc6be',sellBorder:hasPos?'#e1e4dd':'#eef1ec',sellCursor:hasPos?'pointer':'not-allowed',
+          onHatewatch:()=>this.openTrade(p.id,'hatewatch'),onCover:()=>this.openTrade(p.id,'cover'),
+          shortPos:S.shorts[p.id]||null,
+          hasShort:!!(S.shorts[p.id]&&S.shorts[p.id].qty>0),
+          shortQty:S.shorts[p.id]?S.shorts[p.id].qty:0,
+          shortAvg:S.shorts[p.id]?this.money(S.shorts[p.id].avg):'—',
+          shortValue:S.shorts[p.id]?this.money(this.curPrice(p)*S.shorts[p.id].qty):'—',
+          shortPl:(()=>{ const sh=S.shorts[p.id]; if(!sh) return '—'; const pl=(sh.avg-this.curPrice(p))*sh.qty; const up=pl>=0; return (up?'+':'−')+this.money(Math.abs(pl)).slice(1); })(),
+          shortPlColor:(()=>{ const sh=S.shorts[p.id]; if(!sh) return '#46504a'; return (sh.avg-this.curPrice(p))>=0?GREEN:RED; })() };
       }
     }
     const rangeTabs=[['90m',"90'"],['24h','24H'],[7,'7D'],[30,'30D'],[90,'90D']]
@@ -2738,9 +2792,18 @@ Yan Diomande|RB Leipzig|CM|21|4
       .sort((a,b)=>0);
 
     // ---- txns ----
-    const txnList=S.txns.slice(0,30).map(t=>({ side:t.side,name:t.name,
-      detail:`${t.qty} @ ${this.money(t.price)} · ${t.date}`,total:(t.side==='BUY'?'−':'+')+this.money(t.total).slice(1),
-      color:t.side==='BUY'?RED:GREEN,bg:t.side==='BUY'?RBG:GBG }));
+    const HW='#b91c1c',HWBG='#fde8e7';
+    const txnList=S.txns.slice(0,30).map(t=>{ const hw=t.side==='HATEWATCH'||t.side==='COVER'; const cashIn=t.side==='SELL'||t.side==='HATEWATCH'; return { side:t.side,name:t.name,
+      detail:`${t.qty} @ ${this.money(t.price)} · ${t.date}`,total:(cashIn?'+':'−')+this.money(t.total).slice(1),
+      color:hw?HW:t.side==='BUY'?RED:GREEN,bg:hw?HWBG:t.side==='BUY'?RBG:GBG }; });
+
+    // ---- shorts list ----
+    const shortsList=Object.keys(S.shorts).map(id=>{ const p=this.byId(id); if(!p) return null; const sh=S.shorts[id]; const price=this.curPrice(p);
+      const val=price*sh.qty; const plv=(sh.avg-price)*sh.qty; const up=plv>=0; const plpct=(plv/(sh.avg*sh.qty))*100;
+      return { name:p.name,lg:p.abbr,pos:p.pos,price:this.money(price),qty:sh.qty,avg:this.money(sh.avg),value:this.money(val),
+        pl:(up?'+':'−')+this.money(Math.abs(plv)).slice(1),plPct:this.pct(plpct),plColor:up?GREEN:RED,onClick:()=>this.openPlayer(id) }; })
+      .filter(Boolean);
+    const hasShorts=shortsList.length>0, noShorts=shortsList.length===0;
 
     // ---- watch ----
     const watchList=S.watch.map(id=>this.byId(id)).filter(Boolean).map(p=>{ const dec=decorate(p); dec.onRemove=()=>this.toggleWatch(p.id); return dec; });
@@ -2784,18 +2847,28 @@ Yan Diomande|RB Leipzig|CM|21|4
     // ---- trade modal ----
     let tr=null;
     if(S.tradeOpen && S.tradeId){ const p=this.byId(S.tradeId); const price=this.curPrice(p); const qty=S.tradeQty; const total=price*qty;
-      const buy=S.tradeSide==='buy'; const held=S.holdings[p.id]; const heldQty=held?held.qty:0;
-      const cashAfter=buy?this.state.cash-total:this.state.cash+total;
-      let error=''; if(buy&&total>this.state.cash) error='Not enough buying power.'; if(!buy&&qty>heldQty) error='You only hold '+heldQty+' shares.';
+      const buy=S.tradeSide==='buy'; const isHW=S.tradeSide==='hatewatch'; const isCover=S.tradeSide==='cover';
+      const held=S.holdings[p.id]; const heldQty=held?held.qty:0;
+      const shorted=S.shorts[p.id]; const shortedQty=shorted?shorted.qty:0;
+      const cashAfter=(buy||isCover)?this.state.cash-total:this.state.cash+total;
+      let error='';
+      if(buy&&total>this.state.cash) error='Not enough buying power.';
+      if(S.tradeSide==='sell'&&qty>heldQty) error='You only hold '+heldQty+' shares.';
+      if(isHW&&total>this.state.cash) error='Need collateral equal to position size.';
+      if(isCover&&qty>shortedQty) error='You only have '+shortedQty+' shares hatewatched.';
       const ok=!error;
+      const HW_RED='#b91c1c';
       const maxBuy=Math.floor(this.state.cash/price);
-      const quickQtys=(buy?[1,5,10,'Max']:[1,5,'Half','All']).map(label=>{ let q; if(label==='Max')q=Math.max(1,maxBuy); else if(label==='All')q=heldQty; else if(label==='Half')q=Math.max(1,Math.floor(heldQty/2)); else q=label; return {label:String(label),onClick:()=>this.setTradeQty(q)}; });
+      const quickQtys=(buy||isHW?[1,5,10,'Max']:isCover?[1,5,'Half','All']:[1,5,'Half','All']).map(label=>{ let q; if(label==='Max')q=Math.max(1,maxBuy); else if(label==='All')q=isCover?shortedQty:heldQty; else if(label==='Half')q=Math.max(1,Math.floor((isCover?shortedQty:heldQty)/2)); else q=label; return {label:String(label),onClick:()=>this.setTradeQty(q)}; });
+      const sideLabel=buy?'Buy order':isHW?'Hatewatch':isCover?'Cover hatewatch':'Sell order';
+      const sideColor=isHW||isCover?HW_RED:buy?GREEN:RED;
+      const confirmLabel=isHW?('Hatewatch '+qty+' · '+this.money(total)):isCover?('Cover '+qty+' · '+this.money(total)):buy?('Buy '+qty+' · '+this.money(total)):('Sell '+qty+' · '+this.money(total));
       tr={ name:p.name,team:p.team,pos:p.pos,price:this.money(price),qty,
-        sideLabel:buy?'Buy order':'Sell order',sideColor:buy?GREEN:RED,
-        total:this.money(total),balanceLabel:buy?'Cash after':'Cash after',balanceAfter:this.money(cashAfter),balanceColor:cashAfter<0?RED:'#16201a',
+        sideLabel,sideColor,
+        total:this.money(total),balanceLabel:'Cash after',balanceAfter:this.money(cashAfter),balanceColor:cashAfter<0?RED:'#16201a',
         inc:()=>this.setTradeQty(qty+1),dec:()=>this.setTradeQty(qty-1),quickQtys,error,
-        confirm:()=>this.confirmTrade(),confirmLabel:buy?('Buy '+qty+' · '+this.money(total)):('Sell '+qty+' · '+this.money(total)),
-        confirmBg:ok?(buy?GREEN:RED):'#c4ccc3',confirmCursor:ok?'pointer':'not-allowed',confirmOpacity:ok?'1':'0.7' }; }
+        confirm:()=>this.confirmTrade(),confirmLabel,
+        confirmBg:ok?(isHW||isCover?HW_RED:buy?GREEN:RED):'#c4ccc3',confirmCursor:ok?'pointer':'not-allowed',confirmOpacity:ok?'1':'0.7' }; }
 
     // ---- reward modal ----
     const sched=this.rewardSchedule(); const claimable=this.isClaimable();
@@ -2850,7 +2923,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // leaderboard
       leaderboard, lbNameData,
       // trade modal
-      tradeOpen:S.tradeOpen, tr, closeTrade:()=>this.closeTrade(), stop:(e)=>this.stop(e),
+      tradeOpen:S.tradeOpen, tr, closeTrade:()=>this.closeTrade(), stop:(e)=>this.stop(e), shortsList,hasShorts,noShorts,
       // reward modal
       showReward:S.showReward, rw, closeReward:()=>this.closeReward(),
     };
