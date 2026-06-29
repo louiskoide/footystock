@@ -2825,17 +2825,23 @@ Yan Diomande|RB Leipzig|CM|21|4
       const RN = rHist.length;
 
       // All % changes come from rHist so they always match the chart.
+      // Only compare within real stored data — never reach into synthetic backfill.
       const realDays = (this._histStore?.[id]?.r?.length) || 1;
-      const change7d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-8)])/rHist[Math.max(0,RN-8)])*100).toFixed(1));
-      if (realDays >= 31)
-        change30d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-31)])/rHist[Math.max(0,RN-31)])*100).toFixed(1));
+      const lookback7 = Math.min(7, realDays - 1);
+      const change7d = lookback7 > 0
+        ? parseFloat((((rHist[RN-1]-rHist[RN-1-lookback7])/rHist[RN-1-lookback7])*100).toFixed(1))
+        : 0;
+      if (realDays >= 31) {
+        const lb30 = Math.min(30, realDays - 1);
+        change30d=parseFloat((((rHist[RN-1]-rHist[RN-1-lb30])/rHist[RN-1-lb30])*100).toFixed(1));
+      }
 
       // Articles mentioning this player — only elite/notable performances get
       // a writeup (see DATA().ARTICLES), shown under the player page when
       // recent rather than duplicated for every routine match.
       const playerArticles = D.ARTICLES.filter(a=>a.refs.includes(id));
       db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price:rHist[RN-1],anchor,
-        change7d,change30d,hist:rHist,events,streakLen,atWC,wcStatus,nation,news,mood,
+        change7d,change30d,hist:rHist,realDays,events,streakLen,atWC,wcStatus,nation,news,mood,
         signals:{fotmob,form:formSig,twitter:moodSig,transfermarkt:transferSig}, avgR,
         tmVal,tmTrendUp,articles:playerArticles });
     }
@@ -3391,10 +3397,10 @@ Yan Diomande|RB Leipzig|CM|21|4
       // the 7D/chart use (today's recorded close vs yesterday's), not the
       // wobbled live price — otherwise it jiggled every render with the
       // intraday noise and disagreed with the chart.
-      const hN=p.hist.length; const todayClose=p.hist[hN-1]; const prevClose=p.hist[hN-2]??todayClose;
-      // Add the same per-player-per-day wobble that was baked into change7d at
-      // build time, so 1D ticks each calendar day even when stored history hasn't
-      // rolled over yet. p._dw1d is set on the player object during buildDB.
+      const hN=p.hist.length; const todayClose=p.hist[hN-1];
+      // Only use yesterday's close if we have at least 2 real stored days —
+      // otherwise hist[hN-2] is synthetic backfill and would freeze the 1D ordering.
+      const prevClose=(p.realDays>=2)?p.hist[hN-2]:null;
       const dayChg=(prevClose?((todayClose-prevClose)/prevClose)*100:0);
       const upDay=dayChg>=0;
       const {volPct,hiAll,loAll}=riskStats(p);
