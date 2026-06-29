@@ -1517,7 +1517,7 @@ class Component extends DCLogic {
       cash: 10000, holdings: {}, txns: [], watch: ['lamine-yamal','desire-doue','mika-godts','florian-wirtz'],
       streak: 0, lastClaim: null, shorts: {},
       joinDate: today, allTimeHigh: 10000,
-      portfolioLoading: true,
+      portfolioLoading: true, username: '',
       clubLoading: false, myClub: null, clubMembers: [], clubPublicList: [],
       clubView: 'home', clubMenuOpenId: null, recapTab: 'bought',
       clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
@@ -1622,6 +1622,8 @@ class Component extends DCLogic {
     pollLeaderboard();
     this.leaderboardTimer = setInterval(()=>{ if(this.state.view==='leaders') pollLeaderboard(); }, 60000);
     setTimeout(()=>this.submitScore(), 3000);
+    // clear legacy localStorage keys from pre-email-auth era
+    try{ localStorage.removeItem('footystock_v3'); localStorage.removeItem('footystock_uid'); localStorage.removeItem('fs_username'); }catch(e){}
     // sync portfolio from cloud (handles cross-device and cross-domain merge)
     setTimeout(()=>this.syncFromCloud(), 1000);
     // auto-open reward if claimable on first load
@@ -1657,6 +1659,11 @@ class Component extends DCLogic {
   async syncFromCloud(){
     if(!this._sbUrl){ this.setState({portfolioLoading:false}); return; }
     const token=this.loadToken(); if(!token||token==='anon'){ this.setState({portfolioLoading:false}); return; }
+    // Restore username from leaderboard
+    try{
+      const lbRows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(token)+'&select=name');
+      if(lbRows&&lbRows.length&&lbRows[0].name) this.setState({username:lbRows[0].name});
+    }catch(e){}
     try{
       const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(token));
       if(!rows||!rows.length){
@@ -3511,8 +3518,8 @@ Yan Diomande|RB Leipzig|CM|21|4
     const fresh=Math.random().toString(36).slice(2)+Date.now().toString(36);
     localStorage.setItem('fs_token',fresh); return fresh;
   }catch(e){ return 'anon'; } }
-  loadUsername(){ try{ return localStorage.getItem('fs_username')||''; }catch(e){ return ''; } }
-  saveUsername(n){ try{ localStorage.setItem('fs_username',n.trim().slice(0,32)); }catch(e){} }
+  loadUsername(){ return (this.state&&this.state.username)||''; }
+  saveUsername(n){ const name=n.trim().slice(0,32); this.setState({username:name}); }
 
   async doSendOtp(){
     const email=(document.getElementById('fs-login-email')||{}).value||'';
