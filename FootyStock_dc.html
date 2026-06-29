@@ -1177,11 +1177,12 @@
         </div>
       </div>
 
-      <!-- email / account info -->
+      <!-- account code -->
       <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:20px 22px;margin-bottom:28px">
-        <div style="font:700 13px 'Hanken Grotesk';margin-bottom:4px">Account email</div>
-        <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:10px;line-height:1.5">Your verified email. Same email on any device gives you back your account.</div>
-        <div style="font:600 14px 'Hanken Grotesk';color:#16201a;background:#f5f6f3;border-radius:9px;padding:10px 14px">{{ myEmail }}</div>
+        <div style="font:700 13px 'Hanken Grotesk';margin-bottom:4px">Account code</div>
+        <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:10px;line-height:1.5">Copy this code and paste it on another device to restore your portfolio.</div>
+        <div style="font:500 12px 'Space Grotesk';color:#16201a;background:#f5f6f3;border-radius:9px;padding:10px 14px;word-break:break-all;letter-spacing:.03em">{{ myToken }}</div>
+        <button onClick="{{ copyToken }}" style="margin-top:10px;font:600 13px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;border-radius:9px;padding:8px 18px;cursor:pointer">{{ copyTokenLabel }}</button>
       </div>
     </sc-if>
 
@@ -1289,7 +1290,7 @@
 </div>
 </sc-if>
 
-<!-- ============ PHONE LOGIN GATE ============ -->
+<!-- ============ LOGIN GATE ============ -->
 <sc-if value="{{ showLoginGate }}" hint-placeholder-val="{{ false }}">
 <div style="position:fixed;inset:0;z-index:200;background:linear-gradient(160deg,#0c1f15 0%,#11321f 60%,#0a180f 100%);display:flex;align-items:center;justify-content:center;padding:24px">
   <div style="width:100%;max-width:400px">
@@ -1299,25 +1300,25 @@
     </div>
     <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px">
 
-      <!-- Step 1: email + name -->
+      <!-- New account -->
       <sc-if value="{{ loginStepEmail }}" hint-placeholder-val="{{ true }}">
-        <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Create your account</div>
-        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">We'll email you a code to verify — no password needed.</div>
-        <input id="fs-login-email" type="email" placeholder="Email address" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
-        <input id="fs-login-name" placeholder="Display name (must be unique)" maxlength="32" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
+        <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Pick a display name</div>
+        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">Choose a unique name to join the leaderboard. Save your account code to log in on other devices.</div>
+        <input id="fs-login-name" placeholder="Display name (e.g. LouisK)" maxlength="32" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
         <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
-        <button onClick="{{ doSendOtp }}" style="width:100%;font:700 16px 'Hanken Grotesk';background: {{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginBtnLabel }}</button>
+        <button onClick="{{ doLogin }}" style="width:100%;font:700 16px 'Hanken Grotesk';background:{{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginBtnLabel }}</button>
         <div style="font:500 12px 'Hanken Grotesk';color:#7fb89a;text-align:center;margin-top:14px;line-height:1.5">For entertainment only — no real money.</div>
+        <button onClick="{{ loginRecover }}" style="width:100%;font:600 13px 'Hanken Grotesk';background:none;color:#4a8a6a;border:none;padding:8px;cursor:pointer;margin-top:4px">Already have an account? Enter code →</button>
       </sc-if>
 
-      <!-- Step 2: enter OTP code -->
+      <!-- Recover with account code -->
       <sc-if value="{{ loginStepOtp }}" hint-placeholder-val="{{ false }}">
-        <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Check your email</div>
-        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">We sent a 6-digit code to <b style="color:#eaf3ed">{{ loginEmail }}</b>. Enter it below.</div>
-        <input id="fs-login-otp" type="text" inputmode="numeric" placeholder="6-digit code" maxlength="6" style="width:100%;box-sizing:border-box;font:700 22px 'Space Grotesk';letter-spacing:.2em;text-align:center;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:14px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
+        <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Enter your account code</div>
+        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">Paste the code from your original device to restore your portfolio.</div>
+        <input id="fs-login-otp" type="text" placeholder="Paste account code" maxlength="64" style="width:100%;box-sizing:border-box;font:500 14px 'Space Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
         <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
-        <button onClick="{{ doVerifyOtp }}" style="width:100%;font:700 16px 'Hanken Grotesk';background: {{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginBtnLabel }}</button>
-        <button onClick="{{ loginBack }}" style="width:100%;font:600 14px 'Hanken Grotesk';background:none;color:#7fb89a;border:none;padding:12px;cursor:pointer;margin-top:6px">← Use a different email</button>
+        <button onClick="{{ doVerifyOtp }}" style="width:100%;font:700 16px 'Hanken Grotesk';background:{{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginBtnLabel }}</button>
+        <button onClick="{{ loginBack }}" style="width:100%;font:600 14px 'Hanken Grotesk';background:none;color:#7fb89a;border:none;padding:12px;cursor:pointer;margin-top:6px">← Back</button>
       </sc-if>
 
     </div>
@@ -1526,7 +1527,7 @@ class Component extends DCLogic {
       clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null,
       shareOpen: false, shareCopied: false, mysteryOpen: false, mysteryPacks: [], recoverOpen: false,
       phoneVal: '', phoneSaving: false, phoneSaved: false,
-      loggedIn: !!this.loadEmail(), loginStep: 'email', loginEmail: '', loginError: '', loginSending: false,
+      loggedIn: !!(localStorage.getItem('fs_loggedin')), loginStep: 'email', loginEmail: '', loginError: '', loginSending: false, copyTokenLabel: 'Copy code',
     };
   }
   componentDidMount(){
@@ -1623,7 +1624,7 @@ class Component extends DCLogic {
     this.leaderboardTimer = setInterval(()=>{ if(this.state.view==='leaders') pollLeaderboard(); }, 60000);
     setTimeout(()=>this.submitScore(), 3000);
     // clear legacy localStorage keys from pre-email-auth era
-    try{ localStorage.removeItem('footystock_v3'); localStorage.removeItem('footystock_uid'); localStorage.removeItem('fs_username'); }catch(e){}
+    try{ localStorage.removeItem('footystock_v3'); localStorage.removeItem('footystock_uid'); localStorage.removeItem('fs_username'); localStorage.removeItem('fs_email'); }catch(e){}
     // one-time migration: wipe all display names from Supabase leaderboard
     if(this._sbUrl && !localStorage.getItem('fs_names_wiped_v1')){
       fetch(this._sbUrl+'?token=not.is.null',{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({name:''})}).then(()=>{ try{ localStorage.setItem('fs_names_wiped_v1','1'); }catch(e){} }).catch(()=>{});
@@ -3520,48 +3521,49 @@ Yan Diomande|RB Leipzig|CM|21|4
   loadUsername(){ return (this.state&&this.state.username)||''; }
   saveUsername(n){ const name=n.trim().slice(0,32); this.setState({username:name}); }
 
-  async doSendOtp(){
-    const email=(document.getElementById('fs-login-email')||{}).value||'';
+  // Generate a stable UUID token for a new user
+  _genToken(){ try{ return crypto.randomUUID(); }catch(e){ return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16)); } }
+
+  async doLogin(){
     const name=(document.getElementById('fs-login-name')||{}).value||'';
-    if(!email.includes('@')){ this.setState({loginError:'Enter a valid email address.'}); return; }
     if(!name.trim()){ this.setState({loginError:'Enter a display name.'}); return; }
     if(name.trim().length<2){ this.setState({loginError:'Display name must be at least 2 characters.'}); return; }
-    // Check username uniqueness (skip empty/wiped names)
+    this.setState({loginError:'',loginSending:true});
+    // Check uniqueness against non-empty names
     try{
       const existing=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name.trim())+'&select=token,name');
       const myToken=this.loadToken();
       const conflict=existing&&existing.find(r=>r.name&&r.token!==myToken);
-      if(conflict){ this.setState({loginError:'That display name is taken. Choose another.'}); return; }
+      if(conflict){ this.setState({loginError:'That name is taken. Try another.',loginSending:false}); return; }
     }catch(e){}
-    this.setState({loginError:'',loginSending:true});
-    try{
-      const res=await fetch(this._sbAuth()+'/otp',{method:'POST',headers:this._sbAuthHdr(),body:JSON.stringify({email:email.trim(),create_user:true})});
-      if(!res.ok){ const e=await res.json(); console.error('OTP error',e); this.setState({loginError:(e.error_description||e.msg||e.message||JSON.stringify(e)||'Failed to send code.').slice(0,120),loginSending:false}); return; }
-      this._pendingLoginEmail=email.trim();
-      this._pendingLoginName=name.trim();
-      this.setState({loginStep:'otp',loginEmail:email.trim(),loginError:'',loginSending:false});
-    }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
+    // Generate or reuse token
+    let token=this.loadToken();
+    if(!token||token==='anon'){ token=this._genToken(); try{ localStorage.setItem('fs_token',token); }catch(e){} }
+    this.saveUsername(name.trim());
+    try{ localStorage.setItem('fs_loggedin','1'); }catch(e){}
+    this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
+    setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); this.syncFromCloud(); },300);
   }
 
   async doVerifyOtp(){
-    const code=(document.getElementById('fs-login-otp')||{}).value||'';
-    const email=this._pendingLoginEmail||this.state.loginEmail||'';
-    if(!code||code.length<6){ this.setState({loginError:'Enter the 6-digit code from your email.'}); return; }
+    // Recover account by pasting account code (token)
+    const code=((document.getElementById('fs-login-otp')||{}).value||'').trim();
+    if(!code){ this.setState({loginError:'Paste your account code.'}); return; }
     this.setState({loginError:'',loginSending:true});
+    // Validate code exists in portfolios table
     try{
-      const res=await fetch(this._sbAuth()+'/verify',{method:'POST',headers:this._sbAuthHdr(),body:JSON.stringify({type:'email',email,token:code.trim()})});
-      if(!res.ok){ const e=await res.json(); this.setState({loginError:e.error_description||e.msg||'Invalid code. Try again.',loginSending:false}); return; }
-      const session=await res.json();
-      const userId=session?.user?.id||session?.id;
-      if(!userId){ this.setState({loginError:'Verification failed. Try again.',loginSending:false}); return; }
-      // Use Supabase user ID as the stable token
-      try{ localStorage.setItem('fs_token',userId); }catch(e){}
-      this.saveEmail(email);
-      const name=this._pendingLoginName||'';
-      if(name) this.saveUsername(name);
-      this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
-      setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); this.syncFromCloud(); },300);
-    }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
+      const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(code)+'&select=token');
+      if(!rows||!rows.length){ this.setState({loginError:'Account code not found. Check and try again.',loginSending:false}); return; }
+    }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); return; }
+    try{ localStorage.setItem('fs_token',code); }catch(e){}
+    // Restore username from leaderboard
+    try{
+      const lb=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(code)+'&select=name');
+      if(lb&&lb.length&&lb[0].name) this.saveUsername(lb[0].name);
+    }catch(e){}
+    try{ localStorage.setItem('fs_loggedin','1'); }catch(e){}
+    this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
+    setTimeout(()=>{ this.submitScore(); this.syncFromCloud(); },300);
   }
 
   // ---------- leaderboard ----------
@@ -4481,10 +4483,11 @@ Yan Diomande|RB Leipzig|CM|21|4
       loginStepEmail:S.loginStep==='email', loginStepOtp:S.loginStep==='otp',
       loginEmail:S.loginEmail, loginError:S.loginError,
       loginBtnBg:S.loginSending?'#4a7a5f':'#16a85f',
-      loginBtnLabel:S.loginSending?(S.loginStep==='otp'?'Verifying…':'Sending…'):(S.loginStep==='otp'?'Verify code':'Send code →'),
-      doSendOtp:()=>this.doSendOtp(),
+      loginBtnLabel:S.loginSending?(S.loginStep==='otp'?'Restoring…':'Joining…'):(S.loginStep==='otp'?'Restore account':'Join FootyStock →'),
+      doLogin:()=>this.doLogin(),
       doVerifyOtp:()=>this.doVerifyOtp(),
       loginBack:()=>this.setState({loginStep:'email',loginError:''}),
+      loginRecover:()=>this.setState({loginStep:'otp',loginError:''}),
       openFeedback:()=>this.openFeedback(),
       feedbackOpen:S.feedbackOpen,
       closeFeedback:()=>this.closeFeedback(),
@@ -4588,6 +4591,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       mysteryPacks: S.mysteryPacks||[],
       isFounder: this.isFounder(),
       myEmail: this.loadEmail()||'—',
+      myToken: this.loadToken()||'—',
+      copyToken: ()=>{ navigator.clipboard&&navigator.clipboard.writeText(this.loadToken()||'').then(()=>{ this.setState({copyTokenLabel:'Copied!'}); setTimeout(()=>this.setState({copyTokenLabel:'Copy code'}),2000); }).catch(()=>{}); },
+      copyTokenLabel: S.copyTokenLabel||'Copy code',
       recoverOpen: S.recoverOpen, closeRecover:()=>this.setState({recoverOpen:false}),
       stopRecover:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
     };
