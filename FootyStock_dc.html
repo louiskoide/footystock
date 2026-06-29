@@ -2996,19 +2996,22 @@ Yan Diomande|RB Leipzig|CM|21|4
       // and use it to asymmetrically scale perf/form — unknowns get amplified
       // upside and softened downside; expensive stars get the reverse.
       const notoriety = clamp((anchor - 20) / 180, 0, 1); // 0=unknown, 1=superstar
-      // Neutral shifted from 46→36: WC ratings cluster 6.5–7.5, nobody sustains
-      // 9.5 averages, so the old centre made the whole player pool look cold.
-      // A 7.0 avg now reads as clearly positive (~0.7) instead of mildly positive (~0.45).
-      // Divisor tightened 30→26 so the spread isn't flat either side of neutral.
-      const rawPerf = hasMatchData ? clamp((fotmob-36)/26, -1, 1) : 0;
-      const rawForm = hasMatchData ? clamp((formSig-36)/26, -1, 1) : 0;
+      // Neutral stays at fotmob=46 (rating 6.0 = no price effect). Divisor
+      // tightened 30→18 so 7.0 avg → rawPerf≈0.75 and 7.5 → max, without
+      // making 6.0 look positive.
+      const rawPerf = hasMatchData ? clamp((fotmob-46)/18, -1, 1) : 0;
+      const rawForm = hasMatchData ? clamp((formSig-46)/18, -1, 1) : 0;
       // upMult: unknowns earn 1.55x on good perf, stars earn 0.75x
       // downMult: unknowns are punished 0.6x on bad perf, stars 1.4x
-      const upMult   = 1.55 - 0.8 * notoriety; // unknown→1.55, star→0.75
-      const downMult = 0.60 + 0.8 * notoriety; // unknown→0.60, star→1.40
+      // formDownMult: extra notoriety kicker on negative form — expensive stars
+      // face steeper consequences for cold spells than cheap unknowns do.
+      const upMult       = 1.55 - 0.8 * notoriety; // unknown→1.55, star→0.75
+      const downMult     = 0.60 + 0.8 * notoriety; // unknown→0.60, star→1.40
+      const formDownMult = downMult * (1 + notoriety * 0.4); // star bad form: up to 1.96x
       const applyMult=(v,up,dn)=>v>=0?v*up:v*dn;
+      const applyFormMult=(v)=>v>=0?v*upMult:v*formDownMult;
       const perfScore = applyMult(rawPerf, upMult, downMult);
-      const formScore = applyMult(rawForm, upMult, downMult);
+      const formScore = applyFormMult(rawForm);
       // hype basket = mood + transfer/news signal, capped so buzz alone can
       // never dwarf fundamentals. Unknowns also get a touch more hype uplift.
       const hypeScore = clamp(((moodSig-46)+(transferSig-46))/2/30, -1, 1) * (1.3 - 0.4*notoriety);
