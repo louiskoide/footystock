@@ -1624,6 +1624,10 @@ class Component extends DCLogic {
     setTimeout(()=>this.submitScore(), 3000);
     // clear legacy localStorage keys from pre-email-auth era
     try{ localStorage.removeItem('footystock_v3'); localStorage.removeItem('footystock_uid'); localStorage.removeItem('fs_username'); }catch(e){}
+    // one-time migration: wipe all display names from Supabase leaderboard
+    if(this._sbUrl && !localStorage.getItem('fs_names_wiped_v1')){
+      fetch(this._sbUrl+'?token=not.is.null',{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({name:''})}).then(()=>{ try{ localStorage.setItem('fs_names_wiped_v1','1'); }catch(e){} }).catch(()=>{});
+    }
     // sync portfolio from cloud (handles cross-device and cross-domain merge)
     setTimeout(()=>this.syncFromCloud(), 1000);
     // auto-open reward if claimable on first load
@@ -1659,11 +1663,6 @@ class Component extends DCLogic {
   async syncFromCloud(){
     if(!this._sbUrl){ this.setState({portfolioLoading:false}); return; }
     const token=this.loadToken(); if(!token||token==='anon'){ this.setState({portfolioLoading:false}); return; }
-    // Restore username from leaderboard
-    try{
-      const lbRows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(token)+'&select=name');
-      if(lbRows&&lbRows.length&&lbRows[0].name) this.setState({username:lbRows[0].name});
-    }catch(e){}
     try{
       const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(token));
       if(!rows||!rows.length){
@@ -3559,11 +3558,6 @@ Yan Diomande|RB Leipzig|CM|21|4
       this.saveEmail(email);
       const name=this._pendingLoginName||'';
       if(name) this.saveUsername(name);
-      // Check if returning user — restore their username from leaderboard
-      try{
-        const rows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(userId)+'&select=name');
-        if(rows&&rows.length&&rows[0].name) this.saveUsername(rows[0].name);
-      }catch(e){}
       this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
       setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); this.syncFromCloud(); },300);
     }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
