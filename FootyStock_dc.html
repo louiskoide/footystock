@@ -2714,7 +2714,13 @@ Yan Diomande|RB Leipzig|CM|21|4
       // the bridge construction above). That live-bump-inclusive value *is*
       // the traded price — clipping it back to bare `price` is what erased
       // the spike right at the chart's last point.
-      const tradedPrice = hist[N-1];
+      // Daily wobble: deterministic per player per calendar day so the
+      // close price is different each day even with no new match events.
+      // Seeded by id + dayKey → changes midnight-to-midnight; WC players
+      // get a bigger swing (±2%) than quiet bench players (±0.6%).
+      const wR = this.mulberry(this.hash(id + ':w:' + dayKey));
+      const wMag = atWC ? 0.02 : 0.006;
+      const wobbledPrice = Math.max(2, hist[N-1] * (1 + (wR() - 0.5) * 2 * wMag));
 
       // REAL recorded history. The synthetic `hist` above is now only a
       // one-time seed: priceHistory freezes it the first time we ever see
@@ -2724,7 +2730,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // right edge ticks, the way a real chart behaves. The chart, sparkline,
       // volatility and high/low range all read p.hist, so they all become
       // real history for free.
-      const rHist = this.priceHistory(id, tradedPrice, dayKey);
+      const rHist = this.priceHistory(id, wobbledPrice, dayKey);
       const RN = rHist.length;
 
       // Only replace the event-driven change7d/30d with hist-diff once we have
