@@ -2727,11 +2727,15 @@ Yan Diomande|RB Leipzig|CM|21|4
       const rHist = this.priceHistory(id, tradedPrice, dayKey);
       const RN = rHist.length;
 
-      // The displayed 7d/30d change must be read off the SAME (now real) hist
-      // array the chart draws, never recomputed from raw event deltas —
-      // otherwise the badge and the chart can show different numbers.
-      change7d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-8)])/rHist[Math.max(0,RN-8)])*100).toFixed(1));
-      change30d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-31)])/rHist[Math.max(0,RN-31)])*100).toFixed(1));
+      // Only replace the event-driven change7d/30d with hist-diff once we have
+      // enough REAL calendar days stored — before that, rHist[RN-8] is still
+      // synthetic backfill and produces a near-zero frozen signal regardless of
+      // actual match performance. After 8/31 real days the hist is authoritative.
+      const realDays = (this._histStore?.[id]?.r?.length) || 1;
+      if (realDays >= 8)
+        change7d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-8)])/rHist[Math.max(0,RN-8)])*100).toFixed(1));
+      if (realDays >= 31)
+        change30d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-31)])/rHist[Math.max(0,RN-31)])*100).toFixed(1));
 
       // Articles mentioning this player — only elite/notable performances get
       // a writeup (see DATA().ARTICLES), shown under the player page when
