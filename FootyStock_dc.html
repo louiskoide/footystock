@@ -16,6 +16,7 @@
   html,body{margin:0;padding:0;background:#eef0ec;font-family:'Hanken Grotesk',sans-serif;color:#16201a;-webkit-font-smoothing:antialiased}
   ::-webkit-scrollbar{width:10px;height:10px}
   ::-webkit-scrollbar-thumb{background:#cdd3cc;border-radius:6px;border:2px solid #eef0ec}
+  @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes fs-ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
   @keyframes fs-pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
   @keyframes fs-fade{from{opacity:0}to{opacity:1}}
@@ -1280,6 +1281,14 @@
   Share
 </button>
 
+<!-- ============ PORTFOLIO LOADING OVERLAY ============ -->
+<sc-if value="{{ portfolioLoading }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:190;background:rgba(12,31,21,0.92);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <div style="width:40px;height:40px;border:4px solid rgba(22,168,95,0.3);border-top-color:#16a85f;border-radius:50%;animation:spin 0.9s linear infinite"></div>
+  <div style="color:#3ddc8a;font-size:15px;font-weight:600">Loading your portfolio…</div>
+</div>
+</sc-if>
+
 <!-- ============ PHONE LOGIN GATE ============ -->
 <sc-if value="{{ showLoginGate }}" hint-placeholder-val="{{ false }}">
 <div style="position:fixed;inset:0;z-index:200;background:linear-gradient(160deg,#0c1f15 0%,#11321f 60%,#0a180f 100%);display:flex;align-items:center;justify-content:center;padding:24px">
@@ -1493,7 +1502,7 @@ class Component extends DCLogic {
   // ---------- lifecycle ----------
   constructor(props){
     super(props);
-    const saved = this.load();
+    const today = new Date().toISOString().slice(0,10);
     this.state = {
       view:'market', selectedId:null, selectedArticleId:null, league:'ALL', search:'', range:90,
       sortKey:'rank', sortDir:'asc',
@@ -1505,9 +1514,10 @@ class Component extends DCLogic {
       feedbackOpen:false, feedbackText:'', feedbackName:'', feedbackSending:false, feedbackSent:false, feedbackError:'',
       profileViewName: null,
       comments:[], commentSort:'top', commentInput:'', commentReplyTo:null, commentReplyInput:'', commentsLoading:false, commentsPlayerId:null,
-      cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
-      streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
-      joinDate: saved.joinDate, allTimeHigh: saved.allTimeHigh,
+      cash: 10000, holdings: {}, txns: [], watch: ['lamine-yamal','desire-doue','mika-godts','florian-wirtz'],
+      streak: 0, lastClaim: null, shorts: {},
+      joinDate: today, allTimeHigh: 10000,
+      portfolioLoading: true, username: '',
       clubLoading: false, myClub: null, clubMembers: [], clubPublicList: [],
       clubView: 'home', clubMenuOpenId: null, recapTab: 'bought',
       clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
@@ -1612,6 +1622,12 @@ class Component extends DCLogic {
     pollLeaderboard();
     this.leaderboardTimer = setInterval(()=>{ if(this.state.view==='leaders') pollLeaderboard(); }, 60000);
     setTimeout(()=>this.submitScore(), 3000);
+    // clear legacy localStorage keys from pre-email-auth era
+    try{ localStorage.removeItem('footystock_v3'); localStorage.removeItem('footystock_uid'); localStorage.removeItem('fs_username'); }catch(e){}
+    // one-time migration: wipe all display names from Supabase leaderboard
+    if(this._sbUrl && !localStorage.getItem('fs_names_wiped_v1')){
+      fetch(this._sbUrl+'?token=not.is.null',{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({name:''})}).then(()=>{ try{ localStorage.setItem('fs_names_wiped_v1','1'); }catch(e){} }).catch(()=>{});
+    }
     // sync portfolio from cloud (handles cross-device and cross-domain merge)
     setTimeout(()=>this.syncFromCloud(), 1000);
     // auto-open reward if claimable on first load
@@ -1632,16 +1648,10 @@ class Component extends DCLogic {
   componentWillUnmount(){ clearInterval(this.timer); clearInterval(this.liveTimer); clearInterval(this.leaderboardTimer); clearInterval(this.clubTimer); }
 
   // ---------- persistence ----------
-  load(){
-    let s=null; try{ s = JSON.parse(localStorage.getItem('footystock_v3')); }catch(e){}
-    const today=new Date().toISOString().slice(0,10);
-    if(!s) return { cash:10000, holdings:{}, txns:[], watch:['lamine-yamal','desire-doue','mika-godts','florian-wirtz'], streak:0, lastClaim:null, shorts:{}, joinDate:today, allTimeHigh:10000 };
-    return { cash:s.cash??10000, holdings:s.holdings||{}, txns:s.txns||[], watch:s.watch||[], streak:s.streak||0, lastClaim:s.lastClaim||null, shorts:s.shorts||{}, joinDate:s.joinDate||today, allTimeHigh:s.allTimeHigh||10000 };
-  }
   persist(extra){
+    // wipe old localStorage portfolio if still present
+    try{ localStorage.removeItem('footystock_v3'); }catch(e){}
     const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim, shorts:this.state.shorts, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh }, extra||{});
-    try{ localStorage.setItem('footystock_v3', JSON.stringify(s)); }catch(e){}
-    // also push to Supabase so portfolio syncs across devices/domains
     this._persistToCloud(s);
   }
   _persistToCloud(s){
@@ -1651,26 +1661,20 @@ class Component extends DCLogic {
     fetch(this._sbUrl.replace('/leaderboard','/portfolios'),{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload)}).catch(()=>{});
   }
   async syncFromCloud(){
-    if(!this._sbUrl) return;
-    const token=this.loadToken(); if(!token||token==='anon') return;
+    if(!this._sbUrl){ this.setState({portfolioLoading:false}); return; }
+    const token=this.loadToken(); if(!token||token==='anon'){ this.setState({portfolioLoading:false}); return; }
     try{
       const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(token));
-      if(!rows||!rows.length) {
-        // No cloud data yet — push local data up (migration)
+      if(!rows||!rows.length){
+        // New user — initialize fresh portfolio in cloud
         this._persistToCloud({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, shorts:this.state.shorts, streak:this.state.streak, lastClaim:this.state.lastClaim, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh });
+        this.setState({portfolioLoading:false});
         return;
       }
       const r=rows[0];
-      // Compare cloud vs local by transaction count — take whichever has more data
-      const cloudTxns=(r.txns||[]).length, localTxns=(this.state.txns||[]).length;
-      if(cloudTxns>=localTxns){
-        const today=new Date().toISOString().slice(0,10);
-        this.setState({ cash:r.cash??10000, holdings:r.holdings||{}, txns:r.txns||[], shorts:r.shorts||{}, streak:r.streak||0, lastClaim:r.last_claim||null, joinDate:r.join_date||today, allTimeHigh:r.all_time_high||10000 }, ()=>{ this.persist(); });
-      } else {
-        // Local is richer — push it up
-        this._persistToCloud({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, shorts:this.state.shorts, streak:this.state.streak, lastClaim:this.state.lastClaim, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh });
-      }
-    }catch(e){}
+      const today=new Date().toISOString().slice(0,10);
+      this.setState({ cash:r.cash??10000, holdings:r.holdings||{}, txns:r.txns||[], shorts:r.shorts||{}, streak:r.streak||0, lastClaim:r.last_claim||null, joinDate:r.join_date||today, allTimeHigh:r.all_time_high||10000, portfolioLoading:false });
+    }catch(e){ this.setState({portfolioLoading:false}); }
   }
 
   // ---------- deterministic rng ----------
@@ -3513,8 +3517,8 @@ Yan Diomande|RB Leipzig|CM|21|4
     const fresh=Math.random().toString(36).slice(2)+Date.now().toString(36);
     localStorage.setItem('fs_token',fresh); return fresh;
   }catch(e){ return 'anon'; } }
-  loadUsername(){ try{ return localStorage.getItem('fs_username')||''; }catch(e){ return ''; } }
-  saveUsername(n){ try{ localStorage.setItem('fs_username',n.trim().slice(0,32)); }catch(e){} }
+  loadUsername(){ return (this.state&&this.state.username)||''; }
+  saveUsername(n){ const name=n.trim().slice(0,32); this.setState({username:name}); }
 
   async doSendOtp(){
     const email=(document.getElementById('fs-login-email')||{}).value||'';
@@ -3554,11 +3558,6 @@ Yan Diomande|RB Leipzig|CM|21|4
       this.saveEmail(email);
       const name=this._pendingLoginName||'';
       if(name) this.saveUsername(name);
-      // Check if returning user — restore their username from leaderboard
-      try{
-        const rows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(userId)+'&select=name');
-        if(rows&&rows.length&&rows[0].name) this.saveUsername(rows[0].name);
-      }catch(e){}
       this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
       setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); this.syncFromCloud(); },300);
     }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
@@ -4477,7 +4476,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // reward modal
       showReward:S.showReward, rw, closeReward:()=>this.closeReward(),
       // feedback
-      showLoginGate:!S.loggedIn,
+      showLoginGate:!S.loggedIn, portfolioLoading:S.portfolioLoading,
       loginStepEmail:S.loginStep==='email', loginStepOtp:S.loginStep==='otp',
       loginEmail:S.loginEmail, loginError:S.loginError,
       loginBtnBg:S.loginSending?'#4a7a5f':'#16a85f',
