@@ -194,14 +194,19 @@
     if (!componentInstance) return;
     const active = document.activeElement;
     const wasInput = active && active.tagName === 'INPUT' && rootEl.contains(active);
+    const activeInputId = wasInput ? active.id : null;
     const selStart = wasInput ? active.selectionStart : null;
     const selEnd = wasInput ? active.selectionEnd : null;
     const scrollEntries = captureScroll();
 
-    // snapshot all textarea values before wiping the DOM
+    // snapshot textarea and uncontrolled input values before wiping the DOM
     const textareaSnapshots = {};
     rootEl.querySelectorAll('textarea[id]').forEach(ta => {
       if (ta.value) textareaSnapshots[ta.id] = ta.value;
+    });
+    const inputSnapshots = {};
+    rootEl.querySelectorAll('input[id]').forEach(inp => {
+      if (inp.value) inputSnapshots[inp.id] = inp.value;
     });
 
     const vals = componentInstance.renderVals();
@@ -212,14 +217,20 @@
     rootEl.innerHTML = '';
     while (tmp.firstChild) rootEl.appendChild(tmp.firstChild);
 
-    // restore textarea values after re-render
+    // restore textarea and uncontrolled input values after re-render
     Object.entries(textareaSnapshots).forEach(([id, val]) => {
       const ta = rootEl.querySelector('textarea#' + id);
       if (ta) ta.value = val;
     });
+    Object.entries(inputSnapshots).forEach(([id, val]) => {
+      const inp = rootEl.querySelector('input#' + id);
+      if (inp) inp.value = val;
+    });
 
     if (wasInput) {
-      const newInput = rootEl.querySelector('input');
+      const newInput = activeInputId
+        ? rootEl.querySelector('input#' + activeInputId)
+        : rootEl.querySelector('input');
       if (newInput) {
         newInput.focus();
         try { newInput.setSelectionRange(selStart, selEnd); } catch (e) {}
