@@ -2765,7 +2765,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // a writeup (see DATA().ARTICLES), shown under the player page when
       // recent rather than duplicated for every routine match.
       const playerArticles = D.ARTICLES.filter(a=>a.refs.includes(id));
-      db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price:rHist[RN-1],
+      db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price:rHist[RN-1],anchor,
         change7d,change30d,hist:rHist,events,streakLen,atWC,wcStatus,nation,news,mood,_dw1d:dailyWobble1d,
         signals:{fotmob,form:formSig,twitter:moodSig,transfermarkt:transferSig}, avgR,
         tmVal,tmTrendUp,articles:playerArticles });
@@ -3583,13 +3583,18 @@ Yan Diomande|RB Leipzig|CM|21|4
           ? [0,0.25,0.5,0.75,1].map(f=>{ const hoursAgo=Math.round(24*(1-f)); return {label:hoursAgo===0?'now':`-${hoursAgo}h`}; })
           : [0,0.25,0.5,0.75,1].map(f=>{ const daysAgo=Math.round(range*(1-f)); const dt=new Date(today.getTime()-daysAgo*86400000); return {label:this.dateShort(dt)}; });
 
+        const formLabel=(f)=>{ if(f>=88)return'Unstoppable'; if(f>=74)return'On Fire 🔥'; if(f>=60)return'In Form'; if(f>=48)return'Average'; if(f>=34)return'Cold'; if(f>=20)return'Out of Form'; return'Ice Cold'; };
+        const formBarColor=(f)=>f>=60?GREEN:f>=48?'#e2a32b':RED;
+        const hypeLabel=(h)=>{ if(h>=88)return'Phenomenon'; if(h>=74)return'Viral'; if(h>=60)return'Trending'; if(h>=46)return'Building Buzz'; if(h>=32)return'Under the Radar'; return'Ghost'; };
+        const hypeBarColor=(h)=>h>=60?GREEN:h>=46?'#e2a32b':RED;
+        const effTmVal=p.anchor?Math.max(1,Math.round(p.tmVal*(p.price/p.anchor)/5)*5):p.tmVal;
         const sigDefs=[
           ['Match rating · World Cup',p.signals.fotmob, p.avgR?p.avgR.toFixed(2)+' avg':'No WC matches'],
-          ['World Cup form',p.signals.form, (p.streakLen>=2?('🔥 '+p.streakLen+'-match streak'):(p.atWC?(p.streakLen+'-match form'):'Not at the World Cup'))],
-          ['Search interest (Google Trends)',p.signals.twitter, (p.signals.twitter>66?'Buzzing':p.signals.twitter>40?'Steady':'Quiet')],
-          ['Transfer market & value',p.signals.transfermarkt, '€'+p.tmVal+'M '+(p.tmTrendUp?'▲':'▼')]];
-        const signals=sigDefs.map(([label,val,display])=>({label,pct:Math.round(val)+'%',display,
-          barColor:val>=66?GREEN:val>=42?'#e2a32b':RED, valColor:'#46504a'}));
+          ['World Cup form',p.signals.form, p.atWC?formLabel(p.signals.form):'Not at the World Cup'],
+          ['Hype',p.signals.twitter, hypeLabel(p.signals.twitter)],
+          ['Transfer market value',p.signals.transfermarkt, '€'+effTmVal+'M '+(p.tmTrendUp?'▲':'▼')]];
+        const signals=sigDefs.map(([label,val,display],i)=>({label,pct:Math.round(val)+'%',display,
+          barColor:i===1?formBarColor(val):i===2?hypeBarColor(val):(val>=66?GREEN:val>=42?'#e2a32b':RED), valColor:'#46504a'}));
 
         const evDisp=p.events.slice().sort((a,b)=>a.offset-b.offset).map(e=>{ const impact=e._impactPct||0; const up=impact>=0; const dt=new Date(today.getTime()-e.offset*86400000);
           const isBench = e.bench || e.min===0;
