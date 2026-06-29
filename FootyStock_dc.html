@@ -2996,8 +2996,12 @@ Yan Diomande|RB Leipzig|CM|21|4
       // and use it to asymmetrically scale perf/form — unknowns get amplified
       // upside and softened downside; expensive stars get the reverse.
       const notoriety = clamp((anchor - 20) / 180, 0, 1); // 0=unknown, 1=superstar
-      const rawPerf = hasMatchData ? clamp((fotmob-46)/30, -1, 1) : 0;
-      const rawForm = hasMatchData ? clamp((formSig-46)/30, -1, 1) : 0;
+      // Neutral shifted from 46→36: WC ratings cluster 6.5–7.5, nobody sustains
+      // 9.5 averages, so the old centre made the whole player pool look cold.
+      // A 7.0 avg now reads as clearly positive (~0.7) instead of mildly positive (~0.45).
+      // Divisor tightened 30→26 so the spread isn't flat either side of neutral.
+      const rawPerf = hasMatchData ? clamp((fotmob-36)/26, -1, 1) : 0;
+      const rawForm = hasMatchData ? clamp((formSig-36)/26, -1, 1) : 0;
       // upMult: unknowns earn 1.55x on good perf, stars earn 0.75x
       // downMult: unknowns are punished 0.6x on bad perf, stars 1.4x
       const upMult   = 1.55 - 0.8 * notoriety; // unknown→1.55, star→0.75
