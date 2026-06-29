@@ -198,6 +198,12 @@
     const selEnd = wasInput ? active.selectionEnd : null;
     const scrollEntries = captureScroll();
 
+    // snapshot all textarea values before wiping the DOM
+    const textareaSnapshots = {};
+    rootEl.querySelectorAll('textarea[id]').forEach(ta => {
+      if (ta.value) textareaSnapshots[ta.id] = ta.value;
+    });
+
     const vals = componentInstance.renderVals();
     const tmp = document.createElement('div');
     tmp.innerHTML = pristineTemplateHTML;
@@ -205,6 +211,12 @@
 
     rootEl.innerHTML = '';
     while (tmp.firstChild) rootEl.appendChild(tmp.firstChild);
+
+    // restore textarea values after re-render
+    Object.entries(textareaSnapshots).forEach(([id, val]) => {
+      const ta = rootEl.querySelector('textarea#' + id);
+      if (ta) ta.value = val;
+    });
 
     if (wasInput) {
       const newInput = rootEl.querySelector('input');
