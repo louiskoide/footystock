@@ -181,9 +181,10 @@
           <button onClick="{{ dismissRecap }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#aab2ab;padding:2px 4px;line-height:1">✕</button>
         </div>
       </div>
-      <div class="fs-recap-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+      <!-- gainers / losers grid -->
+      <div class="fs-recap-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
         <div>
-          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#16a85f;text-transform:uppercase;margin-bottom:8px">Top Gainers · 7d</div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#16a85f;text-transform:uppercase;margin-bottom:8px">Top Gainers · 1d</div>
           <sc-for list="{{ recap.gainers }}" as="g" hint-placeholder-count="3">
             <div onClick="{{ g.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer;opacity:.75">
               <div style="display:flex;flex-direction:column;min-width:0">
@@ -198,7 +199,7 @@
           </sc-for>
         </div>
         <div>
-          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#e03e3e;text-transform:uppercase;margin-bottom:8px">Biggest Drops · 7d</div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#e03e3e;text-transform:uppercase;margin-bottom:8px">Biggest Drops · 1d</div>
           <sc-for list="{{ recap.losers }}" as="l" hint-placeholder-count="3">
             <div onClick="{{ l.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer;opacity:.75">
               <div style="display:flex;flex-direction:column;min-width:0">
@@ -213,35 +214,42 @@
           </sc-for>
         </div>
       </div>
-      <sc-if value="{{ recap.mostBought.length > 0 || recap.mostSold.length > 0 }}">
-      <div class="fs-recap-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;padding-top:14px;border-top:1px solid #f3f4f0">
-        <div>
-          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#2563eb;text-transform:uppercase;margin-bottom:8px">Most Bought · All time</div>
+      <!-- most bought / most sold tabs -->
+      <div style="padding-top:14px;border-top:1px solid #f3f4f0">
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <button onClick="{{ recapTabBought }}" style="{{ recapTabBoughtStyle }}">Most Bought</button>
+          <button onClick="{{ recapTabSold }}" style="{{ recapTabSoldStyle }}">Most Sold</button>
+        </div>
+        <sc-if value="{{ recapShowBought }}">
           <sc-for list="{{ recap.mostBought }}" as="b" hint-placeholder-count="3">
             <div onClick="{{ b.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
               <div style="display:flex;flex-direction:column;min-width:0">
                 <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</span>
-                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ b.qty }} shares</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ b.qty }} shares bought</span>
               </div>
               <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ b.price }}</span>
             </div>
           </sc-for>
-        </div>
-        <div>
-          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#8a938c;text-transform:uppercase;margin-bottom:8px">Most Sold · All time</div>
+          <sc-if value="{{ recap.noBought }}">
+            <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;padding:8px 0">No buy transactions yet.</div>
+          </sc-if>
+        </sc-if>
+        <sc-if value="{{ recapShowSold }}">
           <sc-for list="{{ recap.mostSold }}" as="s" hint-placeholder-count="3">
             <div onClick="{{ s.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
               <div style="display:flex;flex-direction:column;min-width:0">
                 <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span>
-                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ s.qty }} shares</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ s.qty }} shares sold</span>
               </div>
               <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ s.price }}</span>
             </div>
           </sc-for>
-        </div>
+          <sc-if value="{{ recap.noSold }}">
+            <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;padding:8px 0">No sell transactions yet.</div>
+          </sc-if>
+        </sc-if>
       </div>
-      </sc-if>
-      <div style="padding-top:12px;border-top:1px solid #f3f4f0;font:500 13px 'Hanken Grotesk';color:#46504a;line-height:1.5">{{ recap.headline }}</div>
+      <div style="padding-top:12px;margin-top:4px;border-top:1px solid #f3f4f0;font:500 13px 'Hanken Grotesk';color:#46504a;line-height:1.5">{{ recap.headline }}</div>
     </div>
     </sc-if>
 
@@ -1201,7 +1209,7 @@ class Component extends DCLogic {
       streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
       joinDate: saved.joinDate, allTimeHigh: saved.allTimeHigh,
       clubLoading: false, myClub: null, clubMembers: [], clubPublicList: [],
-      clubView: 'home', clubMenuOpenId: null,
+      clubView: 'home', clubMenuOpenId: null, recapTab: 'bought',
       clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
       clubJoinCode: '', clubJoinSearch: '',
       clubError: '', clubSuccess: '',
@@ -3248,13 +3256,14 @@ Yan Diomande|RB Leipzig|CM|21|4
     // morning recap
     const showRecap=DB.length>0&&!S.recapDismissed;
     const recap=(()=>{
-      if(!DB.length) return {date:'',sentiment:'',gainers:[],losers:[],mostBought:[],mostSold:[],headline:''};
-      const byWk=[...DB].sort((a,b)=>b.change7d-a.change7d);
-      const recapGainers=byWk.slice(0,3).map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
-      const recapLosers=byWk.slice(-3).reverse().map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
-      const upCount=DB.filter(p=>p.change7d>0).length;
-      const downCount=DB.filter(p=>p.change7d<0).length;
-      const topGainer=byWk[0], topLoser=byWk[byWk.length-1];
+      if(!DB.length) return {date:'',sentiment:'',gainers:[],losers:[],mostBought:[],mostSold:[],headline:'',noBought:true,noSold:true};
+      const dayChgOf=p=>{ const h=p.hist,n=h.length; const prev=h[n-2]??h[n-1]; return prev?((h[n-1]-prev)/prev)*100:0; };
+      const by1d=[...DB].sort((a,b)=>dayChgOf(b)-dayChgOf(a));
+      const recapGainers=by1d.slice(0,3).map(p=>{ const d=decorate(p); const c=dayChgOf(p); return {name:p.name,team:p.team,price:d.price,chg:Math.abs(c).toFixed(1)+'%',onClick:()=>this.openPlayer(p.id)}; });
+      const recapLosers=by1d.slice(-3).reverse().map(p=>{ const d=decorate(p); const c=dayChgOf(p); return {name:p.name,team:p.team,price:d.price,chg:Math.abs(c).toFixed(1)+'%',onClick:()=>this.openPlayer(p.id)}; });
+      const upCount=DB.filter(p=>dayChgOf(p)>0).length;
+      const downCount=DB.filter(p=>dayChgOf(p)<0).length;
+      const topGainer=by1d[0], topLoser=by1d[by1d.length-1];
       const recapDate=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
       const bullish=upCount>=downCount;
       const buyTally={}, sellTally={};
@@ -3263,14 +3272,15 @@ Yan Diomande|RB Leipzig|CM|21|4
         else if(t.side==='SELL'){ sellTally[t.id]=(sellTally[t.id]||{id:t.id,name:t.name,qty:0}); sellTally[t.id].qty+=t.qty; }
       }
       const mkTrade=(obj)=>{ const p=DB.find(x=>x.id===obj.id); const d=p?decorate(p):null; return {name:obj.name,qty:obj.qty,price:d?d.price:'—',onClick:p?()=>this.openPlayer(p.id):()=>{}}; };
+      const topG=topGainer?dayChgOf(topGainer):0; const topL=topLoser?dayChgOf(topLoser):0;
+      const mostBought=Object.values(buyTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade);
+      const mostSold=Object.values(sellTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade);
       return {
         date:recapDate,
-        sentiment:`${upCount} rising · ${downCount} falling`,
-        gainers:recapGainers,
-        losers:recapLosers,
-        mostBought:Object.values(buyTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade),
-        mostSold:Object.values(sellTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade),
-        headline:`${topGainer.name} leads this week's risers (+${topGainer.change7d.toFixed(1)}%), while ${topLoser.name} is the week's biggest faller (${topLoser.change7d.toFixed(1)}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up over the past 7 days.`,
+        sentiment:`${upCount} rising · ${downCount} falling today`,
+        gainers:recapGainers, losers:recapLosers, mostBought, mostSold,
+        noBought:mostBought.length===0, noSold:mostSold.length===0,
+        headline:`${topGainer?.name??'—'} leads today's risers (+${topG.toFixed(1)}%), while ${topLoser?.name??'—'} is the day's biggest faller (${topL.toFixed(1)}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up today.`,
       };
     })();
     const dismissRecap=()=>this.setState({recapDismissed:true});
@@ -3727,6 +3737,11 @@ Yan Diomande|RB Leipzig|CM|21|4
       plChipBg:plUp?'rgba(61,220,138,.18)':'rgba(255,93,93,.18)', plChipColor:plUp?'#3ddc8a':'#ff5d5d',
       nwSpark:nwHistPts, movers, marketList, universeNote:DB.length+' players priced — movers ranked by real World Cup form &amp; transfer activity. Players not at the World Cup sit flat until the market moves.',
       showRecap, recap, dismissRecap,
+      recapShowBought:S.recapTab==='bought', recapShowSold:S.recapTab==='sold',
+      recapTabBought:()=>this.setState({recapTab:'bought'}),
+      recapTabSold:()=>this.setState({recapTab:'sold'}),
+      recapTabBoughtStyle:S.recapTab==='bought'?'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:none;cursor:pointer;background:#16201a;color:#fff':'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:1px solid #e1e4dd;cursor:pointer;background:#fff;color:#46504a',
+      recapTabSoldStyle:S.recapTab==='sold'?'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:none;cursor:pointer;background:#16201a;color:#fff':'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:1px solid #e1e4dd;cursor:pointer;background:#fff;color:#46504a',
       // detail
       d, rangeTabs, goBack:()=>this.goBack(),
       // portfolio
