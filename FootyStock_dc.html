@@ -721,8 +721,8 @@
         <div style="margin-bottom:16px">
           <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px">Visibility</label>
           <div style="display:flex;gap:10px">
-            <button onClick="{{ () => onClubCreatePublic(true) }}" style="flex:1;padding:10px;border-radius:10px;font:600 13px 'Hanken Grotesk';cursor:pointer;border:2px solid {{ clubCreatePublic ? '#16a85f' : '#e1e4dd' }};background:{{ clubCreatePublic ? '#f0fdf4' : '#fff' }};color:{{ clubCreatePublic ? '#16a85f' : '#46504a' }}">Public</button>
-            <button onClick="{{ () => onClubCreatePublic(false) }}" style="flex:1;padding:10px;border-radius:10px;font:600 13px 'Hanken Grotesk';cursor:pointer;border:2px solid {{ !clubCreatePublic ? '#16a85f' : '#e1e4dd' }};background:{{ !clubCreatePublic ? '#f0fdf4' : '#fff' }};color:{{ !clubCreatePublic ? '#16a85f' : '#46504a' }}">Private</button>
+            <button onClick="{{ () => onClubCreatePublic(true) }}" style="{{ clubPublicBtnStyle }}">Public</button>
+            <button onClick="{{ () => onClubCreatePublic(false) }}" style="{{ clubPrivateBtnStyle }}">Private</button>
           </div>
         </div>
         <div style="margin-bottom:22px">
@@ -746,6 +746,25 @@
           <button onClick="{{ submitJoinClub }}" style="flex-shrink:0;padding:11px 20px;background:#16a85f;color:#fff;border:none;border-radius:10px;font:700 14px 'Hanken Grotesk';cursor:pointer">Join</button>
         </div>
       </div>
+      <!-- public clubs list in join view -->
+      <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Public clubs</div>
+      <sc-if value="{{ clubPublicList.length > 0 }}">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
+        <sc-for list="{{ clubPublicList }}" as="c" hint-placeholder-count="3">
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="min-width:0">
+              <div style="font:700 15px 'Space Grotesk'">{{ c.name }}</div>
+              <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ c.description }}</div>
+              <div style="font:600 11px 'Hanken Grotesk';color:#46504a;margin-top:6px">Led by {{ c.leader_name }}</div>
+            </div>
+            <button onClick="{{ c.onJoin }}" style="flex-shrink:0;padding:9px 18px;background:#16a85f;color:#fff;border:none;border-radius:10px;font:700 13px 'Hanken Grotesk';cursor:pointer">Join</button>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <sc-if value="{{ clubPublicList.length === 0 }}">
+        <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No public clubs yet. Be the first to create one.</div>
+      </sc-if>
     </sc-if>
 
     <!-- MY CLUB -->
@@ -2989,7 +3008,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     this.setState({sortKey:key,sortDir:descDefault.has(key)?'desc':'asc'});
   }
   setRange(r){ this.setState({range:r}); }
-  onSearch(e){ this.setState({search:e.target.value}); }
+  onSearch(e){ if(e.target.classList.contains('fs-search-input')) this.setState({search:e.target.value}); }
   toggleWatch(id){ const w=this.state.watch.slice(); const i=w.indexOf(id); if(i>=0)w.splice(i,1); else w.push(id); this.setState({watch:w},()=>this.persist()); }
 
   openTrade(id,side){ const p=this.byId(id); const held=this.state.holdings[id]; const shorted=this.state.shorts[id]; if(side==='sell'&&(!held||held.qty<1))return; if(side==='cover'&&(!shorted||shorted.qty<1))return; this.setState({tradeOpen:true,tradeId:id,tradeSide:side,tradeQty:1}); }
@@ -3937,6 +3956,8 @@ Yan Diomande|RB Leipzig|CM|21|4
       onClubCreateMinNW:(e)=>this.setState({clubCreateMinNW:e.target.value}),
       clubCreateName:S.clubCreateName, clubCreateDesc:S.clubCreateDesc,
       clubCreatePublic:S.clubCreatePublic, clubCreateMinNW:S.clubCreateMinNW,
+      clubPublicBtnStyle:S.clubCreatePublic?'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #16a85f;background:#f0fdf4;color:#16a85f':'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #e1e4dd;background:#fff;color:#46504a',
+      clubPrivateBtnStyle:!S.clubCreatePublic?'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #16a85f;background:#f0fdf4;color:#16a85f':'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #e1e4dd;background:#fff;color:#46504a',
       submitCreateClub:()=>this.createClub(),
       onClubJoinCode:(e)=>this.setState({clubJoinCode:e.target.value}),
       clubJoinCode:S.clubJoinCode,
