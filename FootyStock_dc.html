@@ -4140,7 +4140,7 @@ Yan Diomande|RB Leipzig|CM|21|4
           ? [0,0.25,0.5,0.75,1].map(f=>{ const minute=Math.round(matchMinute*f); return {label:minute===0?'KO':minute===matchMinute?'now':minute+"'"}; })
           : is24h
           ? [0,0.25,0.5,0.75,1].map(f=>{ const hoursAgo=Math.round(24*(1-f)); return {label:hoursAgo===0?'now':`-${hoursAgo}h`}; })
-          : [0,0.25,0.5,0.75,1].map(f=>{ const daysAgo=Math.round(range*(1-f)); const dt=new Date(today.getTime()-daysAgo*86400000); return {label:this.dateShort(dt)}; });
+          : [0,0.25,0.5,0.75,1].map(f=>{ const daysAgo=Math.round((slice.length-1)*(1-f)); const dt=new Date(today.getTime()-daysAgo*86400000); return {label:this.dateShort(dt)}; });
 
         const formLabel=(f)=>{ if(f>=88)return'Unstoppable'; if(f>=74)return'On Fire 🔥'; if(f>=60)return'In Form'; if(f>=48)return'Average'; if(f>=34)return'Cold'; if(f>=20)return'Out of Form'; return'Ice Cold'; };
         const formBarColor=(f)=>f>=60?GREEN:f>=48?'#e2a32b':RED;
