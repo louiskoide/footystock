@@ -1835,8 +1835,8 @@ Jasur Yakhshiboev|Pakhtakor|RW|26|6
   // and re-seed cleanly: the backfill joins smoothly onto today's correct close,
   // so 1D starts near 0 and real daily movement re-accumulates under the fixed
   // formula instead of inheriting a phantom step.
-  loadHist(){ try{ localStorage.removeItem('footystock_pricehist_v1'); localStorage.removeItem('footystock_pricehist_v2'); return JSON.parse(localStorage.getItem('footystock_pricehist_v3'))||{}; }catch(e){ return {}; } }
-  saveHist(){ if(!this._histDirty||!this._histStore) return; try{ localStorage.setItem('footystock_pricehist_v3',JSON.stringify(this._histStore)); this._histDirty=false; }catch(e){} }
+  loadHist(){ try{ localStorage.removeItem('footystock_pricehist_v1'); localStorage.removeItem('footystock_pricehist_v2'); localStorage.removeItem('footystock_pricehist_v3'); return JSON.parse(localStorage.getItem('footystock_pricehist_v4'))||{}; }catch(e){ return {}; } }
+  saveHist(){ if(!this._histDirty||!this._histStore) return; try{ localStorage.setItem('footystock_pricehist_v4',JSON.stringify(this._histStore)); this._histDirty=false; }catch(e){} }
   // smooth, deterministic pre-history filler of `count` points for the days
   // BEFORE the oldest real close. It leads smoothly UP TO `anchor` but its last
   // point is the natural "day before" value, NOT anchor exactly — otherwise the
