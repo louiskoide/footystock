@@ -16,6 +16,7 @@
   html,body{margin:0;padding:0;background:#eef0ec;font-family:'Hanken Grotesk',sans-serif;color:#16201a;-webkit-font-smoothing:antialiased}
   ::-webkit-scrollbar{width:10px;height:10px}
   ::-webkit-scrollbar-thumb{background:#cdd3cc;border-radius:6px;border:2px solid #eef0ec}
+  @keyframes spin{to{transform:rotate(360deg)}}
   @keyframes fs-ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
   @keyframes fs-pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
   @keyframes fs-fade{from{opacity:0}to{opacity:1}}
@@ -55,6 +56,8 @@
 
     .fs-banner-grid{grid-template-columns:1fr!important}
     .fs-recap-grid{grid-template-columns:1fr!important}
+    .fs-profile-grid4{grid-template-columns:repeat(2,1fr)!important}
+    .fs-profile-grid3{grid-template-columns:repeat(2,1fr)!important}
     .fs-movers-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
     .fs-stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
 
@@ -158,6 +161,9 @@
         <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Invested</div>
         <div style="font:700 28px 'Space Grotesk';letter-spacing:-.02em;margin-top:5px">{{ investedFmt }}</div>
         <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-top:4px">{{ holdingCount }} positions</div>
+        <div style="margin-top:8px;padding-top:8px;border-top:1px solid #f3f4f0;font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Buying power</div>
+        <div style="font:700 16px 'Space Grotesk';letter-spacing:-.01em;margin-top:3px">{{ buyingPowerFmt }}</div>
+        <sc-if value="{{ hasMarginUsed }}"><div style="font:500 11px 'Hanken Grotesk';color:#e07a1a;margin-top:2px">{{ marginUsedFmt }} margin</div></sc-if>
       </div>
       <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px 22px;display:flex;flex-direction:column;justify-content:center;cursor:pointer" onClick="{{ goLeaders }}">
         <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Global rank</div>
@@ -166,7 +172,100 @@
       </div>
     </div>
 
+    <!-- stale price warning -->
+    <sc-if value="{{ pricesStale }}">
+    <div style="background:#fff8ec;border:1px solid #f5c842;border-radius:12px;padding:11px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px">
+      <span style="font-size:16px">⚠️</span>
+      <span style="font:500 13px 'Hanken Grotesk';color:#7a5c00">Prices may be outdated — live connection lost. Trading is disabled until prices refresh.</span>
+    </div>
+    </sc-if>
+
+    <!-- morning market recap -->
+    <sc-if value="{{ showRecap }}">
+    <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:20px 24px;margin-bottom:26px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font:600 10px 'Hanken Grotesk';letter-spacing:.08em;text-transform:uppercase;color:#16a85f;background:#e8f7ef;padding:4px 9px;border-radius:6px">MORNING RECAP</span>
+          <span style="font:500 12px 'Hanken Grotesk';color:#a7afa7">{{ recap.date }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ recap.sentiment }}</span>
+          <button onClick="{{ dismissRecap }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#aab2ab;padding:2px 4px;line-height:1">✕</button>
+        </div>
+      </div>
+      <!-- gainers / losers grid -->
+      <div class="fs-recap-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px">
+        <div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#16a85f;text-transform:uppercase;margin-bottom:8px">Top Gainers</div>
+          <sc-for list="{{ recap.gainers }}" as="g" hint-placeholder-count="3">
+            <div onClick="{{ g.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer;opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ g.team }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:12px">
+                <span style="font:700 14px 'Space Grotesk'">{{ g.price }}</span>
+                <span style="font:600 12px 'Hanken Grotesk';color:#16a85f">▲ {{ g.chg }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#e03e3e;text-transform:uppercase;margin-bottom:8px">Biggest Drops</div>
+          <sc-for list="{{ recap.losers }}" as="l" hint-placeholder-count="3">
+            <div onClick="{{ l.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer;opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ l.team }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:12px">
+                <span style="font:700 14px 'Space Grotesk'">{{ l.price }}</span>
+                <span style="font:600 12px 'Hanken Grotesk';color:#e03e3e">▼ {{ l.chg }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <!-- most bought / most sold tabs -->
+      <div style="padding-top:14px;border-top:1px solid #f3f4f0">
+        <div style="display:flex;gap:6px;margin-bottom:12px">
+          <button onClick="{{ recapTabBought }}" style="{{ recapTabBoughtStyle }}">Most Held</button>
+        </div>
+        <sc-if value="{{ recapShowBought }}">
+          <sc-for list="{{ recap.mostBought }}" as="b" hint-placeholder-count="3">
+            <div onClick="{{ b.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ b.qty }} holders</span>
+              </div>
+              <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ b.price }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ recapNoBought }}">
+            <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;padding:8px 0">No global holders data yet.</div>
+          </sc-if>
+        </sc-if>
+        <sc-if value="{{ recapShowSold }}">
+          <sc-for list="{{ recap.mostSold }}" as="s" hint-placeholder-count="3">
+            <div onClick="{{ s.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ s.qty }} shares sold</span>
+              </div>
+              <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ s.price }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ recapNoSold }}">
+            <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;padding:8px 0">No sell transactions yet.</div>
+          </sc-if>
+        </sc-if>
+      </div>
+      <div style="padding-top:12px;margin-top:4px;border-top:1px solid #f3f4f0;font:500 13px 'Hanken Grotesk';color:#46504a;line-height:1.5">{{ recap.headline }}</div>
+    </div>
+    </sc-if>
+
     <!-- top movers -->
+    <sc-if value="{{ showMovers }}" hint-placeholder-val="{{ true }}">
     <div style="display:flex;align-items:baseline;justify-content:space-between;margin:0 2px 13px">
       <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Today's movers</span>
       <span style="font:500 12.5px 'Hanken Grotesk';color:#8a938c">7-day change</span>
@@ -184,54 +283,6 @@
           <div style="font:700 20px 'Space Grotesk';margin-top:11px">{{ p.price }}</div>
         </div>
       </sc-for>
-    </div>
-
-    <!-- morning market recap -->
-    <sc-if value="{{ showRecap }}" hint-placeholder-val="{{ true }}">
-    <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:20px 24px;margin-bottom:26px;position:relative">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font:600 10px 'Hanken Grotesk';letter-spacing:.08em;text-transform:uppercase;color:#16a85f;background:#e8f7ef;padding:4px 9px;border-radius:6px">MORNING RECAP</span>
-          <span style="font:500 12px 'Hanken Grotesk';color:#a7afa7">{{ recap.date }}</span>
-        </div>
-        <div style="display:flex;align-items:center;gap:10px">
-          <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ recap.sentiment }}</span>
-          <button onClick="{{ dismissRecap }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#aab2ab;padding:2px 4px;line-height:1">✕</button>
-        </div>
-      </div>
-      <div class="fs-recap-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
-        <div>
-          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#16a85f;text-transform:uppercase;margin-bottom:8px">Top Gainers · 7d</div>
-          <sc-for list="{{ recap.gainers }}" as="g" hint-placeholder-count="3">
-            <div onClick="{{ g.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer;opacity:.75">
-              <div style="display:flex;flex-direction:column;min-width:0">
-                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.name }}</span>
-                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ g.team }}</span>
-              </div>
-              <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:12px">
-                <span style="font:700 14px 'Space Grotesk'">{{ g.price }}</span>
-                <span style="font:600 12px 'Hanken Grotesk';color:#16a85f">▲ {{ g.chg }}</span>
-              </div>
-            </div>
-          </sc-for>
-        </div>
-        <div>
-          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#e03e3e;text-transform:uppercase;margin-bottom:8px">Biggest Drops · 7d</div>
-          <sc-for list="{{ recap.losers }}" as="l" hint-placeholder-count="3">
-            <div onClick="{{ l.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer;opacity:.75">
-              <div style="display:flex;flex-direction:column;min-width:0">
-                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.name }}</span>
-                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ l.team }}</span>
-              </div>
-              <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:12px">
-                <span style="font:700 14px 'Space Grotesk'">{{ l.price }}</span>
-                <span style="font:600 12px 'Hanken Grotesk';color:#e03e3e">▼ {{ l.chg }}</span>
-              </div>
-            </div>
-          </sc-for>
-        </div>
-      </div>
-      <div style="padding-top:12px;border-top:1px solid #f3f4f0;font:500 13px 'Hanken Grotesk';color:#46504a;line-height:1.5">{{ recap.headline }}</div>
     </div>
     </sc-if>
 
@@ -275,6 +326,30 @@
             <input type="number" value="{{ filterPriceMin }}" onInput="{{ onFilterPriceMin }}" placeholder="Min" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:82px;outline:none;color:#16201a;background:#fff" />
             <span style="color:#aab2ab">–</span>
             <input type="number" value="{{ filterPriceMax }}" onInput="{{ onFilterPriceMax }}" placeholder="Max" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:82px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Volatility (%)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filterVolMin }}" onInput="{{ onFilterVolMin }}" placeholder="Min" min="0" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filterVolMax }}" onInput="{{ onFilterVolMax }}" placeholder="Max" min="0" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">1D change (%)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filter1dMin }}" onInput="{{ onFilter1dMin }}" placeholder="Min" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filter1dMax }}" onInput="{{ onFilter1dMax }}" placeholder="Max" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+          </div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:5px">
+          <label style="font:600 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">7D change (%)</label>
+          <div style="display:flex;align-items:center;gap:6px">
+            <input type="number" value="{{ filter7dMin }}" onInput="{{ onFilter7dMin }}" placeholder="Min" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
+            <span style="color:#aab2ab">–</span>
+            <input type="number" value="{{ filter7dMax }}" onInput="{{ onFilter7dMax }}" placeholder="Max" style="font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 10px;width:72px;outline:none;color:#16201a;background:#fff" />
           </div>
         </div>
         <sc-if value="{{ hasActiveFilters }}">
@@ -351,7 +426,7 @@
 
           <!-- chart -->
           <div style="position:relative;margin-top:8px">
-            <svg class="fs-price-chart" viewBox="0 0 760 260" width="100%" height="260" preserveAspectRatio="none" style="display:block;overflow:visible;cursor:crosshair"
+            <svg class="fs-price-chart" viewBox="0 0 760 260" width="100%" height="260" preserveAspectRatio="none" style="display:block;overflow:visible;cursor:crosshair;touch-action:none"
                  onMouseMove="{{ d.onChartMove }}" onMouseDown="{{ d.onChartDown }}" onMouseUp="{{ d.onChartUp }}" onMouseLeave="{{ d.onChartLeave }}"
                  onTouchStart="{{ d.onChartTouchStart }}" onTouchMove="{{ d.onChartTouchMove }}" onTouchEnd="{{ d.onChartTouchEnd }}" onTouchCancel="{{ d.onChartTouchEnd }}">
               <defs><linearGradient id="fsArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="{{ d.chartColor }}" stop-opacity="0.18"></stop><stop offset="100%" stop-color="{{ d.chartColor }}" stop-opacity="0"></stop></linearGradient></defs>
@@ -460,6 +535,91 @@
           </sc-for>
         </div>
         </sc-if>
+
+        <!-- discussion / comments -->
+        <div class="fs-card-pad" style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:22px 26px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+            <div style="font:700 16px 'Space Grotesk';letter-spacing:-.01em">Discussion <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">{{ cmtCount }}</span></div>
+            <div style="display:flex;gap:5px">
+              <button onClick="{{ cmtSortTop }}" style="font:600 12px 'Hanken Grotesk';background: {{ cmtSortTopBg }};color: {{ cmtSortTopColor }};border:1px solid {{ cmtSortTopBorder }};padding:6px 12px;border-radius:999px;cursor:pointer">▲ Top</button>
+              <button onClick="{{ cmtSortNew }}" style="font:600 12px 'Hanken Grotesk';background: {{ cmtSortNewBg }};color: {{ cmtSortNewColor }};border:1px solid {{ cmtSortNewBorder }};padding:6px 12px;border-radius:999px;cursor:pointer">🕐 New</button>
+            </div>
+          </div>
+
+          <!-- composer (requires username) -->
+          <sc-if value="{{ cmtHasUser }}" hint-placeholder-val="{{ true }}">
+          <div style="margin-bottom:18px;padding-bottom:18px;border-bottom:1px solid #f1f3ef">
+            <textarea id="fs-cmt-input" placeholder="Share your thoughts on this stock…" maxlength="500" rows="3" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;resize:none;line-height:1.5;background:#fafbf8"></textarea>
+            <div style="display:flex;justify-content:flex-end;margin-top:7px">
+              <button onClick="{{ cmtSubmit }}" style="font:600 13px 'Hanken Grotesk';background: {{ cmtSubmitBg }};color:#fff;border:none;padding:9px 18px;border-radius:10px;cursor: {{ cmtSubmitCursor }}">Post</button>
+            </div>
+          </div>
+          </sc-if>
+          <sc-if value="{{ cmtNoUser }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-bottom:18px;padding:12px 14px;background:#f5f6f3;border-radius:10px;font:500 13px 'Hanken Grotesk';color:#8a938c">Set a display name on the <button onClick="{{ goLeaders }}" style="background:none;border:none;padding:0;color:#16a85f;font:600 13px 'Hanken Grotesk';cursor:pointer">Leaderboard</button> tab to join the discussion.</div>
+          </sc-if>
+
+          <!-- loading -->
+          <sc-if value="{{ cmtLoading }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:20px 0;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c">Loading comments…</div>
+          </sc-if>
+
+          <!-- empty -->
+          <sc-if value="{{ cmtEmpty }}" hint-placeholder-val="{{ false }}">
+          <div style="padding:16px 0;font:500 13px 'Hanken Grotesk';color:#8a938c">No comments yet. Be the first!</div>
+          </sc-if>
+
+          <!-- comment list -->
+          <sc-for list="{{ cmtList }}" as="c" hint-placeholder-count="3">
+          <div style="padding:14px 0;border-top:1px solid #f1f3ef">
+            <!-- top-level comment -->
+            <div style="display:flex;gap:10px">
+              <div style="width:30px;height:30px;border-radius:999px;background: {{ c.avatarBg }};color:#fff;font:700 11px 'Space Grotesk';display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ c.initials }}</div>
+              <div style="flex:1;min-width:0">
+                <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+                  <span style="font:700 13px 'Hanken Grotesk'">{{ c.username }}</span>
+                  <span style="font:500 11.5px 'Hanken Grotesk';color:#a7afa7">{{ c.timeAgo }}</span>
+                </div>
+                <div style="font:500 14px 'Hanken Grotesk';color:#1f2a23;line-height:1.55;margin-top:4px;word-break:break-word">{{ c.body }}</div>
+                <div style="display:flex;align-items:center;gap:12px;margin-top:8px">
+                  <button onClick="{{ c.upvote }}" style="display:inline-flex;align-items:center;gap:5px;background: {{ c.upvoteBg }};border:1px solid {{ c.upvoteBorder }};border-radius:999px;padding:4px 10px;cursor:pointer;font:600 12px 'Hanken Grotesk';color: {{ c.upvoteColor }}">▲ {{ c.upvotes }}</button>
+                  <button onClick="{{ c.replyToggle }}" style="background:none;border:none;cursor:pointer;font:600 12px 'Hanken Grotesk';color:#8a938c;padding:0">↩ Reply</button>
+                </div>
+
+                <!-- reply composer -->
+                <sc-if value="{{ c.replyOpen }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:10px">
+                  <textarea id="fs-reply-input" placeholder="Write a reply…" maxlength="500" rows="2" style="width:100%;box-sizing:border-box;font:500 13px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:8px;padding:8px 11px;outline:none;color:#16201a;resize:none;line-height:1.5;background:#fafbf8"></textarea>
+                  <div style="display:flex;justify-content:flex-end;gap:7px;margin-top:6px">
+                    <button onClick="{{ c.replyCancel }}" style="font:600 12px 'Hanken Grotesk';background:none;border:1px solid #e1e4dd;color:#8a938c;padding:7px 14px;border-radius:8px;cursor:pointer">Cancel</button>
+                    <button onClick="{{ c.replySubmit }}" style="font:600 12px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:7px 14px;border-radius:8px;cursor:pointer">Reply</button>
+                  </div>
+                </div>
+                </sc-if>
+
+                <!-- replies -->
+                <sc-if value="{{ c.hasReplies }}" hint-placeholder-val="{{ false }}">
+                <div style="margin-top:12px;padding-left:14px;border-left:2px solid #eef1ec;display:flex;flex-direction:column;gap:10px">
+                  <sc-for list="{{ c.replies }}" as="r" hint-placeholder-count="1">
+                  <div style="display:flex;gap:8px">
+                    <div style="width:24px;height:24px;border-radius:999px;background: {{ r.avatarBg }};color:#fff;font:700 10px 'Space Grotesk';display:flex;align-items:center;justify-content:center;flex-shrink:0">{{ r.initials }}</div>
+                    <div style="flex:1;min-width:0">
+                      <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap">
+                        <span style="font:700 12.5px 'Hanken Grotesk'">{{ r.username }}</span>
+                        <span style="font:500 11px 'Hanken Grotesk';color:#a7afa7">{{ r.timeAgo }}</span>
+                      </div>
+                      <div style="font:500 13.5px 'Hanken Grotesk';color:#1f2a23;line-height:1.5;margin-top:3px;word-break:break-word">{{ r.body }}</div>
+                      <button onClick="{{ r.upvote }}" style="display:inline-flex;align-items:center;gap:5px;background: {{ r.upvoteBg }};border:1px solid {{ r.upvoteBorder }};border-radius:999px;padding:3px 9px;cursor:pointer;font:600 11.5px 'Hanken Grotesk';color: {{ r.upvoteColor }};margin-top:6px">▲ {{ r.upvotes }}</button>
+                    </div>
+                  </div>
+                  </sc-for>
+                </div>
+                </sc-if>
+              </div>
+            </div>
+          </div>
+          </sc-for>
+        </div>
       </div>
 
       <!-- right: trade panel -->
@@ -482,7 +642,7 @@
             <button onClick="{{ d.onBuy }}" style="flex:1;font:700 14px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:13px;border-radius:11px;cursor:pointer">Buy</button>
             <button onClick="{{ d.onSell }}" style="flex:1;font:700 14px 'Hanken Grotesk';background: {{ d.sellBg }};color: {{ d.sellColor }};border:1px solid {{ d.sellBorder }};padding:13px;border-radius:11px;cursor: {{ d.sellCursor }}">Sell</button>
           </div>
-          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;text-align:center;margin-top:12px">Buying power · {{ cashFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;text-align:center;margin-top:12px">Buying power · {{ buyingPowerFmt }}<sc-if value="{{ hasMarginUsed }}" hint-placeholder-val="{{ false }}"> <span style="color:#e07a1a">({{ marginUsedFmt }} margin)</span></sc-if></div>
           <div style="margin-top:14px;padding-top:14px;border-top:1px solid #eef1ec">
             <sc-if value="{{ d.hasShort }}" hint-placeholder-val="{{ false }}">
               <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';margin-bottom:6px"><span style="color:#8a938c">Hatewatching</span><span style="font-family:'Space Grotesk';font-weight:600">{{ d.shortQty }} shares</span></div>
@@ -595,6 +755,259 @@
   </div>
   </sc-if>
 
+  <!-- ============ CLUBS VIEW ============ -->
+  <sc-if value="{{ isClubs }}" hint-placeholder-val="{{ false }}">
+  <div class="fs-page-pad" style="padding:24px 26px 0">
+
+    <!-- error/success banner -->
+    <sc-if value="{{ clubError }}">
+      <div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:12px;padding:12px 16px;margin-bottom:16px;font:500 13px 'Hanken Grotesk';color:#b91c1c">{{ clubError }}</div>
+    </sc-if>
+    <sc-if value="{{ clubSuccess }}">
+      <div style="background:#f0fdf4;border:1px solid #86efac;border-radius:12px;padding:12px 16px;margin-bottom:16px;font:500 13px 'Hanken Grotesk';color:#166534">{{ clubSuccess }}</div>
+    </sc-if>
+
+    <!-- loading -->
+    <sc-if value="{{ clubLoading }}">
+      <div style="text-align:center;padding:60px;font:500 14px 'Hanken Grotesk';color:#8a938c">Loading clubs...</div>
+    </sc-if>
+
+    <!-- NO CLUB: home chooser -->
+    <sc-if value="{{ noClubHome }}">
+      <div style="font:700 24px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 6px">Clubs</div>
+      <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 28px">Create or join a club to compete with friends in weekly competitions.</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:32px">
+        <div onClick="{{ goClubCreate }}" style="background:#0c1f15;border-radius:18px;padding:28px 24px;cursor:pointer">
+          <div style="font:700 28px 'Space Grotesk';color:#3ddc8a;margin-bottom:6px">+</div>
+          <div style="font:700 16px 'Space Grotesk';color:#eaf3ed;margin-bottom:6px">Create a club</div>
+          <div style="font:500 12.5px 'Hanken Grotesk';color:#7fb89a">Start your own. Set the rules, invite your crew.</div>
+        </div>
+        <div onClick="{{ goClubJoin }}" style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:28px 24px;cursor:pointer">
+          <div style="font:700 28px 'Space Grotesk';color:#16a85f;margin-bottom:6px">&#x2192;</div>
+          <div style="font:700 16px 'Space Grotesk';margin-bottom:6px">Join a club</div>
+          <div style="font:500 12.5px 'Hanken Grotesk';color:#8a938c">Use an invite code or browse public clubs.</div>
+        </div>
+      </div>
+
+      <!-- public clubs list -->
+      <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Public clubs</div>
+      <sc-if value="{{ clubPublicList.length > 0 }}">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
+        <sc-for list="{{ clubPublicList }}" as="c" hint-placeholder-count="3">
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="min-width:0">
+              <div style="font:700 15px 'Space Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</div>
+              <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">by {{ c.leader_name }}</div>
+            </div>
+            <button onClick="{{ c.onJoin }}" style="flex-shrink:0;font:700 13px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:8px 16px;border-radius:999px;cursor:pointer">Join</button>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <sc-if value="{{ clubPublicList.length === 0 }}">
+        <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No public clubs yet. Be the first to create one.</div>
+      </sc-if>
+    </sc-if>
+
+    <!-- CREATE CLUB FORM -->
+    <sc-if value="{{ isClubCreate }}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
+        <button onClick="{{ goClubHome }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back</button>
+        <span style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Create a club</span>
+      </div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:26px;max-width:520px">
+        <div style="margin-bottom:16px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Club name *</label>
+          <input id="club-create-name" placeholder="e.g. Sunday League FC" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none" />
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Description</label>
+          <input id="club-create-desc" placeholder="Optional tagline" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none" />
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px">Visibility</label>
+          <div style="display:flex;gap:10px">
+            <button onClick="{{ setClubPublic }}" style="{{ clubPublicBtnStyle }}">Public</button>
+            <button onClick="{{ setClubPrivate }}" style="{{ clubPrivateBtnStyle }}">Private</button>
+          </div>
+        </div>
+        <div style="margin-bottom:22px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Min net worth to join (optional)</label>
+          <input id="club-create-minnw" placeholder="e.g. 12000" type="number" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none" />
+        </div>
+        <button onClick="{{ submitCreateClub }}" style="width:100%;padding:13px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 15px 'Hanken Grotesk';cursor:pointer">Create club</button>
+      </div>
+    </sc-if>
+
+    <!-- JOIN CLUB FORM -->
+    <sc-if value="{{ isClubJoin }}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
+        <button onClick="{{ goClubHome }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back</button>
+        <span style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Join a club</span>
+      </div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:26px;max-width:520px;margin-bottom:24px">
+        <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Invite code</label>
+        <div style="display:flex;gap:10px">
+          <input id="club-join-code" placeholder="e.g. XK7M2P" style="flex:1;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none;text-transform:uppercase;letter-spacing:.12em" />
+          <button onClick="{{ submitJoinClub }}" style="flex-shrink:0;padding:11px 20px;background:#16a85f;color:#fff;border:none;border-radius:10px;font:700 14px 'Hanken Grotesk';cursor:pointer">Join</button>
+        </div>
+      </div>
+      <!-- public clubs list in join view -->
+      <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Public clubs</div>
+      <sc-if value="{{ clubPublicList.length > 0 }}">
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
+        <sc-for list="{{ clubPublicList }}" as="c" hint-placeholder-count="3">
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="min-width:0">
+              <div style="font:700 15px 'Space Grotesk'">{{ c.name }}</div>
+              <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ c.description }}</div>
+              <div style="font:600 11px 'Hanken Grotesk';color:#46504a;margin-top:6px">Led by {{ c.leader_name }}</div>
+            </div>
+            <button onClick="{{ c.onJoin }}" style="flex-shrink:0;padding:9px 18px;background:#16a85f;color:#fff;border:none;border-radius:10px;font:700 13px 'Hanken Grotesk';cursor:pointer">Join</button>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <sc-if value="{{ clubPublicList.length === 0 }}">
+        <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No public clubs yet. Be the first to create one.</div>
+      </sc-if>
+    </sc-if>
+
+    <!-- MY CLUB -->
+    <sc-if value="{{ hasClubHome }}">
+      <!-- club header -->
+      <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:20px;padding:24px 28px;margin-bottom:20px;color:#eaf3ed">
+        <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div>
+            <div style="font:700 26px 'Space Grotesk';letter-spacing:-.01em">{{ myClub.name }}</div>
+            <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-top:4px">{{ myClub.description }}</div>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">
+              <span style="font:600 11px 'Hanken Grotesk';background:rgba(61,220,138,.18);color:#3ddc8a;padding:4px 10px;border-radius:999px">{{ myClub.is_public ? 'Public' : 'Private' }}</span>
+              <span style="font:600 11px 'Hanken Grotesk';background:rgba(255,255,255,.12);color:#c5d9cc;padding:4px 10px;border-radius:999px">{{ clubMembers.length }} / 11 members</span>
+              <span style="font:600 11px 'Hanken Grotesk';background:rgba(255,255,255,.12);color:#c5d9cc;padding:4px 10px;border-radius:999px">Led by {{ myClub.leader_name }}</span>
+            </div>
+          </div>
+          <button onClick="{{ leaveClub }}" style="flex-shrink:0;background:rgba(255,255,255,.12);border:none;color:#c5d9cc;font:600 12px 'Hanken Grotesk';padding:8px 14px;border-radius:999px;cursor:pointer">Leave</button>
+        </div>
+        <!-- invite code (leader only) -->
+        <sc-if value="{{ isMyClubLeader }}">
+        <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+          <span style="font:500 12px 'Hanken Grotesk';color:#7fb89a">Invite code:</span>
+          <span style="font:700 18px 'Space Grotesk';letter-spacing:.15em;color:#fff">{{ clubInviteCode }}</span>
+          <button onClick="{{ copyInviteCode }}" style="background:rgba(61,220,138,.2);border:none;color:#3ddc8a;font:600 12px 'Hanken Grotesk';padding:6px 14px;border-radius:999px;cursor:pointer">Copy</button>
+        </div>
+        </sc-if>
+      </div>
+
+      <!-- members -->
+      <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Members</div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:28px">
+        <sc-for list="{{ clubMembers }}" as="m" hint-placeholder-count="4">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 20px;border-bottom:1px solid #f3f4f0;position:relative">
+            <div style="display:flex;align-items:center;gap:11px">
+              <div class="fs-avatar-badge" style="width:34px;height:34px;border-radius:999px;background:{{ m.avatarBg }};color:#fff;display:flex;align-items:center;justify-content:center;font:700 13px 'Space Grotesk';flex-shrink:0">{{ m.initials }}</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <span style="font:600 14px 'Hanken Grotesk'">{{ m.display_name }}</span>
+                <sc-if value="{{ m.isLeader }}"><span style="font:700 10px 'Hanken Grotesk';letter-spacing:.05em;background:#e7f6ec;color:#16a85f;padding:2px 8px;border-radius:999px;text-transform:uppercase">Manager</span></sc-if>
+              </div>
+            </div>
+            <sc-if value="{{ m.hasMenu }}">
+              <div style="position:relative">
+                <button onClick="{{ m.toggleMenu }}" style="background:none;border:none;cursor:pointer;font:700 16px 'Space Grotesk';color:#8a938c;padding:4px 8px;border-radius:8px;line-height:1">···</button>
+                <sc-if value="{{ m.menuOpen }}">
+                  <div style="position:absolute;right:0;top:100%;z-index:50;background:#fff;border:1px solid #e1e4dd;border-radius:12px;box-shadow:0 4px 16px rgba(0,0,0,.10);min-width:170px;overflow:hidden">
+                    <button onClick="{{ m.onTransfer }}" style="display:block;width:100%;text-align:left;padding:11px 16px;font:600 13px 'Hanken Grotesk';background:none;border:none;border-bottom:1px solid #f3f4f0;cursor:pointer;color:#16201a">Give ownership</button>
+                    <button onClick="{{ m.onRemove }}" style="display:block;width:100%;text-align:left;padding:11px 16px;font:600 13px 'Hanken Grotesk';background:none;border:none;cursor:pointer;color:#e03e3e">Remove from club</button>
+                  </div>
+                </sc-if>
+              </div>
+            </sc-if>
+          </div>
+        </sc-for>
+      </div>
+
+      <!-- club chat -->
+      <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Club chat</div>
+      <!-- loading -->
+      <sc-if value="{{ clubChatLoading }}">
+        <div style="text-align:center;padding:30px;font:500 13px 'Hanken Grotesk';color:#8a938c">Loading chat…</div>
+      </sc-if>
+      <!-- setup needed banner -->
+      <sc-if value="{{ clubChatSetupNeeded }}">
+        <div style="background:#fef9ec;border:1px solid #f5d87a;border-radius:14px;padding:18px 20px;margin-bottom:16px">
+          <div style="font:700 14px 'Space Grotesk';color:#92610a;margin-bottom:6px">⚙️ One-time setup needed</div>
+          <div style="font:500 13px 'Hanken Grotesk';color:#6b4d0e;line-height:1.5">The club_messages table needs to be created in Supabase. Open the Supabase SQL editor for project pwlszzrvwhflijbjwnnf and run the SQL found in the source comment block near SUPABASE_URL in FootyStock_dc.html.</div>
+        </div>
+      </sc-if>
+      <!-- messages (only shown when table exists) -->
+      <sc-if value="{{ clubChatReady }}">
+      <div id="club-chat-scroll" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:16px;min-height:180px;max-height:420px;overflow-y:auto;margin-bottom:12px;display:flex;flex-direction:column;gap:14px">
+        <sc-if value="{{ clubMessages.length === 0 }}">
+          <div style="text-align:center;padding:40px 0;font:500 13px 'Hanken Grotesk';color:#b0b8b4">No messages yet. Say hello!</div>
+        </sc-if>
+        <sc-for list="{{ clubMessages }}" as="msg" hint-placeholder-count="3">
+          <div style="display:flex;flex-direction:{{ msg.isMe ? 'row-reverse' : 'row' }};align-items:flex-end;gap:8px">
+            <!-- avatar (others only) -->
+            <sc-if value="{{ !msg.isMe }}">
+              <div style="width:28px;height:28px;border-radius:999px;background:{{ msg.avatarBg }};color:#fff;display:flex;align-items:center;justify-content:center;font:700 11px 'Space Grotesk';flex-shrink:0">{{ msg.initials }}</div>
+            </sc-if>
+            <div style="max-width:80%;display:flex;flex-direction:column;gap:3px;align-items:{{ msg.isMe ? 'flex-end' : 'flex-start' }}">
+              <!-- name + time (others only) -->
+              <sc-if value="{{ !msg.isMe }}">
+                <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-left:2px">{{ msg.name }} · {{ msg.timeStr }}</span>
+              </sc-if>
+              <!-- text bubble -->
+              <sc-if value="{{ msg.isText }}">
+                <div style="background:{{ msg.isMe ? '#16a85f' : '#f3f5f1' }};color:{{ msg.isMe ? '#fff' : '#16201a' }};border-radius:{{ msg.isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px' }};padding:10px 14px;font:500 14px 'Hanken Grotesk';line-height:1.45;word-break:break-word">{{ msg.body }}</div>
+              </sc-if>
+              <!-- portfolio card -->
+              <sc-if value="{{ msg.isPortfolio }}">
+                <div style="background:{{ msg.isMe ? '#0c1f15' : '#f3f5f1' }};border-radius:14px;padding:14px 16px;min-width:220px">
+                  <div style="font:700 12px 'Hanken Grotesk';letter-spacing:.05em;text-transform:uppercase;color:{{ msg.isMe ? '#3ddc8a' : '#16a85f' }};margin-bottom:8px">📊 Portfolio share</div>
+                  <sc-for list="{{ msg.portfolio.holdings }}" as="h" hint-placeholder-count="3">
+                    <div style="display:flex;justify-content:space-between;font:500 13px 'Hanken Grotesk';color:{{ msg.isMe ? '#c5d9cc' : '#46504a' }};padding:2px 0">
+                      <span>{{ h.name }} <span style="color:{{ msg.isMe ? '#7fb89a' : '#8a938c' }}">×{{ h.qty }}</span></span>
+                      <span style="font-weight:600">${{ h.price }}</span>
+                    </div>
+                  </sc-for>
+                  <div style="border-top:1px solid {{ msg.isMe ? 'rgba(255,255,255,.12)' : '#e8eae4' }};margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font:600 13px 'Hanken Grotesk';color:{{ msg.isMe ? '#fff' : '#16201a' }}">
+                    <span>Net worth</span>
+                    <span>${{ msg.portfolio.totalValue.toFixed(0) }}</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';color:{{ msg.portfolio.pnl >= 0 ? '#3ddc8a' : '#ff5d5d' }};margin-top:3px">
+                    <span>P&amp;L</span>
+                    <span>{{ msg.portfolio.pnl >= 0 ? '+' : '' }}${{ msg.portfolio.pnl.toFixed(2) }}</span>
+                  </div>
+                </div>
+              </sc-if>
+              <!-- trade card -->
+              <sc-if value="{{ msg.isTrade }}">
+                <div onClick="{{ msg.onViewPlayer }}" style="background:{{ msg.isMe ? '#0c1f15' : '#f3f5f1' }};border-radius:14px;padding:12px 16px;min-width:180px;cursor:pointer">
+                  <div style="font:700 12px 'Hanken Grotesk';letter-spacing:.05em;text-transform:uppercase;color:{{ msg.trade.action === 'buy' ? '#3ddc8a' : '#ff5d5d' }};margin-bottom:4px">{{ msg.trade.action === 'buy' ? '🟢 Bought' : msg.trade.action === 'sell' ? '🔴 Sold' : msg.trade.action === 'hatewatch' ? '👁 Shorting' : '✅ Covered' }}</div>
+                  <div style="font:600 14px 'Hanken Grotesk';color:{{ msg.isMe ? '#eaf3ed' : '#16201a' }}">{{ msg.trade.player }}</div>
+                  <div style="font:500 12px 'Hanken Grotesk';color:{{ msg.isMe ? '#7fb89a' : '#8a938c' }};margin-top:2px">{{ msg.trade.qty }}× @ ${{ msg.trade.price }}</div>
+                </div>
+              </sc-if>
+              <!-- timestamp (own messages) -->
+              <sc-if value="{{ msg.isMe }}">
+                <span style="font:500 11px 'Hanken Grotesk';color:#a7afa7">{{ msg.timeStr }}</span>
+              </sc-if>
+            </div>
+          </div>
+        </sc-for>
+      </div>
+      <!-- input row -->
+      <div style="display:flex;gap:8px;align-items:flex-end;margin-bottom:30px">
+        <button onClick="{{ sharePortfolio }}" style="flex-shrink:0;background:#eef1ec;border:none;color:#16a85f;font:600 12px 'Hanken Grotesk';padding:10px 13px;border-radius:12px;cursor:pointer;white-space:nowrap">📊 Share portfolio</button>
+        <input id="club-chat-input" value="{{ clubChatInput }}" onInput="{{ onClubChatInput }}" onKeydown="{{ onClubChatKeydown }}" placeholder="Message your club…" style="flex:1;border:1px solid #e1e4dd;border-radius:12px;padding:10px 14px;font:500 14px 'Hanken Grotesk';outline:none;background:#fff" />
+        <button onClick="{{ submitClubChat }}" disabled="{{ clubChatSending }}" style="flex-shrink:0;background:#16a85f;border:none;color:#fff;font:700 13px 'Hanken Grotesk';padding:10px 16px;border-radius:12px;cursor:pointer">Send</button>
+      </div>
+      </sc-if><!-- end clubChatReady -->
+    </sc-if><!-- end hasClubHome -->
+
+  </div>
+  </sc-if>
+
   <!-- ============ ARTICLES VIEW ============ -->
   <sc-if value="{{ isArticles }}" hint-placeholder-val="{{ false }}">
   <div class="fs-page-pad" style="padding:24px 26px 0">
@@ -648,8 +1061,11 @@
   <!-- ============ LEADERBOARD VIEW ============ -->
   <sc-if value="{{ isLeaders }}" hint-placeholder-val="{{ false }}">
   <div class="fs-page-pad" style="padding:24px 26px 0">
-    <div style="font:700 20px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 4px">Leaderboard</div>
-    <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 18px">Ranked by net worth across all traders.</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+      <div style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Leaderboard</div>
+      <button onClick="{{ goProfile }}" style="font:600 13px 'Hanken Grotesk';background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:9px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">👤 My Profile</button>
+    </div>
+    <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 18px">Ranked by net worth — click any row to view a profile.</div>
     <!-- name prompt: shown when user hasn't set a display name yet -->
     <sc-if value="{{ lbNameData.showPrompt }}" hint-placeholder-val="{{ false }}">
     <div style="background:#f0faf4;border:1px solid #b6e8cc;border-radius:14px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -667,16 +1083,129 @@
     </div>
     </sc-if>
     <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
-      <div class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Rank</span><span>Trader</span><span style="text-align:right">Net worth</span><span style="text-align:right">Profit</span></div>
+      <div class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Rank</span><span>Trader</span><span style="text-align:right">Trading P/L</span></div>
       <sc-for list="{{ leaderboard }}" as="l" hint-placeholder-count="12">
-        <div class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }}">
+        <div onClick="{{ l.onClick }}" class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }};cursor:pointer" style-hover="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background:#fafbf8;cursor:pointer">
           <span style="font:700 15px 'Space Grotesk';color: {{ l.rankColor }}">{{ l.medal }}</span>
-          <span style="display:flex;align-items:center;gap:10px"><span class="fs-avatar-badge" style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk'">{{ l.name }}</b></span>
-          <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ l.netWorth }}</span>
+          <span style="display:flex;align-items:center;gap:10px"><span class="fs-avatar-badge" style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk'">{{ l.name }}</b><sc-if value="{{ l.showFounder }}"><span style="font-size:14px;line-height:1" title="Founder">🏅</span></sc-if></span>
           <span style="text-align:right;font:700 14px 'Space Grotesk';color: {{ l.profitColor }}">{{ l.profitArrow }}{{ l.profit }}</span>
         </div>
       </sc-for>
     </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ PROFILE VIEW ============ -->
+  <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+  <div class="fs-page-pad" style="padding:24px 26px 0">
+    <button onClick="{{ closeProfile }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#16a85f;padding:6px 0;margin-bottom:18px">← Back to leaderboard</button>
+
+    <!-- own profile: full stats -->
+    <sc-if value="{{ profileIsMe }}" hint-placeholder-val="{{ true }}">
+      <!-- header card -->
+      <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:20px;padding:26px 28px;color:#eaf3ed;display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+        <div style="width:64px;height:64px;border-radius:999px;background:#16a85f;display:flex;align-items:center;justify-content:center;font:700 22px 'Space Grotesk';color:#fff;flex-shrink:0">{{ profileInitials }}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font:700 24px 'Space Grotesk';letter-spacing:-.01em">{{ profileName }}</div>
+          <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-top:3px">Member since {{ profileStats.joinDate }} · #{{ profileStats.streak }} day streak 🔥<sc-if value="{{ isFounder }}"> · 🏅 Founder</sc-if></div>
+        </div>
+        <div style="text-align:right">
+          <div style="font:600 11px 'Hanken Grotesk';color:#7fb89a;letter-spacing:.08em;text-transform:uppercase">Net worth</div>
+          <div style="font:700 32px 'Space Grotesk';letter-spacing:-.02em;margin-top:2px">{{ profileStats.nwFmt }}</div>
+        </div>
+      </div>
+
+      <!-- key numbers row -->
+      <div class="fs-profile-grid4" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">All-time P/L</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px;color: {{ profileStats.plColor }}">{{ profileStats.plFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">from §10,000 start</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">All-time peak</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.athFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">highest net worth</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Total trades</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.totalTrades }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ profileStats.totalBuys }} buys · {{ profileStats.totalSells }} sells</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Win rate</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.winRateFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">profitable open positions</div>
+        </div>
+      </div>
+
+      <!-- detail stats row -->
+      <div class="fs-profile-grid3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Stocks bought</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.totalBuyQty }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">shares across all buys</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Players traded</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.playersTraded }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">unique players ever</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Portfolio diversity</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.diversityLabel }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ profileStats.positions }} open positions</div>
+        </div>
+      </div>
+
+      <!-- bottom row: flavor stats -->
+      <div class="fs-profile-grid3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Favourite player</div>
+          <div style="font:700 16px 'Space Grotesk';margin-top:6px;line-height:1.2">{{ profileStats.favPlayer }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">most shares bought</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Best open position</div>
+          <div style="font:700 16px 'Space Grotesk';margin-top:6px;line-height:1.2">{{ profileStats.bestPLNameDisplay }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#16a85f;margin-top:2px">{{ profileStats.bestPosPctFmt }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Cash on hand</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.cashFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">buying power</div>
+        </div>
+      </div>
+
+      <!-- email / account info -->
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:20px 22px;margin-bottom:28px">
+        <div style="font:700 13px 'Hanken Grotesk';margin-bottom:4px">Account email</div>
+        <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:10px;line-height:1.5">Your verified email. Same email on any device gives you back your account.</div>
+        <div style="font:600 14px 'Hanken Grotesk';color:#16201a;background:#f5f6f3;border-radius:9px;padding:10px 14px">{{ myEmail }}</div>
+      </div>
+    </sc-if>
+
+    <!-- other user's profile: limited public view -->
+    <sc-if value="{{ profileIsOther }}" hint-placeholder-val="{{ false }}">
+      <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:20px;padding:26px 28px;color:#eaf3ed;display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+        <div style="width:64px;height:64px;border-radius:999px;background:#2a6fdb;display:flex;align-items:center;justify-content:center;font:700 22px 'Space Grotesk';color:#fff;flex-shrink:0">{{ profileInitials }}</div>
+        <div style="flex:1">
+          <div style="font:700 24px 'Space Grotesk';letter-spacing:-.01em">{{ profileName }}</div>
+          <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-top:3px">Public profile</div>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:12px;margin-bottom:28px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Trading P/L</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px;color: {{ profileOtherPLColor }}">{{ profileOtherPL }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Global rank</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileOtherMedal }}</div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:20px;font:500 13px 'Hanken Grotesk';color:#8a938c">Detailed stats are only visible to the account holder.</div>
+    </sc-if>
   </div>
   </sc-if>
 
@@ -709,7 +1238,11 @@
     </div>
 
     <div style="display:flex;justify-content:space-between;font:500 14px 'Hanken Grotesk';padding:4px 0"><span style="color:#8a938c">Order total</span><b style="font-family:'Space Grotesk'">{{ tr.total }}</b></div>
+    <div style="display:flex;justify-content:space-between;font:500 14px 'Hanken Grotesk';padding:4px 0"><span style="color:#8a938c">Buying power</span><b style="font-family:'Space Grotesk'">{{ tr.buyingPower }}</b></div>
     <div style="display:flex;justify-content:space-between;font:500 14px 'Hanken Grotesk';padding:4px 0"><span style="color:#8a938c">{{ tr.balanceLabel }}</span><b style="font-family:'Space Grotesk';color: {{ tr.balanceColor }}">{{ tr.balanceAfter }}</b></div>
+    <sc-if value="{{ tr.marginWarning }}" hint-placeholder-val="{{ false }}">
+    <div style="font:500 12px 'Hanken Grotesk';color:#e07a1a;margin-top:6px;padding:8px 12px;background:#fff8f0;border-radius:8px;border:1px solid #fcdcb0">{{ tr.marginWarning }}</div>
+    </sc-if>
 
     <div style="font:600 12.5px 'Hanken Grotesk';color:#d23b2c;margin-top:10px;min-height:16px">{{ tr.error }}</div>
 
@@ -741,22 +1274,259 @@
   </div>
 </div>
 </sc-if>
+
+<!-- ============ SHARE BUTTON ============ -->
+<button onClick="{{ openShare }}" style="position:fixed;bottom:28px;right:130px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#0a4a2f;color:#3ddc8a;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
+  <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2"/><circle cx="18" cy="15" r="2"/><circle cx="3" cy="10" r="2"/><line x1="3" y1="10" x2="16" y2="5"/><line x1="3" y1="10" x2="16" y2="15"/></svg>
+  Share
+</button>
+
+<!-- ============ PORTFOLIO LOADING OVERLAY ============ -->
+<sc-if value="{{ portfolioLoading }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:190;background:rgba(12,31,21,0.92);display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <div style="width:40px;height:40px;border:4px solid rgba(22,168,95,0.3);border-top-color:#16a85f;border-radius:50%;animation:spin 0.9s linear infinite"></div>
+  <div style="color:#3ddc8a;font-size:15px;font-weight:600">Loading your portfolio…</div>
+</div>
+</sc-if>
+
+<!-- ============ PHONE LOGIN GATE ============ -->
+<sc-if value="{{ showLoginGate }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:200;background:linear-gradient(160deg,#0c1f15 0%,#11321f 60%,#0a180f 100%);display:flex;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:400px">
+    <div style="text-align:center;margin-bottom:36px">
+      <div style="font:800 32px 'Space Grotesk';color:#eaf3ed;letter-spacing:-.02em">FootyStock</div>
+      <div style="font:500 15px 'Hanken Grotesk';color:#7fb89a;margin-top:8px">The football stock market game</div>
+    </div>
+    <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px">
+
+      <!-- Step 1: email + name -->
+      <sc-if value="{{ loginStepEmail }}" hint-placeholder-val="{{ true }}">
+        <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Create your account</div>
+        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">We'll email you a code to verify — no password needed.</div>
+        <input id="fs-login-email" type="email" placeholder="Email address" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
+        <input id="fs-login-name" placeholder="Display name (must be unique)" maxlength="32" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
+        <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
+        <button onClick="{{ doSendOtp }}" style="width:100%;font:700 16px 'Hanken Grotesk';background: {{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginBtnLabel }}</button>
+        <div style="font:500 12px 'Hanken Grotesk';color:#7fb89a;text-align:center;margin-top:14px;line-height:1.5">For entertainment only — no real money.</div>
+      </sc-if>
+
+      <!-- Step 2: enter OTP code -->
+      <sc-if value="{{ loginStepOtp }}" hint-placeholder-val="{{ false }}">
+        <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Check your email</div>
+        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">We sent a 6-digit code to <b style="color:#eaf3ed">{{ loginEmail }}</b>. Enter it below.</div>
+        <input id="fs-login-otp" type="text" inputmode="numeric" placeholder="6-digit code" maxlength="6" style="width:100%;box-sizing:border-box;font:700 22px 'Space Grotesk';letter-spacing:.2em;text-align:center;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:14px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
+        <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
+        <button onClick="{{ doVerifyOtp }}" style="width:100%;font:700 16px 'Hanken Grotesk';background: {{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginBtnLabel }}</button>
+        <button onClick="{{ loginBack }}" style="width:100%;font:600 14px 'Hanken Grotesk';background:none;color:#7fb89a;border:none;padding:12px;cursor:pointer;margin-top:6px">← Use a different email</button>
+      </sc-if>
+
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ FEEDBACK BUTTON ============ -->
+<button onClick="{{ openFeedback }}" style="position:fixed;bottom:28px;right:24px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
+  <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13a2 2 0 0 1-2 2H6l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/></svg>
+  Feedback
+</button>
+
+<!-- ============ FEEDBACK MODAL ============ -->
+<sc-if value="{{ feedbackOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:100;background:rgba(12,20,15,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeFeedback }}">
+  <div onClick="{{ stopFeedback }}" class="fs-modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:440px;padding:28px;box-shadow:0 30px 80px rgba(10,20,14,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px">
+      <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Send feedback</span>
+      <button onClick="{{ closeFeedback }}" style="background:none;border:none;cursor:pointer;font:400 22px 'Hanken Grotesk';color:#aab2ab;line-height:1">×</button>
+    </div>
+    <sc-if value="{{ fbSent }}" hint-placeholder-val="{{ false }}">
+      <div style="text-align:center;padding:30px 0">
+        <div style="font:700 28px 'Space Grotesk'">Thanks! 🙏</div>
+        <div style="font:500 13.5px 'Hanken Grotesk';color:#8a938c;margin-top:8px">Your feedback has been received.</div>
+        <button onClick="{{ closeFeedback }}" style="margin-top:20px;font:700 14px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:12px 28px;border-radius:12px;cursor:pointer">Close</button>
+      </div>
+    </sc-if>
+    <sc-if value="{{ fbNotSent }}" hint-placeholder-val="{{ true }}">
+      <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:18px">Got a bug, suggestion, or thought? We read everything.</div>
+      <input id="fs-fb-name" placeholder="Your name (optional)" maxlength="60" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff;margin-bottom:10px">
+      <textarea id="fs-fb-text" placeholder="What's on your mind?" maxlength="1000" rows="5" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #e1e4dd;border-radius:10px;padding:10px 13px;outline:none;color:#16201a;background:#fff;resize:vertical;line-height:1.5"></textarea>
+      <div style="font:500 12px 'Hanken Grotesk';color:#e03e3e;margin-top:6px;min-height:16px">{{ fbError }}</div>
+      <button onClick="{{ fbSubmit }}" style="width:100%;margin-top:10px;font:700 15px 'Hanken Grotesk';background: {{ fbBtnBg }};color:#fff;border:none;padding:14px;border-radius:13px;cursor: {{ fbBtnCursor }}">{{ fbBtnLabel }}</button>
+    </sc-if>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ SHARE MODAL ============ -->
+<sc-if value="{{ shareOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:100;background:rgba(12,20,15,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeShare }}">
+  <div onClick="{{ stopShare }}" class="fs-modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:440px;padding:28px;box-shadow:0 30px 80px rgba(10,20,14,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Invite friends</span>
+      <button onClick="{{ closeShare }}" style="background:none;border:none;cursor:pointer;font:400 22px 'Hanken Grotesk';color:#aab2ab;line-height:1">×</button>
+    </div>
+    <sc-if value="{{ isFounder }}">
+      <div style="display:inline-flex;align-items:center;gap:6px;background:#fff8ec;border:1px solid #f5c842;border-radius:8px;padding:6px 12px;font:600 12px 'Hanken Grotesk';color:#7a5c00;margin-bottom:14px">🏅 Founder — joined early</div>
+    </sc-if>
+    <div style="font:500 13px 'Hanken Grotesk';color:#46504a;margin-bottom:16px;line-height:1.5">Invite friends. Each person who joins using your link gets 3 Mystery Stocks. So do you (up to 5 referrals).</div>
+    <div style="background:#f5f6f3;border-radius:12px;padding:12px 14px;margin-bottom:10px">
+      <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Your referral link</div>
+      <div style="font:500 12.5px 'Hanken Grotesk';color:#16201a;word-break:break-all;margin-bottom:10px">{{ shareLink }}</div>
+      <button onClick="{{ copyShareLink }}" style="font:600 13px 'Hanken Grotesk';background:#16201a;color:#eaf3ed;border:none;border-radius:8px;padding:9px 16px;cursor:pointer">{{ shareCopiedLabel }}</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;background:#f5f6f3;border-radius:12px;padding:12px 14px;margin-bottom:14px">
+      <span style="font:500 13px 'Hanken Grotesk';color:#46504a">Referrals used</span>
+      <span style="font:700 14px 'Space Grotesk'">{{ referralCount }} / 5</span>
+    </div>
+    <a href="{{ whatsappShareLink }}" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25d366;color:#fff;border-radius:12px;padding:12px 16px;font:600 13px 'Hanken Grotesk';text-decoration:none;margin-bottom:4px">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.556 4.118 1.528 5.849L.057 23.25a.75.75 0 0 0 .92.92l5.4-1.47A11.953 11.953 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.937 0-3.75-.52-5.309-1.43l-.38-.22-3.203.871.888-3.108-.243-.395A9.956 9.956 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
+      Share on WhatsApp
+    </a>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ MYSTERY STOCKS MODAL ============ -->
+<sc-if value="{{ mysteryOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:100;background:rgba(12,20,15,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeMystery }}">
+  <div onClick="{{ stopMystery }}" class="fs-modal-card" style="background:#fff;border-radius:24px;width:100%;max-width:440px;padding:30px;text-align:center;box-shadow:0 30px 80px rgba(10,20,14,.32)">
+    <div style="font:600 12px 'Hanken Grotesk';letter-spacing:.14em;text-transform:uppercase;color:#16a85f">Mystery reward</div>
+    <div style="font:700 26px 'Space Grotesk';letter-spacing:-.02em;margin-top:8px">🎁 3 Mystery Stocks!</div>
+    <div style="font:500 13.5px 'Hanken Grotesk';color:#8a938c;margin-top:6px;margin-bottom:22px">You joined via a referral link. Here are your free shares!</div>
+    <sc-for list="{{ mysteryPacks }}" as="mp">
+      <div style="background:#f5f6f3;border-radius:14px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
+        <div style="text-align:left">
+          <div style="font:700 15px 'Space Grotesk'">{{ mp.name }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ mp.team }} · {{ mp.qty }} shares free</div>
+        </div>
+        <div style="font:700 16px 'Space Grotesk';color:#16a85f">{{ mp.price }}</div>
+      </div>
+    </sc-for>
+    <button onClick="{{ closeMystery }}" style="width:100%;margin-top:10px;font:700 15px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:15px;border-radius:13px;cursor:pointer">Start trading!</button>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ ACCOUNT RECOVERY MODAL ============ -->
+<sc-if value="{{ recoverOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:100;background:rgba(12,20,15,.45);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeRecover }}">
+  <div onClick="{{ stopRecover }}" class="fs-modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:420px;padding:28px;box-shadow:0 30px 80px rgba(10,20,14,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Account recovery</span>
+      <button onClick="{{ closeRecover }}" style="background:none;border:none;cursor:pointer;font:400 22px 'Hanken Grotesk';color:#aab2ab;line-height:1">×</button>
+    </div>
+    <div style="font:500 13px 'Hanken Grotesk';color:#46504a;line-height:1.5;margin-bottom:18px">To recover your account, enter the phone number you saved under your profile. Contact support at gmensports11@gmail.com with your phone number and username.</div>
+    <button onClick="{{ closeRecover }}" style="width:100%;font:700 14px 'Hanken Grotesk';background:#16201a;color:#fff;border:none;padding:13px;border-radius:12px;cursor:pointer">Got it</button>
+  </div>
+</div>
+</sc-if>
+
 </x-dc>
 <script type="text/x-dc" data-dc-script>
+/*
+-- Run this in Supabase SQL editor before using Clubs:
+create table if not exists clubs (
+  id uuid default gen_random_uuid() primary key,
+  name text not null,
+  description text default '',
+  leader_id text not null,
+  leader_name text not null,
+  is_public boolean default true,
+  invite_code text not null unique,
+  min_net_worth numeric default 0,
+  created_at timestamptz default now()
+);
+create unique index if not exists clubs_name_lower_idx on clubs (lower(name));
+
+create table if not exists club_members (
+  id uuid default gen_random_uuid() primary key,
+  club_id uuid references clubs(id) on delete cascade not null,
+  user_id text not null,
+  display_name text not null,
+  joined_at timestamptz default now(),
+  unique(club_id, user_id)
+);
+
+create table if not exists competitions (
+  id uuid default gen_random_uuid() primary key,
+  club_id uuid references clubs(id) on delete cascade not null,
+  name text not null,
+  ends_at timestamptz not null,
+  status text default 'active',
+  created_at timestamptz default now()
+);
+
+create table if not exists comp_portfolios (
+  id uuid default gen_random_uuid() primary key,
+  competition_id uuid references competitions(id) on delete cascade not null,
+  club_id uuid not null,
+  user_id text not null,
+  display_name text not null,
+  cash numeric default 10000,
+  holdings jsonb default '{}',
+  updated_at timestamptz default now(),
+  unique(competition_id, user_id)
+);
+
+create table if not exists club_messages (
+  id uuid default gen_random_uuid() primary key,
+  club_id uuid references clubs(id) on delete cascade not null,
+  user_id text not null,
+  display_name text not null,
+  type text default 'text',
+  body text,
+  payload jsonb,
+  created_at timestamptz default now()
+);
+
+-- Allow public access (entertainment-only app, no real money)
+alter table clubs disable row level security;
+alter table club_members disable row level security;
+alter table competitions disable row level security;
+alter table comp_portfolios disable row level security;
+alter table club_messages disable row level security;
+*/
+
+const SUPABASE_URL='https://pwlszzrvwhflijbjwnnf.supabase.co';
+const SUPABASE_KEY='sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_';
+class Supa{
+  static h(extra={}){return{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'return=representation',...extra};}
+  static async get(table,q=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${q}`,{headers:this.h()});if(!r.ok)throw new Error(await r.text());return r.json();}
+  static async post(table,body){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:this.h(),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
+  static async patch(table,q,body){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${q}`,{method:'PATCH',headers:this.h({'Prefer':'return=representation'}),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
+  static async del(table,q){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}?${q}`,{method:'DELETE',headers:this.h()});return r.ok;}
+  static async upsert(table,body,onConflict=''){const r=await fetch(`${SUPABASE_URL}/rest/v1/${table}`,{method:'POST',headers:this.h({'Prefer':'resolution=merge-duplicates,return=representation'}),body:JSON.stringify(body)});if(!r.ok)throw new Error(await r.text());return r.json();}
+}
+
 class Component extends DCLogic {
   // ---------- lifecycle ----------
   constructor(props){
     super(props);
-    const saved = this.load();
+    const today = new Date().toISOString().slice(0,10);
     this.state = {
       view:'market', selectedId:null, selectedArticleId:null, league:'ALL', search:'', range:90,
       sortKey:'rank', sortDir:'asc',
       filterOpen:false, filterNation:'ALL', filterTeam:'ALL', filterAgeMin:'', filterAgeMax:'', filterPriceMin:'', filterPriceMax:'',
+      filterVolMin:'', filterVolMax:'', filter1dMin:'', filter1dMax:'', filter7dMin:'', filter7dMax:'',
       chartHoverIdx:null, chartDragStart:null,
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
       showReward:false, tick:0, pendingOrders:[], ready:false, recapDismissed:false,
-      cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
-      streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
+      feedbackOpen:false, feedbackText:'', feedbackName:'', feedbackSending:false, feedbackSent:false, feedbackError:'',
+      profileViewName: null,
+      comments:[], commentSort:'top', commentInput:'', commentReplyTo:null, commentReplyInput:'', commentsLoading:false, commentsPlayerId:null,
+      cash: 10000, holdings: {}, txns: [], watch: ['lamine-yamal','desire-doue','mika-godts','florian-wirtz'],
+      streak: 0, lastClaim: null, shorts: {},
+      joinDate: today, allTimeHigh: 10000,
+      portfolioLoading: true,
+      clubLoading: false, myClub: null, clubMembers: [], clubPublicList: [],
+      clubView: 'home', clubMenuOpenId: null, recapTab: 'bought',
+      clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
+      clubJoinCode: '', clubJoinSearch: '',
+      clubError: '', clubSuccess: '',
+      clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null,
+      shareOpen: false, shareCopied: false, mysteryOpen: false, mysteryPacks: [], recoverOpen: false,
+      phoneVal: '', phoneSaving: false, phoneSaved: false,
+      loggedIn: !!this.loadEmail(), loginStep: 'email', loginEmail: '', loginError: '', loginSending: false,
     };
   }
   componentDidMount(){
@@ -796,6 +1566,9 @@ class Component extends DCLogic {
     // price, not two racing each other.
     const cachedLive = this.loadCachedLive();
     if(cachedLive){ this._wcLive = cachedLive; }
+    // Feedback submissions go here — sign up at formspree.io (free), create a
+    // form targeting your email, then paste the endpoint below.
+    this._feedbackEndpoint = 'https://formspree.io/f/mzdlvjqo';
     this._liveWorkerBase = 'https://footystock.fly.dev';
     const LIVE_WORKER_URL = this._liveWorkerBase + '/prices.json';
     // Only adopt a fetched snapshot if it isn't OLDER than the one we already
@@ -811,6 +1584,7 @@ class Component extends DCLogic {
     const pollLive = ()=>{
       fetch(LIVE_WORKER_URL).then(r=>r.ok?r.json():null).then(data=>{
         if(data && fresher(data)){ this._wcLive = data; this._db = null; this.saveCachedLive(data); }
+        this._lastFetchMs = Date.now();
         settleFirstLoad();
         this.setState(s=>({tick:s.tick+1}));
       }).catch(()=>settleFirstLoad());
@@ -823,12 +1597,17 @@ class Component extends DCLogic {
     if(cachedLive) settleFirstLoad();
     else setTimeout(settleFirstLoad, 6000);
     this.liveTimer = setInterval(pollLive, 30000);
+    // Poll club data every 30s so new members, ownership changes, and
+    // removals appear without a manual refresh.
+    this.clubTimer = setInterval(()=>{ if(this.state.myClub) this.loadMyClub(); }, 30000);
+    this.chatTimer = setInterval(()=>{ if(this.state.myClub && this.state.view==='clubs') this.loadClubMessages(this.state.myClub.id); }, 15000);
     this.timer = setInterval(()=>{
       const DB = this.getDB();
       // orders fill at the next price tick, not the price shown when confirmed —
       // closes the "watch it happen on TV, buy before the price reacts" window.
       this.fillPendingOrders(DB);
-      this.setState(s=>({tick:s.tick+1}));
+      const nwNow=this.netWorth();
+      this.setState(s=>{ const ath=Math.max(s.allTimeHigh||10000,nwNow); if(ath>s.allTimeHigh) setTimeout(()=>this.persist(),0); return {tick:s.tick+1,allTimeHigh:ath}; });
     }, 9000);
     // Leaderboard: read/write Supabase directly from the browser — no worker
     // hop needed since the anon key is public and RLS handles access control.
@@ -837,26 +1616,59 @@ class Component extends DCLogic {
     this._sbUrl=SB_URL; this._sbHdr=SB_HDR;
     const pollLeaderboard = ()=>{
       fetch(SB_URL+'?order=net_worth.desc&limit=100',{headers:SB_HDR}).then(r=>r.ok?r.json():null).then(data=>{
-        if(data){ this._liveLeaderboard=data.map(r=>({name:r.name,netWorth:r.net_worth})); this.setState(s=>({tick:s.tick+1})); }
+        if(data){ this._liveLeaderboard=data.map(r=>({name:r.name,netWorth:r.net_worth,topHoldings:r.top_holdings||[]})); this.setState(s=>({tick:s.tick+1})); }
       }).catch(()=>{});
     };
     pollLeaderboard();
     this.leaderboardTimer = setInterval(()=>{ if(this.state.view==='leaders') pollLeaderboard(); }, 60000);
     setTimeout(()=>this.submitScore(), 3000);
+    // sync portfolio from cloud (handles cross-device and cross-domain merge)
+    setTimeout(()=>this.syncFromCloud(), 1000);
     // auto-open reward if claimable on first load
     if(this.isClaimable()) this.setState({showReward:true});
+    // charge daily margin interest on load
+    this.applyMarginInterest();
+    // handle ?ref= referral param
+    const refParam=new URLSearchParams(window.location.search).get('ref');
+    if(refParam){ localStorage.setItem('fs_pending_ref',refParam); history.replaceState(null,'',window.location.pathname); }
+    if(this.loadUsername()) this.checkPendingRef();
+    // handle ?recover= param
+    const recoverParam=new URLSearchParams(window.location.search).get('recover');
+    if(recoverParam){ this.setState({recoverOpen:true}); history.replaceState(null,'',window.location.pathname); }
+    // load referral count and phone
+    this.getReferralCount();
+    this.loadMyPhone();
   }
-  componentWillUnmount(){ clearInterval(this.timer); clearInterval(this.liveTimer); clearInterval(this.leaderboardTimer); }
+  componentWillUnmount(){ clearInterval(this.timer); clearInterval(this.liveTimer); clearInterval(this.leaderboardTimer); clearInterval(this.clubTimer); }
 
   // ---------- persistence ----------
-  load(){
-    let s=null; try{ s = JSON.parse(localStorage.getItem('footystock_v3')); }catch(e){}
-    if(!s) return { cash:10000, holdings:{}, txns:[], watch:['lamine-yamal','desire-doue','mika-godts','florian-wirtz'], streak:0, lastClaim:null, shorts:{} };
-    return { cash:s.cash??10000, holdings:s.holdings||{}, txns:s.txns||[], watch:s.watch||[], streak:s.streak||0, lastClaim:s.lastClaim||null, shorts:s.shorts||{} };
-  }
   persist(extra){
-    const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim, shorts:this.state.shorts }, extra||{});
-    try{ localStorage.setItem('footystock_v3', JSON.stringify(s)); }catch(e){}
+    // wipe old localStorage portfolio if still present
+    try{ localStorage.removeItem('footystock_v3'); }catch(e){}
+    const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim, shorts:this.state.shorts, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh }, extra||{});
+    this._persistToCloud(s);
+  }
+  _persistToCloud(s){
+    if(!this._sbUrl) return;
+    const token=this.loadToken(); if(!token||token==='anon') return;
+    const payload={ token, cash:s.cash, holdings:s.holdings, txns:(s.txns||[]).slice(0,500), shorts:s.shorts||{}, streak:s.streak||0, last_claim:s.lastClaim||null, join_date:s.joinDate||null, all_time_high:s.allTimeHigh||10000, updated_at:new Date().toISOString() };
+    fetch(this._sbUrl.replace('/leaderboard','/portfolios'),{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload)}).catch(()=>{});
+  }
+  async syncFromCloud(){
+    if(!this._sbUrl){ this.setState({portfolioLoading:false}); return; }
+    const token=this.loadToken(); if(!token||token==='anon'){ this.setState({portfolioLoading:false}); return; }
+    try{
+      const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(token));
+      if(!rows||!rows.length){
+        // New user — initialize fresh portfolio in cloud
+        this._persistToCloud({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, shorts:this.state.shorts, streak:this.state.streak, lastClaim:this.state.lastClaim, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh });
+        this.setState({portfolioLoading:false});
+        return;
+      }
+      const r=rows[0];
+      const today=new Date().toISOString().slice(0,10);
+      this.setState({ cash:r.cash??10000, holdings:r.holdings||{}, txns:r.txns||[], shorts:r.shorts||{}, streak:r.streak||0, lastClaim:r.last_claim||null, joinDate:r.join_date||today, allTimeHigh:r.all_time_high||10000, portfolioLoading:false });
+    }catch(e){ this.setState({portfolioLoading:false}); }
   }
 
   // ---------- deterministic rng ----------
@@ -1794,14 +2606,36 @@ Yan Diomande|RB Leipzig|CM|21|4
       'marcus-rashford-barcelona':NW('TRANSFER','Barça weigh a permanent deal as add-ons are debated',2.0,'06-21'),
       'robert-lewandowski-barcelona':NW('TRANSFER','Leaves Barcelona at 37; next move under discussion',-3.5,'06-20'),
       'bruno-fernandes-man-utd':NW('AWARDS BUZZ','Pundits naming Fernandes the front-runner for PFA Player of the Year on the back of his club form',5.5,'06-23'),
-      'lionel-messi-inter-miami':NW('MATCH RECAP','Messi’s opening hat-trick vs Algeria is being called one of the great group-stage individual showings as Argentina cruise through Group J',6.0,'06-17'),
-      'cristiano-ronaldo-al-nassr':NW('MATCH RECAP','Ronaldo drew heavy criticism after a quiet night in Portugal’s shock 1-1 draw with DR Congo, with pundits questioning his impact at this stage of his career',-4.0,'06-18'),
-      'kylian-mbappe-real-madrid':NW('MATCH RECAP','Mbappé’s brace against Iraq on his 100th France cap has reporters hailing his consistency as France ease into the round of 32',4.5,'06-23'),
-      'erling-haaland-man-city':NW('MATCH RECAP','Haaland’s brace against Senegal finally delivers his first World Cup goals, ending years of tournament frustration with a bang',5.0,'06-17'),
-      'matheus-cunha-man-utd':NW('MATCH RECAP','Cunha’s first-half brace against Haiti has reporters noting his third goal of the tournament and his growing influence for Brazil',4.0,'06-20'),
-      'jamal-musiala-bayern':NW('MATCH RECAP','Germany’s 7-1 demolition of Curaçao was one of the tournament’s most one-sided scorelines, with Musiala among the standout performers',4.0,'06-16'),
+      "lionel-messi-inter-miami":NW("MATCH RECAP","Messi's opening hat-trick vs Algeria is being called one of the great group-stage individual showings as Argentina cruise through Group J",6.0,"06-17"),
+      "cristiano-ronaldo-al-nassr":NW("MATCH RECAP","Ronaldo drew heavy criticism after a quiet night in Portugal's shock 1-1 draw with DR Congo, with pundits questioning his impact at this stage of his career",-4.0,"06-18"),
+      "kylian-mbappe-real-madrid":NW("MATCH RECAP","Mbappé ends the group stage with 4 goals — a brace on his 100th France cap vs Iraq plus further strikes that have him level with Haaland in the Golden Boot race. 16 goals in 16 World Cup games; pundits are running out of superlatives.",7.5,"06-26"),
+      "erling-haaland-man-city":NW("MATCH RECAP","Haaland ends the group stage with 4 goals, ending years of World Cup frustration. He and Mbappé are inseparable at the top of the Golden Boot race — Norway fans have been in full voice and the world is watching.",7.0,"06-26"),
+      "matheus-cunha-man-utd":NW("MATCH RECAP","Cunha's first-half brace against Haiti has reporters noting his third goal of the tournament and his growing influence for Brazil",4.0,"06-20"),
+      "jamal-musiala-bayern":NW("MATCH RECAP","Germany's 7-1 demolition of Curaçao was one of the tournament's most one-sided scorelines, with Musiala among the standout performers",4.0,"06-16"),
       'mohammed-kudus-tottenham':NW('MATCH RECAP','Kudus was an unused substitute as Ghana ground out a 0-0 draw with England to advance, with Lawrence Ati-Zigi the standout performer pulling off a series of sharp saves',2.0,'06-24'),
-      'yan-diomande-rb-leipzig':NW('TRANSFER','Verbal agreement reached with PSG — Diomande set to become one of the most expensive midfielders in history',9.5,'06-29')
+      'yan-diomande-rb-leipzig':NW('TRANSFER','Verbal agreement reached with PSG — Diomande set to become one of the most expensive midfielders in history',9.5,'06-29'),
+
+      // ── WC 2026 Group-stage breakout hype entries ──────────────────────────
+      // Underdogs / shock performers first — these get the biggest relative boost
+      // because our underdog multiplier amplifies unknown players more.
+      'vozinha-famalicao':NW('WORLD CUP BUZZ','The 40-year-old Cape Verde keeper pulled off 7 saves in a stunning 0-0 draw with Spain. He has gone viral with 16M+ Instagram followers overnight and is being called the tournament\'s feel-good story. Cape Verde became the smallest nation by population to ever reach the knockouts.',9.0,'06-25'),
+      'ayyoub-bouaddi-lille':NW('WORLD CUP BUZZ','The 18-year-old maths student bossed Brazil\'s midfield — 87 touches, multiple completed dribbles, MOTM rating from every major outlet. Comparisons to Zidane at the same age are everywhere.',9.0,'06-21'),
+      'ismael-saibari-psv':NW('WORLD CUP BUZZ','Three goals in three group games for Morocco, each at a decisive moment. He\'s become the heartbeat of Morocco\'s run and is being linked with every top-six Premier League club.',8.5,'06-26'),
+      'keito-nakamura-reims':NW('WORLD CUP BUZZ','Nakamura has been Japan\'s standout creative force — two goals and two assists in the group stage, routinely outclassing opponents worth 10x his transfer fee. J-League fans are calling him the best Japanese player since Kagawa.',8.5,'06-25'),
+      'deniz-undav-stuttgart':NW('WORLD CUP BUZZ','Three goals in Germany\'s first two games coming off the bench. His super-sub impact has matched Roger Milla\'s legendary World Cup substitute record for goal contributions — Germany\'s secret weapon.',8.0,'06-22'),
+      'yasin-ayari-brighton':NW('WORLD CUP BUZZ','Two goals against Tunisia in a poignant performance — the Sweden midfielder of Tunisian heritage playing against his ancestral nation. His composed sujoud celebration went global. Multiple European giants have already made inquiries.',7.5,'06-20'),
+      'folarin-balogun-monaco':NW('WORLD CUP BUZZ','Balogun opened his tournament with a brace against Paraguay, announced himself as the USMNT\'s main man with authority. USA fans are already saying this is his tournament to own.',7.5,'06-16'),
+      'pau-cubarsi-barcelona':NW('WORLD CUP BUZZ','19 years old and playing every single minute of Spain\'s group stage without looking out of place once. Analysts calling him the most composed teenager at a World Cup since Pirlo in 1998.',7.5,'06-26'),
+      'nico-o-reilly-man-city':NW('WORLD CUP BUZZ','O\'Reilly earned a place in England\'s group stage squad and hit the crossbar as a substitute against Ghana. At 20, playing on the biggest stage for a tournament host — scouts from across Europe are watching his every move.',6.5,'06-24'),
+      'nico-paz-como':NW('WORLD CUP BUZZ','Got his first World Cup start in Argentina\'s final group game at 21 and impressed — calm on the ball, intelligent movement off it. Zero goals or assists but already being talked about as a future Argentina regular by coaches who watched.',6.0,'06-25'),
+      'william-pacho-paris-sg':NW('WORLD CUP BUZZ','Ecuador shocked Germany in the group stage and Pacho was the anchor at the back for one of the tournament\'s biggest upsets. The PSG centre-back is proving his big-money transfer fee at the biggest stage.',7.5,'06-26'),
+      'weston-mckennie-juventus':NW('WORLD CUP BUZZ','The only USA player to start all three group games — captained the side against Turkey and created three chances in the 4-1 win over Paraguay. McKennie\'s engine and leadership are the spine of this USMNT in front of a home crowd.',7.0,'06-27'),
+      'felix-nmecha-dortmund':NW('WORLD CUP BUZZ','Nmecha has been Germany\'s unsung hero in midfield — breaking up play, driving forward, and scoring the only goal in a tight win. Pundits calling him one of the tournament\'s most underrated performers.',6.5,'06-19'),
+      'achraf-hakimi-paris-sg':NW('WORLD CUP BUZZ','21 chances created in the group stage — more than any African player since Yaya Touré in 2010. Hakimi is at his absolute peak and Morocco\'s creative engine; his goal and assist vs Haiti made front pages worldwide.',8.0,'06-26'),
+      'bruno-guimaraes-newcastle':NW('WORLD CUP BUZZ','Joint-leading assist maker of the group stage with three. Guimarães has become the fulcrum of a rampant Brazil side and is being called the best midfielder at the tournament by several analysts.',7.5,'06-26'),
+      'kai-havertz-arsenal':NW('WORLD CUP BUZZ','A brace in Germany\'s 7-1 demolition of Curaçao — penalty and a deft chip — earned him Player of the Match and finally quieted the critics. He has been Germany\'s most complete forward throughout the group stage.',7.0,'06-14'),
+      'ousmane-dembele-paris-sg':NW('MATCH RECAP','Hat-trick against Norway inside the opening 20 minutes — the first player since Ronaldo to score three so quickly in a WC group game. France\'s attack looks unstoppable with Mbappé and Dembélé in this form.',8.5,'06-20'),
+      'vinicius-junior-real-madrid':NW('MATCH RECAP','Four goals in all three group games — Brazil\'s primary offensive reference back to his very best after a difficult club season. ESPN ranking him joint-top with Messi in the Golden Boot race.',8.5,'06-26')
     };
     const MOOD={
       'kylian-mbappe-real-madrid':'\u201cMr World Cup\u201d trending after the Iraq brace',
@@ -1814,7 +2648,22 @@ Yan Diomande|RB Leipzig|CM|21|4
       'ousmane-dembele-paris-sg':'Wholesome reaction to ending his goal drought',
       'jude-bellingham-real-madrid':'Frustration after a flat 0-0 with Ghana',
       'luis-diaz-bayern':'Colombia trending after his match-winner',
-      'bruno-fernandes-man-utd':'Premier League Player of the Season talk all over his timeline'
+      'bruno-fernandes-man-utd':'Premier League Player of the Season talk all over his timeline',
+      'vozinha-famalicao':'"Mr Cape Verde" — 16M Instagram followers in 48h, memes and tributes from every corner of the internet',
+      'ayyoub-bouaddi-lille':'"The maths genius who solved Brazil" — viral profile piece breaking everywhere',
+      'ismael-saibari-psv':'"Morocco\'s new Ziyech" trending in Arab football circles and beyond',
+      'keito-nakamura-reims':'"Samurai Messi" trending in Japan; clubs reportedly queuing up',
+      'deniz-undav-stuttgart':'"Super-sub Undav" highlight reels have 12M views across social media',
+      'yasin-ayari-brighton':'Sujoud celebration clip hit 8M views, story resonating globally',
+      'folarin-balogun-monaco':'"Balogun is America\'s striker" — USA fans fully sold after the Paraguay brace',
+      'pau-cubarsi-barcelona':'"Spain\'s Maldini" already being used by pundits',
+      'nico-paz-como':'"Messi\'s heir" narrative building in Argentine media after two assists',
+      'achraf-hakimi-paris-sg':'"The Ronaldo of right-backs at this tournament" trending in Morocco',
+      'kai-havertz-arsenal':'Critics silenced — "the real Havertz is at the World Cup" dominating football discourse',
+      'vinicius-junior-real-madrid':'Brazil fans finally exhale — "Vini is back and the world should be scared"',
+      'weston-mckennie-juventus':'"Captain America" trending after McKennie wore the armband at a home World Cup — ranch dressing and leadership in equal measure',
+      'kylian-mbappe-real-madrid':'4 group stage goals — Mbappe vs Messi Golden Boot race dominating every headline',
+      'erling-haaland-man-city':'Norway fans in raptures — Haaland finally delivered at a World Cup and the goals keep coming'
     };
     // Daily World Cup recap articles — each covers the standout games from
     // one matchday, with refs to the players whose stock pages should link
@@ -2060,11 +2909,8 @@ Yan Diomande|RB Leipzig|CM|21|4
         atWC=true; wcStatus=wcEff.status+' (squad — no minutes yet)';
       }
       const newsDelta = news?news.bias:0;
-      let change7d, change30d;
-      if(atWC||news){ change7d=sum(events.filter(e=>e.offset<=8).map(e=>e.delta))+((news&&offOf(news.d)<=8)?newsDelta:0);
-        change30d=sum(events.map(e=>e.delta))+newsDelta; }
-      else { change7d=(r()-0.5)*1.4; change30d=(r()-0.5)*3; }
-      change7d=parseFloat(change7d.toFixed(1)); change30d=parseFloat(change30d.toFixed(1));
+      // change30d placeholder — will be overwritten from rHist below
+      let change30d = parseFloat((sum(events.map(e=>e.delta))+newsDelta).toFixed(1));
       // WC form streak (consecutive most-recent matches rating >= 7.4) — kept
       // purely as a display fact ("🔥 3-match streak"), no longer the main
       // driver of formSig (see below).
@@ -2127,11 +2973,24 @@ Yan Diomande|RB Leipzig|CM|21|4
       // and the 1D change exploded. Gate on avgR>0 (an actual rated match) so
       // no-minutes-yet is a real neutral and a debut is a normal-sized move.
       const hasMatchData = atWC && avgR>0;
-      const perfScore = hasMatchData ? clamp((fotmob-46)/30, -1, 1) : 0;
-      const formScore = hasMatchData ? clamp((formSig-46)/30, -1, 1) : 0;
+      // Underdog multiplier: an unknown cheap player surpassing expectations
+      // generates outsized hype vs a known star doing what's expected. We
+      // derive notoriety [0,1] from anchor (20=unknown → 0, 200=superstar → 1)
+      // and use it to asymmetrically scale perf/form — unknowns get amplified
+      // upside and softened downside; expensive stars get the reverse.
+      const notoriety = clamp((anchor - 20) / 180, 0, 1); // 0=unknown, 1=superstar
+      const rawPerf = hasMatchData ? clamp((fotmob-46)/30, -1, 1) : 0;
+      const rawForm = hasMatchData ? clamp((formSig-46)/30, -1, 1) : 0;
+      // upMult: unknowns earn 1.55x on good perf, stars earn 0.75x
+      // downMult: unknowns are punished 0.6x on bad perf, stars 1.4x
+      const upMult   = 1.55 - 0.8 * notoriety; // unknown→1.55, star→0.75
+      const downMult = 0.60 + 0.8 * notoriety; // unknown→0.60, star→1.40
+      const applyMult=(v,up,dn)=>v>=0?v*up:v*dn;
+      const perfScore = applyMult(rawPerf, upMult, downMult);
+      const formScore = applyMult(rawForm, upMult, downMult);
       // hype basket = mood + transfer/news signal, capped so buzz alone can
-      // never dwarf fundamentals.
-      const hypeScore = clamp(((moodSig-46)+(transferSig-46))/2/30, -1, 1);
+      // never dwarf fundamentals. Unknowns also get a touch more hype uplift.
+      const hypeScore = clamp(((moodSig-46)+(transferSig-46))/2/30, -1, 1) * (1.3 - 0.4*notoriety);
       const fairValueBase = anchor * Math.exp(wPerf*perfScore + wForm*formScore);
       const fairValue = fairValueBase * Math.exp(wHype*hypeScore);
       // Demand pressure from virtual agents + real user trades (server-side
@@ -2203,7 +3062,13 @@ Yan Diomande|RB Leipzig|CM|21|4
       // the bridge construction above). That live-bump-inclusive value *is*
       // the traded price — clipping it back to bare `price` is what erased
       // the spike right at the chart's last point.
-      const tradedPrice = hist[N-1];
+      // Daily wobble: deterministic per player per calendar day so the
+      // close price is different each day even with no new match events.
+      // Seeded by id + dayKey → changes midnight-to-midnight; WC players
+      // get a bigger swing (±2%) than quiet bench players (±0.6%).
+      const wR = this.mulberry(this.hash(id + ':w:' + dayKey));
+      const wMag = atWC ? 0.02 : 0.006;
+      const wobbledPrice = Math.max(2, hist[N-1] * (1 + (wR() - 0.5) * 2 * wMag));
 
       // REAL recorded history. The synthetic `hist` above is now only a
       // one-time seed: priceHistory freezes it the first time we ever see
@@ -2213,21 +3078,35 @@ Yan Diomande|RB Leipzig|CM|21|4
       // right edge ticks, the way a real chart behaves. The chart, sparkline,
       // volatility and high/low range all read p.hist, so they all become
       // real history for free.
-      const rHist = this.priceHistory(id, tradedPrice, dayKey);
+      const rHist = this.priceHistory(id, wobbledPrice, dayKey, hist);
       const RN = rHist.length;
 
-      // The displayed 7d/30d change must be read off the SAME (now real) hist
-      // array the chart draws, never recomputed from raw event deltas —
-      // otherwise the badge and the chart can show different numbers.
-      change7d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-8)])/rHist[Math.max(0,RN-8)])*100).toFixed(1));
-      change30d=parseFloat((((rHist[RN-1]-rHist[Math.max(0,RN-31)])/rHist[Math.max(0,RN-31)])*100).toFixed(1));
+      // change7d is a placeholder — actual value computed in decorate() off p.hist.
+      const change7d = 0;
+      // realDays: how many real (non-synthetic) closes are stored for this player.
+      const realDays = (this._histStore?.[id]?.r?.length) || 1;
+
+      // Recompute each event's impact from rHist (the actual chart data) so
+      // the event card % matches what the chart visually shows. For a match at
+      // offset K, compare rHist[RN-1-K] (match day close) vs rHist[RN-2-K]
+      // (day before). Falls back to the model-computed _impactPct if history
+      // is too short (e.g. first visit).
+      for(const e of events){
+        const k = e.offset;
+        const matchIdx = RN-1-k;
+        const prevIdx  = RN-2-k;
+        if(matchIdx>0 && prevIdx>=0 && rHist[prevIdx]>0){
+          e._impactPct = ((rHist[matchIdx]-rHist[prevIdx])/rHist[prevIdx])*100;
+        }
+        // else keep the model-computed _impactPct from the bump loop above
+      }
 
       // Articles mentioning this player — only elite/notable performances get
       // a writeup (see DATA().ARTICLES), shown under the player page when
       // recent rather than duplicated for every routine match.
       const playerArticles = D.ARTICLES.filter(a=>a.refs.includes(id));
-      db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price:rHist[RN-1],
-        change7d,change30d,hist:rHist,events,streakLen,atWC,wcStatus,nation,news,mood,
+      db.push({ id,name,team,abbr,lg,lgName:lgName[lg],pos,age,tier,price:rHist[RN-1],anchor,
+        change7d,change30d,hist:rHist,realDays,events,streakLen,atWC,wcStatus,nation,news,mood,
         signals:{fotmob,form:formSig,twitter:moodSig,transfermarkt:transferSig}, avgR,
         tmVal,tmTrendUp,articles:playerArticles });
     }
@@ -2302,8 +3181,8 @@ Yan Diomande|RB Leipzig|CM|21|4
   // and re-seed cleanly: the backfill joins smoothly onto today's correct close,
   // so 1D starts near 0 and real daily movement re-accumulates under the fixed
   // formula instead of inheriting a phantom step.
-  loadHist(){ try{ localStorage.removeItem('footystock_pricehist_v1'); localStorage.removeItem('footystock_pricehist_v2'); localStorage.removeItem('footystock_pricehist_v3'); return JSON.parse(localStorage.getItem('footystock_pricehist_v4'))||{}; }catch(e){ return {}; } }
-  saveHist(){ if(!this._histDirty||!this._histStore) return; try{ localStorage.setItem('footystock_pricehist_v4',JSON.stringify(this._histStore)); this._histDirty=false; }catch(e){} }
+  loadHist(){ try{ localStorage.removeItem('footystock_pricehist_v1'); localStorage.removeItem('footystock_pricehist_v2'); localStorage.removeItem('footystock_pricehist_v3'); localStorage.removeItem('footystock_pricehist_v4'); return JSON.parse(localStorage.getItem('footystock_pricehist_v5'))||{}; }catch(e){ return {}; } }
+  saveHist(){ if(!this._histDirty||!this._histStore) return; try{ localStorage.setItem('footystock_pricehist_v5',JSON.stringify(this._histStore)); this._histDirty=false; }catch(e){} }
   // smooth, deterministic pre-history filler of `count` points for the days
   // BEFORE the oldest real close. It leads smoothly UP TO `anchor` but its last
   // point is the natural "day before" value, NOT anchor exactly — otherwise the
@@ -2325,13 +3204,16 @@ Yan Diomande|RB Leipzig|CM|21|4
     out[M-1]=anchor; // node M-1 is "today" (exact) — drop it, keep days before
     return out.slice(0,count);
   }
-  priceHistory(id, todayClose, dayKey){
+  priceHistory(id, todayClose, dayKey, synthHist){
     const store=this._histStore||(this._histStore=this.loadHist());
     const close=Math.round(todayClose*100)/100;
     let rec=store[id];
     if(!rec || !Array.isArray(rec.r) || !rec.r.length){
-      // first sight on this device — start the real record with today's close.
-      rec={d:dayKey,r:[close]}; store[id]=rec; this._histDirty=true;
+      // First sight: seed with the full model-computed history (includes all
+      // match bumps) so the chart immediately shows event spikes rather than a
+      // smooth synthetic curve that hides them.
+      const seed=synthHist?synthHist.map(v=>Math.round(v*100)/100):[close];
+      rec={d:dayKey,r:seed}; store[id]=rec; this._histDirty=true;
     } else if(rec.d!==dayKey){
       // a real calendar day rolled over — append today's close, keep 90 days,
       // never touch the frozen past.
@@ -2365,17 +3247,38 @@ Yan Diomande|RB Leipzig|CM|21|4
 
   // ---------- portfolio math ----------
   holdingsValue(){ let v=0; const h=this.state.holdings; for(const id in h){ const p=this.byId(id); if(p) v+=this.curPrice(p)*h[id].qty; } return v; }
+  marginLimit(){ return Math.floor(this.holdingsValue()*0.5); }
+  buyingPower(){ return Math.max(0, this.state.cash + this.marginLimit()); }
+  marginUsed(){ return Math.max(0, -this.state.cash); }
+  applyMarginInterest(){
+    const used=this.marginUsed(); if(used<=0) return;
+    const interest=used*0.005; // 0.5%/day
+    this.setState(s=>({cash:s.cash-interest}),()=>this.persist());
+  }
   costBasis(){ let v=0; const h=this.state.holdings; for(const id in h){ v+=h[id].qty*h[id].avg; } return v; }
   shortsLiability(){ let v=0; const sh=this.state.shorts; for(const id in sh){ const p=this.byId(id); if(p) v+=this.curPrice(p)*sh[id].qty; } return v; }
   shortsPnl(){ let v=0; const sh=this.state.shorts; for(const id in sh){ const p=this.byId(id); if(p) v+=(sh[id].avg-this.curPrice(p))*sh[id].qty; } return v; }
   netWorth(){ return this.state.cash + this.holdingsValue() - this.shortsLiability(); }
   allTimePL(){ return this.netWorth() - 10000; }
+  // Trading-only P&L: holdings value + proceeds from sells - cost of buys +
+  // short proceeds - cover costs - open short liability. Excludes daily login
+  // bonuses, referral cash, and anything else that isn't a trade.
+  tradingPnl(){
+    let buyTotal=0, sellTotal=0, hwTotal=0, coverTotal=0;
+    for(const t of (this.state.txns||[])){
+      if(t.side==='BUY') buyTotal+=t.total||0;
+      else if(t.side==='SELL') sellTotal+=t.total||0;
+      else if(t.side==='HATEWATCH') hwTotal+=t.total||0;
+      else if(t.side==='COVER') coverTotal+=t.total||0;
+    }
+    return this.holdingsValue() + sellTotal - buyTotal + hwTotal - coverTotal - this.shortsLiability();
+  }
 
   // ---------- daily reward ----------
   todayStr(){ return new Date().toISOString().slice(0,10); }
   yesterdayStr(){ return new Date(Date.now()-86400000).toISOString().slice(0,10); }
   isClaimable(){ return this.state.lastClaim !== this.todayStr(); }
-  rewardSchedule(){ return [250,300,350,400,500,600,1000]; }
+  rewardSchedule(){ return [200,200,200,200,200,200,1000]; }
   nextStreakDay(){ // what day in cycle this claim will be
     if(!this.isClaimable()) return ((this.state.streak-1)%7)+1;
     const continues = this.state.lastClaim===this.yesterdayStr();
@@ -2384,9 +3287,9 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
 
   // ---------- actions ----------
-  nav(v){ this.setState({view:v,selectedArticleId:null}); }
+  nav(v){ this.setState({view:v,selectedArticleId:null}); if(v==='clubs'){ this.loadMyClub(); this.loadClubMessages(); } }
   goHome(){ this.setState({view:'market'}); }
-  openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90}); window.scrollTo(0,0); }
+  openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90,comments:[],commentsLoading:true,commentsPlayerId:id,commentInput:'',commentReplyTo:null,commentReplyInput:''}); window.scrollTo(0,0); this.fetchComments(id); }
   goBack(){ this.setState({view:'market'}); }
   openArticle(id){ this.setState({view:'articles',selectedArticleId:id}); }
   setLeague(lg){ this.setState({league:lg}); }
@@ -2397,7 +3300,13 @@ Yan Diomande|RB Leipzig|CM|21|4
   onFilterAgeMax(e){ this.setState({filterAgeMax:e.target.value}); }
   onFilterPriceMin(e){ this.setState({filterPriceMin:e.target.value}); }
   onFilterPriceMax(e){ this.setState({filterPriceMax:e.target.value}); }
-  clearFilters(){ this.setState({filterNation:'ALL',filterTeam:'ALL',filterAgeMin:'',filterAgeMax:'',filterPriceMin:'',filterPriceMax:'',league:'ALL'}); }
+  onFilterVolMin(e){ this.setState({filterVolMin:e.target.value}); }
+  onFilterVolMax(e){ this.setState({filterVolMax:e.target.value}); }
+  onFilter1dMin(e){ this.setState({filter1dMin:e.target.value}); }
+  onFilter1dMax(e){ this.setState({filter1dMax:e.target.value}); }
+  onFilter7dMin(e){ this.setState({filter7dMin:e.target.value}); }
+  onFilter7dMax(e){ this.setState({filter7dMax:e.target.value}); }
+  clearFilters(){ this.setState({filterNation:'ALL',filterTeam:'ALL',filterAgeMin:'',filterAgeMax:'',filterPriceMin:'',filterPriceMax:'',filterVolMin:'',filterVolMax:'',filter1dMin:'',filter1dMax:'',filter7dMin:'',filter7dMax:'',league:'ALL'}); }
   setSort(key){
     const S=this.state;
     if(S.sortKey===key){ this.setState({sortDir:S.sortDir==='asc'?'desc':'asc'}); return; }
@@ -2405,15 +3314,44 @@ Yan Diomande|RB Leipzig|CM|21|4
     this.setState({sortKey:key,sortDir:descDefault.has(key)?'desc':'asc'});
   }
   setRange(r){ this.setState({range:r}); }
-  onSearch(e){ this.setState({search:e.target.value}); }
+  onSearch(e){ if(e.target.classList.contains('fs-search-input')) this.setState({search:e.target.value}); }
   toggleWatch(id){ const w=this.state.watch.slice(); const i=w.indexOf(id); if(i>=0)w.splice(i,1); else w.push(id); this.setState({watch:w},()=>this.persist()); }
 
   openTrade(id,side){ const p=this.byId(id); const held=this.state.holdings[id]; const shorted=this.state.shorts[id]; if(side==='sell'&&(!held||held.qty<1))return; if(side==='cover'&&(!shorted||shorted.qty<1))return; this.setState({tradeOpen:true,tradeId:id,tradeSide:side,tradeQty:1}); }
   closeTrade(){ this.setState({tradeOpen:false}); }
+  openFeedback(){ this.setState({feedbackOpen:true,feedbackSent:false,feedbackError:'',feedbackText:'',feedbackName:''}); }
+  closeFeedback(){ this.setState({feedbackOpen:false}); }
+  async submitFeedback(){
+    const nameEl=document.getElementById('fs-fb-name');
+    const textEl=document.getElementById('fs-fb-text');
+    const name=(nameEl&&nameEl.value)||'';
+    const text=(textEl&&textEl.value)||'';
+    if(!text.trim()) return;
+    this.setState({feedbackSending:true,feedbackError:''});
+    try{
+      const res=await fetch(this._feedbackEndpoint,{
+        method:'POST',
+        headers:{'Content-Type':'application/json','Accept':'application/json'},
+        body:JSON.stringify({name:name||'Anonymous',message:text}),
+      });
+      if(res.ok){ this.setState({feedbackSent:true,feedbackSending:false}); }
+      else{ this.setState({feedbackError:'Submission failed — please try again.',feedbackSending:false}); }
+    }catch(e){ this.setState({feedbackError:'Network error — please try again.',feedbackSending:false}); }
+  }
   setTradeQty(q){ this.setState({tradeQty:Math.max(1,q)}); }
+  pricesAreFresh(){
+    // Prices must have refreshed successfully within the last 5 minutes.
+    if(!this._lastFetchMs) return false;
+    return (Date.now() - this._lastFetchMs) < 5 * 60 * 1000;
+  }
   confirmTrade(){
     const id=this.state.tradeId, side=this.state.tradeSide, qty=this.state.tradeQty;
     const p=this.byId(id); if(!p) return;
+    if(!this.pricesAreFresh()){
+      this.setState({tradeOpen:false});
+      alert('Prices are stale — your connection to the live server may have dropped. Reconnect and wait for prices to refresh before trading.');
+      return;
+    }
     // queue the order — it fills at the *next* price tick, not the price shown
     // right now. Anyone watching a match live and trying to beat the price
     // reaction gets the same next-tick price as everyone else.
@@ -2459,6 +3397,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       // market price (same signal as virtual agents). Fire-and-forget: if the
       // worker is down, the trade still executes locally.
       if(this._liveWorkerBase){ fetch(this._liveWorkerBase+'/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:order.id,side:order.side})}).catch(()=>{}); }
+      // Share to club chat (fire-and-forget).
+      const p2=this.byId(order.id);
+      if(p2 && this.state.myClub){ this.shareTradeInChat(order.side,p2.name,order.id,order.qty,parseFloat(this.curPrice(p2).toFixed(2))); }
       didFill=true;
     }
     this.setState({holdings,txns,cash,shorts,pendingOrders:[]},()=>{ this.persist(); if(didFill) this.submitScore(); });
@@ -2470,34 +3411,428 @@ Yan Diomande|RB Leipzig|CM|21|4
     const continues=this.state.lastClaim===this.yesterdayStr();
     const newStreak=continues?this.state.streak+1:1;
     const amt=this.rewardSchedule()[((newStreak-1)%7)];
-    this.setState({cash:this.state.cash+amt,streak:newStreak,lastClaim:this.todayStr(),showReward:false},()=>this.persist());
+    this.setState({cash:this.state.cash+amt,streak:newStreak,lastClaim:this.todayStr(),showReward:false},()=>{ this.persist(); this.submitScore(); });
   }
   stop(e){ e.stopPropagation(); }
 
+  // ---------- profile ----------
+  openProfileView(name){ this.setState({profileViewName:name||null,view:'profile'}); }
+  closeProfileView(){ this.setState({view:'leaders',profileViewName:null}); }
+  profileStats(){
+    const S=this.state; const txns=S.txns||[];
+    const buys=txns.filter(t=>t.side==='BUY');
+    const sells=txns.filter(t=>t.side==='SELL');
+    const totalBuyQty=buys.reduce((a,t)=>a+t.qty,0);
+    const totalSellQty=sells.reduce((a,t)=>a+t.qty,0);
+    const totalBuyValue=buys.reduce((a,t)=>a+t.total,0);
+    // favorite player: most total qty bought
+    const buyByPlayer={};
+    buys.forEach(t=>{ buyByPlayer[t.id]=(buyByPlayer[t.id]||{name:t.name,qty:0}); buyByPlayer[t.id].qty+=t.qty; });
+    const favEntry=Object.values(buyByPlayer).sort((a,b)=>b.qty-a.qty)[0]||null;
+    // unique players ever traded
+    const tradedIds=new Set(txns.map(t=>t.id));
+    // current holdings analysis
+    const h=S.holdings; const DB=this.getDB();
+    let bestPL=null, bestPLName='', bestPLPct=0;
+    let worstPL=null, worstPLName='', worstPLPct=0;
+    let winCount=0, totalLong=0;
+    for(const id in h){
+      const holding=h[id]; const p=this.byId(id);
+      if(!p) continue;
+      const cur=this.curPrice(p); const pl=(cur-holding.avg)*holding.qty; const plPct=(cur-holding.avg)/holding.avg*100;
+      totalLong++;
+      if(pl>=0) winCount++;
+      if(bestPL===null||pl>bestPL){ bestPL=pl; bestPLName=p.name; bestPLPct=plPct; }
+      if(worstPL===null||pl<worstPL){ worstPL=pl; worstPLName=p.name; worstPLPct=plPct; }
+    }
+    const winRate=totalLong>0?Math.round(winCount/totalLong*100):null;
+    // portfolio diversity: unique leagues in holdings
+    const heldLeagues=new Set(Object.keys(h).map(id=>{ const p=this.byId(id); return p?p.lg:''; }).filter(Boolean));
+    const nw=this.netWorth(); const pl=this.tradingPnl();
+    return {
+      nw, pl, plUp:pl>=0, ath:S.allTimeHigh||nw,
+      totalTrades:txns.length, totalBuys:buys.length, totalSells:sells.length,
+      totalBuyQty, totalSellQty, totalBuyValue,
+      favPlayer:favEntry?favEntry.name:'—',
+      playersTraded:tradedIds.size,
+      positions:totalLong, diversity:heldLeagues.size,
+      winRate, bestPLName, bestPLPct, worstPLName, worstPLPct,
+      streak:S.streak||0, cash:S.cash,
+      joinDate:S.joinDate||'—',
+    };
+  }
+
+  // ---------- comments ----------
+  // Supabase table setup (run once in Supabase SQL editor):
+  // create table if not exists comments (id uuid default gen_random_uuid() primary key, player_id text not null, token text not null, username text not null, body text not null, upvotes int default 0, parent_id uuid references comments(id) on delete cascade, created_at timestamptz default now());
+  // create index if not exists idx_comments_player on comments(player_id, created_at desc);
+  // alter table comments enable row level security;
+  // create policy "read" on comments for select using (true);
+  // create policy "insert" on comments for insert with check (true);
+  // create policy "upvote" on comments for update using (true);
+  // create or replace function inc_comment_upvote(cid uuid) returns void language sql security definer as $$ update comments set upvotes = upvotes + 1 where id = cid; $$;
+  loadUpvoted(){ try{ return new Set(JSON.parse(localStorage.getItem('fs_upvoted')||'[]')); }catch(e){ return new Set(); } }
+  saveUpvoted(set){ try{ localStorage.setItem('fs_upvoted',JSON.stringify([...set])); }catch(e){} }
+  fetchComments(playerId){
+    if(!this._sbUrl) return;
+    fetch(this._sbUrl.replace('/leaderboard','/comments')+'?player_id=eq.'+encodeURIComponent(playerId)+'&order=created_at.desc&limit=200',{headers:this._sbHdr})
+      .then(r=>r.ok?r.json():[]).then(data=>{ if(this.state.commentsPlayerId===playerId) this.setState({comments:Array.isArray(data)?data:[],commentsLoading:false}); })
+      .catch(()=>{ if(this.state.commentsPlayerId===playerId) this.setState({commentsLoading:false}); });
+  }
+  postComment(playerId, parentId){
+    const elId=parentId?'fs-reply-input':'fs-cmt-input';
+    const el=document.getElementById(elId);
+    const body=(el&&el.value)||'';
+    if(!body.trim()||!this._sbUrl) return;
+    const username=this.loadUsername(); if(!username) return;
+    const token=this.loadToken();
+    const payload={player_id:playerId,token,username,body:body.trim().slice(0,500),upvotes:0};
+    if(parentId) payload.parent_id=parentId;
+    if(el) el.value='';
+    fetch(this._sbUrl.replace('/leaderboard','/comments'),{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify(payload)})
+      .then(r=>r.ok?r.json():null).then(rows=>{ if(rows&&rows[0]) this.setState(s=>({comments:[rows[0],...s.comments],commentReplyTo:null})); })
+      .catch(()=>{});
+  }
+  upvoteComment(commentId){
+    const upvoted=this.loadUpvoted(); if(upvoted.has(commentId)) return;
+    upvoted.add(commentId); this.saveUpvoted(upvoted);
+    this.setState(s=>({comments:s.comments.map(c=>c.id===commentId?{...c,upvotes:(c.upvotes||0)+1}:c)}));
+    fetch(this._sbUrl.replace('/leaderboard','/rpc/inc_comment_upvote'),{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({cid:commentId})}).catch(()=>{});
+  }
+
   // ---------- identity (leaderboard) ----------
-  loadToken(){ try{ let t=localStorage.getItem('fs_token'); if(!t){ t=Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem('fs_token',t); } return t; }catch(e){ return 'anon'; } }
+  // ---------- email auth ----------
+  _sbAuth(){ return 'https://pwlszzrvwhflijbjwnnf.supabase.co/auth/v1'; }
+  _sbAuthHdr(){ return {'apikey':'sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_','Content-Type':'application/json'}; }
+  loadEmail(){ try{ return localStorage.getItem('fs_email')||''; }catch(e){ return ''; } }
+  saveEmail(e){ try{ localStorage.setItem('fs_email',e); }catch(e){} }
+  loadToken(){ try{
+    const t=localStorage.getItem('fs_token'); if(t) return t;
+    const fresh=Math.random().toString(36).slice(2)+Date.now().toString(36);
+    localStorage.setItem('fs_token',fresh); return fresh;
+  }catch(e){ return 'anon'; } }
   loadUsername(){ try{ return localStorage.getItem('fs_username')||''; }catch(e){ return ''; } }
   saveUsername(n){ try{ localStorage.setItem('fs_username',n.trim().slice(0,32)); }catch(e){} }
+
+  async doSendOtp(){
+    const email=(document.getElementById('fs-login-email')||{}).value||'';
+    const name=(document.getElementById('fs-login-name')||{}).value||'';
+    if(!email.includes('@')){ this.setState({loginError:'Enter a valid email address.'}); return; }
+    if(!name.trim()){ this.setState({loginError:'Enter a display name.'}); return; }
+    if(name.trim().length<2){ this.setState({loginError:'Display name must be at least 2 characters.'}); return; }
+    // Check username uniqueness
+    try{
+      const existing=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name.trim())+'&select=token');
+      const myToken=this.loadToken();
+      if(existing&&existing.length&&existing[0].token!==myToken){ this.setState({loginError:'That display name is taken. Choose another.'}); return; }
+    }catch(e){}
+    this.setState({loginError:'',loginSending:true});
+    try{
+      const res=await fetch(this._sbAuth()+'/otp',{method:'POST',headers:this._sbAuthHdr(),body:JSON.stringify({email:email.trim(),create_user:true})});
+      if(!res.ok){ const e=await res.json(); this.setState({loginError:e.error_description||e.msg||'Failed to send code.',loginSending:false}); return; }
+      this._pendingLoginEmail=email.trim();
+      this._pendingLoginName=name.trim();
+      this.setState({loginStep:'otp',loginEmail:email.trim(),loginError:'',loginSending:false});
+    }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
+  }
+
+  async doVerifyOtp(){
+    const code=(document.getElementById('fs-login-otp')||{}).value||'';
+    const email=this._pendingLoginEmail||this.state.loginEmail||'';
+    if(!code||code.length<6){ this.setState({loginError:'Enter the 6-digit code from your email.'}); return; }
+    this.setState({loginError:'',loginSending:true});
+    try{
+      const res=await fetch(this._sbAuth()+'/verify',{method:'POST',headers:this._sbAuthHdr(),body:JSON.stringify({type:'email',email,token:code.trim()})});
+      if(!res.ok){ const e=await res.json(); this.setState({loginError:e.error_description||e.msg||'Invalid code. Try again.',loginSending:false}); return; }
+      const session=await res.json();
+      const userId=session?.user?.id||session?.id;
+      if(!userId){ this.setState({loginError:'Verification failed. Try again.',loginSending:false}); return; }
+      // Use Supabase user ID as the stable token
+      try{ localStorage.setItem('fs_token',userId); }catch(e){}
+      this.saveEmail(email);
+      const name=this._pendingLoginName||'';
+      if(name) this.saveUsername(name);
+      // Check if returning user — restore their username from leaderboard
+      try{
+        const rows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(userId)+'&select=name');
+        if(rows&&rows.length&&rows[0].name) this.saveUsername(rows[0].name);
+      }catch(e){}
+      this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
+      setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); this.syncFromCloud(); },300);
+    }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
+  }
 
   // ---------- leaderboard ----------
   submitScore(){
     const name=this.loadUsername(); if(!name||!this._sbUrl) return;
-    const nw=Math.round(this.netWorth());
+    const pnl=Math.round(this.tradingPnl());
+    const topH=Object.entries(this.state.holdings||{})
+      .sort((a,b)=>(b[1].qty||0)-(a[1].qty||0)).slice(0,10)
+      .map(([id,h])=>({id,qty:h.qty||0}));
     fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({token:this.loadToken(),name,net_worth:nw,updated_at:new Date().toISOString()})}).catch(()=>{});
+      body:JSON.stringify({token:this.loadToken(),name,net_worth:pnl,top_holdings:topH,updated_at:new Date().toISOString()})}).catch(()=>{});
   }
   leaderboardData(){
     const myName=this.loadUsername()||'You';
-    const myNW=Math.round(this.netWorth());
+    const myPnl=Math.round(this.tradingPnl());
     const real=this._liveLeaderboard||[];
-    // Merge real entries with "you" — if user's name is already in the list
-    // (from a prior submission), update that entry so rank stays accurate.
+    // Merge real entries with "you" — net_worth column now stores trading P&L
     const arr=real.filter(e=>e.name!==myName).map(e=>({name:e.name,netWorth:e.netWorth}));
-    arr.push({name:myName,netWorth:myNW,me:true});
+    arr.push({name:myName,netWorth:myPnl,me:true});
     arr.sort((a,b)=>b.netWorth-a.netWorth);
     return arr;
   }
   myRank(){ const lb=this.leaderboardData(); return lb.findIndex(x=>x.me)+1; }
+
+  // ============ REFERRAL / SHARE ============
+  getRefCode(){
+    const token=this.loadToken();
+    const b64=btoa(token).replace(/[^A-Z0-9]/gi,"").toUpperCase();
+    return b64.slice(0,8);
+  }
+  async checkPendingRef(){
+    const pending=localStorage.getItem("fs_pending_ref");
+    if(!pending) return;
+    if(pending===this.getRefCode()){ localStorage.removeItem("fs_pending_ref"); return; }
+    if(localStorage.getItem("fs_ref_claimed")) return;
+    const token=this.loadToken();
+    try{
+      await Supa.post("referrals",{ref_code:pending,referred_token:token});
+      localStorage.setItem("fs_ref_claimed","1");
+      localStorage.removeItem("fs_pending_ref");
+      await this.awardMysteryStocks();
+    }catch(e){ /* already claimed */ }
+  }
+  async awardMysteryStocks(){
+    const DB=this.getDB(); if(!DB||!DB.length) return;
+    const token=this.loadToken();
+    const eligible=DB.filter(p=>this.curPrice(p)>=5).sort((a,b)=>this.curPrice(b)-this.curPrice(a)).slice(0,30);
+    if(!eligible.length) return;
+    const picks=[];
+    for(let i=0;i<3;i++){
+      const r=this.rand01(token+"mystery"+i);
+      const idx=Math.floor(r*eligible.length);
+      picks.push(eligible[idx]);
+    }
+    const holdings={...this.state.holdings};
+    const txns=[...this.state.txns];
+    const packs=[];
+    for(const p of picks){
+      const price=this.curPrice(p);
+      if(!holdings[p.id]) holdings[p.id]={qty:0,avg:0};
+      const prev=holdings[p.id];
+      holdings[p.id]={qty:prev.qty+5,avg:(prev.qty*prev.avg+0)/(prev.qty+5)||0};
+      txns.push({id:p.id,name:p.name,side:"BUY",qty:5,price:0,total:0,date:new Date().toISOString(),label:"MYSTERY"});
+      packs.push({name:p.name,team:p.team,qty:5,price:this.money(price)});
+    }
+    this.setState({holdings,txns,mysteryOpen:true,mysteryPacks:packs},()=>{ this.persist(); });
+  }
+  async getReferralCount(){
+    try{
+      const code=this.getRefCode();
+      const rows=await Supa.get("referrals","ref_code=eq."+code+"&select=id");
+      this._referralCount=rows.length;
+      this.setState(s=>({tick:s.tick+1}));
+    }catch(e){ this._referralCount=0; }
+  }
+  // ============ FOUNDER ============
+  isFounder(){ return (this.state.joinDate||"9999") < "2026-07-10"; }
+  // ============ PHONE ============
+  async loadMyPhone(){
+    this._myPhone=this.loadEmail();
+    this.setState(s=>({tick:s.tick+1}));
+  }
+  async savePhone(){
+    const val=(document.getElementById("fs-phone-input")||{}).value||"";
+    if(!val.trim()){ return; }
+    this.setState({phoneSaving:true,phoneSaved:false});
+    const token=this.loadToken();
+    const name=this.loadUsername()||'Anonymous';
+    try{
+      // Try patch first; if no row exists yet, upsert to create it
+      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{
+        method:'PATCH',
+        headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'return=representation'},
+        body:JSON.stringify({phone:val.trim()})
+      });
+      if(!res.ok) throw new Error(await res.text());
+      const rows=await res.json();
+      if(!rows||rows.length===0){
+        // No row yet — upsert to create it
+        await fetch(this._sbUrl,{
+          method:'POST',
+          headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+          body:JSON.stringify({token,name,net_worth:0,phone:val.trim()})
+        });
+      }
+      this._myPhone=val.trim();
+      this.setState({phoneSaving:false,phoneSaved:true});
+      setTimeout(()=>this.setState({phoneSaved:false}),3000);
+    }catch(e){ this.setState({phoneSaving:false}); alert('Could not save phone number. Make sure the phone column exists in Supabase (run the SQL migration).'); }
+  }
+
+  // ============ CLUBS ============
+  getUserId(){
+    let uid=localStorage.getItem('footystock_uid');
+    if(!uid){uid=([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16));localStorage.setItem('footystock_uid',uid);}
+    return uid;
+  }
+  genCode(){return Math.random().toString(36).slice(2,8).toUpperCase();}
+
+  async loadMyClub(){
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const uid=this.getUserId();
+      const memberships=await Supa.get('club_members','user_id=eq.'+uid+'&select=club_id');
+      if(!memberships.length){
+        const pub=await Supa.get('clubs','is_public=eq.true&order=created_at.desc&limit=20&select=id,name,description,leader_name,is_public,min_net_worth,created_at');
+        this.setState({myClub:null,clubMembers:[],clubPublicList:pub,clubLoading:false});
+        return;
+      }
+      const clubId=memberships[0].club_id;
+      const [clubs,members]=await Promise.all([
+        Supa.get('clubs','id=eq.'+clubId),
+        Supa.get('club_members','club_id=eq.'+clubId+'&order=joined_at.asc'),
+      ]);
+      const club=clubs[0]||null;
+      this.setState({myClub:club,clubMembers:members,clubLoading:false});
+      // Pass clubId directly — setState may not flush before loadClubMessages runs.
+      this.loadClubMessages(club?.id);
+    }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  async loadClubMessages(clubId){
+    const id=clubId||this.state.myClub?.id; if(!id) return;
+    try{
+      const msgs=await Supa.get('club_messages','club_id=eq.'+id+'&order=created_at.asc&limit=100');
+      this.setState({clubMessages:msgs,clubChatReady:true});
+      setTimeout(()=>{ const el=document.getElementById('club-chat-scroll'); if(el) el.scrollTop=el.scrollHeight; },50);
+    }catch(e){
+      this.setState({clubChatReady:false});
+    }
+  }
+
+  async sendChatMessage(type='text', payload=null){
+    const clubId=this.state.myClub?.id; if(!clubId) return;
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    const body=type==='text'?(this.state.clubChatInput||'').trim():'';
+    if(type==='text' && !body) return;
+    this.setState({clubChatSending:true,clubChatInput:''});
+    try{
+      await Supa.post('club_messages',{club_id:clubId,user_id:uid,display_name:dname,type,body,payload});
+      await this.loadClubMessages();
+    }catch(e){ this.setState({clubChatSending:false,clubChatReady:false}); return; }
+    this.setState({clubChatSending:false});
+  }
+
+  sharePortfolio(){
+    const DB=this.getDB(); const S=this.state;
+    const holdings=Object.entries(S.holdings||{}).map(([id,h])=>{
+      const p=DB.find(x=>x.id===id); if(!p||!h.qty) return null;
+      return {id,name:p.name,team:p.team,qty:h.qty,price:parseFloat(this.curPrice(p).toFixed(2))};
+    }).filter(Boolean);
+    const totalValue=holdings.reduce((s,h)=>s+h.qty*h.price,0)+(S.cash||0);
+    const pnl=this.tradingPnl();
+    this.sendChatMessage('portfolio',{holdings,cash:S.cash||0,totalValue,pnl});
+  }
+
+  shareTradeInChat(action,playerName,playerId,qty,price){
+    this.sendChatMessage('trade',{action,player:playerName,playerId,qty,price});
+  }
+
+  async createClub(){
+    const name=(document.getElementById('club-create-name')?.value||'').trim();
+    const desc=(document.getElementById('club-create-desc')?.value||'').trim();
+    const minNW=document.getElementById('club-create-minnw')?.value||'';
+    const isPublic=this.state.clubCreatePublic;
+    if(!name.trim()){this.setState({clubError:'Club name is required.'});return;}
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const existing=await Supa.get('club_members','user_id=eq.'+uid+'&select=club_id');
+      if(existing.length){this.setState({clubLoading:false,clubError:'You are already in a club. Leave it first.'});return;}
+      const code=this.genCode();
+      const club=await Supa.post('clubs',{name:name.trim(),description:desc.trim(),leader_id:uid,leader_name:dname,is_public:isPublic,invite_code:code,min_net_worth:parseFloat(minNW)||0});
+      const c=Array.isArray(club)?club[0]:club;
+      await Supa.post('club_members',{club_id:c.id,user_id:uid,display_name:dname});
+      await this.loadMyClub();
+      this.setState({clubView:'home',clubCreateName:'',clubCreateDesc:'',clubSuccess:'Club created!'});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message.includes('unique')?'A club with that name already exists.':e.message});}
+  }
+
+  async joinClubByCode(){
+    const code=(document.getElementById('club-join-code')?.value||'').trim().toUpperCase();
+    if(!code){this.setState({clubError:'Enter an invite code.'});return;}
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const clubs=await Supa.get('clubs','invite_code=eq.'+code);
+      if(!clubs.length){this.setState({clubLoading:false,clubError:'Invalid invite code.'});return;}
+      const club=clubs[0];
+      const members=await Supa.get('club_members','club_id=eq.'+club.id);
+      if(members.length>=11){this.setState({clubLoading:false,clubError:'This club is full (max 11 members).'});return;}
+      if(members.find(m=>m.user_id===uid)){this.setState({clubLoading:false,clubError:'You are already in this club.'});return;}
+      const nw=this.netWorth();
+      if(nw<club.min_net_worth){this.setState({clubLoading:false,clubError:'This club requires a net worth of '+this.money(club.min_net_worth)+'.'});return;}
+      await Supa.post('club_members',{club_id:club.id,user_id:uid,display_name:dname});
+      await this.loadMyClub();
+      this.setState({clubView:'home',clubJoinCode:'',clubSuccess:'Joined '+club.name+'!'});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  async joinClubById(clubId){
+    const uid=this.getUserId();
+    const dname=this.loadUsername()||'Anonymous';
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      const existing=await Supa.get('club_members','user_id=eq.'+uid+'&select=club_id');
+      if(existing.length){this.setState({clubLoading:false,clubError:'Leave your current club first.'});return;}
+      const members=await Supa.get('club_members','club_id=eq.'+clubId);
+      if(members.length>=11){this.setState({clubLoading:false,clubError:'This club is full.'});return;}
+      const clubs=await Supa.get('clubs','id=eq.'+clubId);
+      const club=clubs[0];
+      const nw=this.netWorth();
+      if(nw<club.min_net_worth){this.setState({clubLoading:false,clubError:'Requires net worth of '+this.money(club.min_net_worth)+'.'});return;}
+      await Supa.post('club_members',{club_id:clubId,user_id:uid,display_name:dname});
+      await this.loadMyClub();
+      this.setState({clubSuccess:'Joined '+club.name+'!'});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  async leaveClub(){
+    if(!confirm('Leave your club? You will lose access to active competitions.'))return;
+    const uid=this.getUserId();
+    const{myClub}=this.state;
+    if(myClub&&myClub.leader_id===uid){
+      const others=this.state.clubMembers.filter(m=>m.user_id!==uid);
+      if(others.length>0){alert('Transfer leadership or remove all members before leaving.');return;}
+      await Supa.del('clubs','id=eq.'+myClub.id);
+    }else{
+      await Supa.del('club_members','club_id=eq.'+myClub.id+'&user_id=eq.'+uid);
+    }
+    this.setState({myClub:null,clubMembers:[],clubView:'home'});
+    await this.loadMyClub();
+  }
+
+  async removeMember(memberId){
+    if(!confirm('Remove this member from the club?'))return;
+    await Supa.del('club_members','id=eq.'+memberId);
+    await this.loadMyClub();
+  }
+
+  async transferOwnership(toUserId, toName){
+    const{myClub}=this.state;
+    if(!myClub)return;
+    if(!confirm(`Make ${toName} the new manager of ${myClub.name}?`))return;
+    this.setState({clubLoading:true,clubError:''});
+    try{
+      await Supa.patch('clubs','id=eq.'+myClub.id,{leader_id:toUserId,leader_name:toName});
+      await this.loadMyClub();
+    }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
 
   // ============ RENDER ============
   renderVals(){
@@ -2506,6 +3841,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     // live worker data is available — see the comment in componentDidMount.
     // This first, near-instant render just shows an empty/blank state.
     const DB=S.ready?this.getDB():[];
+    if(DB.length) this._lastDB=DB;
     const GREEN='#16a85f',RED='#d23b2c',GBG='#e7f6ec',RBG='#fbe9e7';
     const cd=(n)=>n>=0?'#3ddc8a':'#ff5d5d';
     // stdev of daily returns (annualized) + high/low over all available history,
@@ -2522,53 +3858,76 @@ Yan Diomande|RB Leipzig|CM|21|4
       return { volPct, hiAll:Math.max(...hist), loAll:Math.min(...hist) };
     };
     const decorate=(p)=>{
-      const price=this.curPrice(p); const up7=p.change7d>=0;
-      // 1D is a daily close-to-close metric read off the SAME recorded history
-      // the 7D/chart use (today's recorded close vs yesterday's), not the
-      // wobbled live price — otherwise it jiggled every render with the
-      // intraday noise and disagreed with the chart.
-      const hN=p.hist.length; const todayClose=p.hist[hN-1]; const prevClose=p.hist[hN-2]??todayClose;
-      const dayChg=prevClose?((todayClose-prevClose)/prevClose)*100:0;
+      const price=this.curPrice(p);
+      const hN=p.hist.length;
+      const todayClose=p.hist[hN-1];
+      // Read directly from the chart data (p.hist) so badge always matches chart.
+      const dayChg = ((todayClose-p.hist[hN-2])/p.hist[hN-2])*100;
+      const wkChg  = ((todayClose-p.hist[hN-7])/p.hist[hN-7])*100;
+      const up7=wkChg>=0;
       const upDay=dayChg>=0;
       const {volPct,hiAll,loAll}=riskStats(p);
       return {
         id:p.id,name:p.name,last:p.name.split(' ').slice(-1)[0],team:p.team,abbr:p.abbr,lg:p.abbr,
-        league:p.lgName,pos:p.pos,rank:p.rank,price:this.money(price),
-        chg:this.pct(p.change7d),arrow:up7?'▲':'▼',cd:cd(p.change7d),
-        wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',
+        league:p.lgName,pos:p.pos,rank:p.rank,price:this.money(price),rawPrice:price,
+        chg:this.pct(wkChg),arrow:up7?'▲':'▼',cd:cd(wkChg),
+        wkAbs:Math.abs(wkChg).toFixed(1)+'%',wkArrow:up7?'▲':'▼',
         wkColor:up7?GREEN:RED,wkBg:up7?GBG:RBG,
         dayAbs:Math.abs(dayChg).toFixed(1)+'%',dayArrow:upDay?'▲':'▼',dayColor:upDay?GREEN:RED,
         volDisplay:volPct.toFixed(1)+'%',rangeDisplay:this.money(loAll)+' – '+this.money(hiAll),
-        priceNum:price,dayChgNum:dayChg,wkChgNum:p.change7d,volNum:volPct,hiAllNum:hiAll,loAllNum:loAll,
+        priceNum:price,dayChgNum:dayChg,wkChgNum:wkChg,volNum:volPct,hiAllNum:hiAll,loAllNum:loAll,
         spark:this.sparkPts(p.hist,120,26),
         onClick:()=>this.openPlayer(p.id),
       };
     };
 
+    // Decorate all players once so wkChgNum (chart-derived) drives all sorting.
+    const decoratedDB = DB.map(decorate);
+
     // ticker
-    const tickerSrc=[...DB].sort((a,b)=>Math.abs(b.change7d)-Math.abs(a.change7d)).slice(0,26);
-    const ticker=tickerSrc.map(decorate);
+    const ticker=[...decoratedDB].sort((a,b)=>Math.abs(b.wkChgNum)-Math.abs(a.wkChgNum)).slice(0,26);
 
     // movers
-    const movers=[...DB].sort((a,b)=>b.change7d-a.change7d).slice(0,4).map(decorate);
+    const movers=[...decoratedDB].sort((a,b)=>b.wkChgNum-a.wkChgNum).slice(0,4);
 
     // morning recap
-    const byWk=[...DB].sort((a,b)=>b.change7d-a.change7d);
-    const recapGainers=byWk.slice(0,3).map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
-    const recapLosers=byWk.slice(-3).reverse().map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
-    const upCount=DB.filter(p=>p.change7d>0).length;
-    const downCount=DB.filter(p=>p.change7d<0).length;
-    const topGainer=byWk[0], topLoser=byWk[byWk.length-1];
-    const recapDate=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
-    const bullish=upCount>=downCount;
-    const recap={
-      date:recapDate,
-      sentiment:`${upCount} rising · ${downCount} falling`,
-      gainers:recapGainers,
-      losers:recapLosers,
-      headline:`${topGainer.name} leads this week's risers (+${topGainer.change7d.toFixed(1)}%), while ${topLoser.name} is the week's biggest faller (${topLoser.change7d.toFixed(1)}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up over the past 7 days.`,
-    };
-    const showRecap=!S.recapDismissed;
+    const isSearching=S.search.trim().length>0;
+    const showRecap=DB.length>0&&!S.recapDismissed&&!isSearching;
+    const recap=(()=>{
+      if(!DB.length) return {date:'',sentiment:'',gainers:[],losers:[],mostBought:[],mostSold:[],noBought:true,noSold:true,headline:''};
+      const byChg=[...decoratedDB].sort((a,b)=>b.wkChgNum-a.wkChgNum);
+      const recapGainers=byChg.slice(0,3).map(d=>({ name:d.name,team:d.team,price:d.price,chg:d.wkAbs,onClick:d.onClick }));
+      const recapLosers=byChg.slice(-3).reverse().map(d=>({ name:d.name,team:d.team,price:d.price,chg:d.wkAbs,onClick:d.onClick }));
+      const upCount=decoratedDB.filter(d=>d.wkChgNum>0).length;
+      const downCount=decoratedDB.filter(d=>d.wkChgNum<0).length;
+      const topGainer=byChg[0], topLoser=byChg[byChg.length-1];
+      const recapDate=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+      const bullish=upCount>=downCount;
+      // Global most-held: aggregate top_holdings across all leaderboard users + self
+      const globalTally={};
+      const allUsers=[...(this._liveLeaderboard||[])];
+      // include self
+      const selfH=Object.entries(S.holdings||{}).map(([id,h])=>({id,qty:h.qty||0}));
+      allUsers.push({topHoldings:selfH});
+      for(const u of allUsers){
+        for(const h of (u.topHoldings||[])){
+          if(!h.id||!h.qty) continue;
+          globalTally[h.id]=(globalTally[h.id]||{id:h.id,holders:0,qty:0});
+          globalTally[h.id].holders+=1;
+          globalTally[h.id].qty+=h.qty;
+        }
+      }
+      const mkGlobal=(obj)=>{ const d=decoratedDB.find(x=>x.id===obj.id); return {name:d?d.name:obj.id,qty:obj.holders,price:d?d.price:'—',onClick:d?d.onClick:()=>{}}; };
+      const mostBought=Object.values(globalTally).sort((a,b)=>b.holders-a.holders).slice(0,3).map(mkGlobal);
+      const mostSold=[];
+      return {
+        date:recapDate,
+        sentiment:`${upCount} rising · ${downCount} falling`,
+        gainers:recapGainers, losers:recapLosers, mostBought, mostSold,
+        noBought:mostBought.length===0, noSold:mostSold.length===0,
+        headline:`${topGainer?.name??'—'} leads the risers (+${topGainer?.wkChgNum?.toFixed(1)??0}%), while ${topLoser?.name??'—'} is the biggest faller (${topLoser?.wkChgNum?.toFixed(1)??0}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up.`,
+      };
+    })();
     const dismissRecap=()=>this.setState({recapDismissed:true});
 
     // league chips
@@ -2589,14 +3948,26 @@ Yan Diomande|RB Leipzig|CM|21|4
     const fAgeMax=S.filterAgeMax!==''?parseInt(S.filterAgeMax):null;
     const fPrMin=S.filterPriceMin!==''?parseFloat(S.filterPriceMin):null;
     const fPrMax=S.filterPriceMax!==''?parseFloat(S.filterPriceMax):null;
-    let list=DB.filter(p=>{
+    const fVolMin=S.filterVolMin!==''?parseFloat(S.filterVolMin):null;
+    const fVolMax=S.filterVolMax!==''?parseFloat(S.filterVolMax):null;
+    const f1dMin=S.filter1dMin!==''?parseFloat(S.filter1dMin):null;
+    const f1dMax=S.filter1dMax!==''?parseFloat(S.filter1dMax):null;
+    const f7dMin=S.filter7dMin!==''?parseFloat(S.filter7dMin):null;
+    const f7dMax=S.filter7dMax!==''?parseFloat(S.filter7dMax):null;
+    // Filter on decoratedDB so 1D/7D filters use chart-derived values.
+    let list=decoratedDB.filter(d=>{
+      const p=DB.find(x=>x.id===d.id);
+      if(!p) return false;
       if(S.league!=='ALL' && p.lg!==S.league) return false;
       if(S.filterNation!=='ALL' && p.nation!==S.filterNation) return false;
       if(S.filterTeam!=='ALL' && p.team!==S.filterTeam) return false;
       if(fAgeMin!==null && p.age<fAgeMin) return false;
       if(fAgeMax!==null && p.age>fAgeMax) return false;
-      if(fPrMin!==null || fPrMax!==null){ const pr=this.curPrice(p); if(fPrMin!==null && pr<fPrMin) return false; if(fPrMax!==null && pr>fPrMax) return false; }
-      if(q && !(fold(p.name).includes(q)||fold(p.team).includes(q))) return false;
+      if(fPrMin!==null || fPrMax!==null){ if(fPrMin!==null && d.priceNum<fPrMin) return false; if(fPrMax!==null && d.priceNum>fPrMax) return false; }
+      if(fVolMin!==null || fVolMax!==null){ if(fVolMin!==null && d.volNum<fVolMin) return false; if(fVolMax!==null && d.volNum>fVolMax) return false; }
+      if(f1dMin!==null || f1dMax!==null){ if(f1dMin!==null && d.dayChgNum<f1dMin) return false; if(f1dMax!==null && d.dayChgNum>f1dMax) return false; }
+      if(f7dMin!==null || f7dMax!==null){ if(f7dMin!==null && d.wkChgNum<f7dMin) return false; if(f7dMax!==null && d.wkChgNum>f7dMax) return false; }
+      if(q && !(fold(d.name).includes(q)||fold(d.team).includes(q))) return false;
       return true;
     });
     // nation + team dropdown options
@@ -2609,9 +3980,9 @@ Yan Diomande|RB Leipzig|CM|21|4
     const teamSrcDB=S.filterNation==='ALL'?DB:DB.filter(p=>p.nation===S.filterNation);
     const allTeams=[...new Set(teamSrcDB.map(p=>p.team))].sort();
     const teamOptions=[{val:'ALL',label:'All Clubs',selected:sel(S.filterTeam==='ALL')},...allTeams.map(t=>({val:t,label:t,selected:sel(S.filterTeam===t)}))];
-    const activeFilterCount=[S.filterNation!=='ALL',S.filterTeam!=='ALL',S.league!=='ALL',S.filterAgeMin!=='',S.filterAgeMax!=='',S.filterPriceMin!=='',S.filterPriceMax!==''].filter(Boolean).length;
+    const activeFilterCount=[S.filterNation!=='ALL',S.filterTeam!=='ALL',S.league!=='ALL',S.filterAgeMin!=='',S.filterAgeMax!=='',S.filterPriceMin!=='',S.filterPriceMax!=='',S.filterVolMin!=='',S.filterVolMax!=='',S.filter1dMin!=='',S.filter1dMax!=='',S.filter7dMin!=='',S.filter7dMax!==''].filter(Boolean).length;
     const hasActiveFilters=activeFilterCount>0;
-    const marketList=list.map(decorate);
+    const marketList=[...list];
     const sortFieldMap={name:'name',price:'priceNum',day:'dayChgNum',week:'wkChgNum',vol:'volNum',range:'hiAllNum',rank:'rank'};
     const sortField=sortFieldMap[S.sortKey]||'rank';
     const sortDir=S.sortDir==='desc'?-1:1;
@@ -2633,12 +4004,12 @@ Yan Diomande|RB Leipzig|CM|21|4
     ];
 
     // nav tabs
-    const tabsDef=[['market','Market'],['articles','Articles'],['portfolio','Portfolio'],['watch','Watchlist'],['leaders','Leaderboard']];
+    const tabsDef=[['market','Market'],['articles','Articles'],['portfolio','Portfolio'],['watch','Watchlist'],['clubs','Clubs'],['leaders','Leaderboard'],['profile','Profile']];
     const navTabs=tabsDef.map(([k,label])=>{ const on=S.view===k||(k==='market'&&S.view==='detail'); return {label,onClick:()=>this.nav(k),
       color:on?'#16201a':'#9aa39b',underline:on?'#16a85f':'transparent'}; });
 
     // portfolio summary
-    const nw=this.netWorth(), pl=this.allTimePL(), plUp=pl>=0;
+    const nw=this.netWorth(), pl=this.tradingPnl(), plUp=pl>=0;
     const cost=this.costBasis(), hv=this.holdingsValue();
     const nwHistPts=(()=>{ // synthetic net-worth sparkline
       const pts=[]; for(let i=0;i<20;i++){ const t=i/19; const v=10000+(nw-10000)*Math.pow(t,1.1)+Math.sin(i)*40; pts.push(v);} 
@@ -2652,9 +4023,11 @@ Yan Diomande|RB Leipzig|CM|21|4
     if(S.view==='detail' && S.selectedId){
       const p=this.byId(S.selectedId);
       if(p){
-        const price=this.curPrice(p); const up7=p.change7d>=0; const cc=up7?GREEN:RED;
+        const price=this.curPrice(p);
         const today=new Date();
         const N=p.hist.length;
+        const detailWkChg=((p.hist[N-1]-p.hist[N-7])/p.hist[N-7])*100;
+        const up7=detailWkChg>=0; const cc=up7?GREEN:RED;
         // Real kickoff-relative minute marks (goals/cards), pulled from
         // API-Football's fixture events by the live worker — when present,
         // the 90' chart steps at the actual minute each happened instead of
@@ -2807,15 +4180,25 @@ Yan Diomande|RB Leipzig|CM|21|4
           ? [0,0.25,0.5,0.75,1].map(f=>{ const minute=Math.round(matchMinute*f); return {label:minute===0?'KO':minute===matchMinute?'now':minute+"'"}; })
           : is24h
           ? [0,0.25,0.5,0.75,1].map(f=>{ const hoursAgo=Math.round(24*(1-f)); return {label:hoursAgo===0?'now':`-${hoursAgo}h`}; })
-          : [0,0.25,0.5,0.75,1].map(f=>{ const daysAgo=Math.round(range*(1-f)); const dt=new Date(today.getTime()-daysAgo*86400000); return {label:this.dateShort(dt)}; });
+          : [0,0.25,0.5,0.75,1].map(f=>{ const daysAgo=Math.round((slice.length-1)*(1-f)); const dt=new Date(today.getTime()-daysAgo*86400000); return {label:this.dateShort(dt)}; });
 
+        const formLabel=(f)=>{ if(f>=88)return'Unstoppable'; if(f>=74)return'On Fire 🔥'; if(f>=60)return'In Form'; if(f>=48)return'Average'; if(f>=34)return'Cold'; if(f>=20)return'Out of Form'; return'Ice Cold'; };
+        const formBarColor=(f)=>f>=60?GREEN:f>=48?'#e2a32b':RED;
+        const hypeLabel=(h)=>{ if(h>=88)return'Phenomenon'; if(h>=74)return'Viral'; if(h>=60)return'Trending'; if(h>=46)return'Building Buzz'; if(h>=32)return'Under the Radar'; return'Ghost'; };
+        const hypeBarColor=(h)=>h>=60?GREEN:h>=46?'#e2a32b':RED;
+        // Convert internal game anchor (inflated) to realistic €M display value.
+        // Scale factor 0.38 maps game anchors to plausible TM range; perf ratio
+        // capped at ±30% so a hot WC can lift the display value but can't make
+        // a €100M player look like a €500M one; hard cap at €250M.
+        const perfRatio=p.anchor?Math.min(1.3,Math.max(0.7,p.price/p.anchor)):1;
+        const effTmVal=Math.max(5,Math.min(250,Math.round(p.tmVal*perfRatio*0.45/5)*5));
         const sigDefs=[
           ['Match rating · World Cup',p.signals.fotmob, p.avgR?p.avgR.toFixed(2)+' avg':'No WC matches'],
-          ['World Cup form',p.signals.form, (p.streakLen>=2?('🔥 '+p.streakLen+'-match streak'):(p.atWC?(p.streakLen+'-match form'):'Not at the World Cup'))],
-          ['Search interest (Google Trends)',p.signals.twitter, (p.signals.twitter>66?'Buzzing':p.signals.twitter>40?'Steady':'Quiet')],
-          ['Transfer market & value',p.signals.transfermarkt, '€'+p.tmVal+'M '+(p.tmTrendUp?'▲':'▼')]];
-        const signals=sigDefs.map(([label,val,display])=>({label,pct:Math.round(val)+'%',display,
-          barColor:val>=66?GREEN:val>=42?'#e2a32b':RED, valColor:'#46504a'}));
+          ['World Cup form',p.signals.form, p.atWC?formLabel(p.signals.form):'Not at the World Cup'],
+          ['Hype',p.signals.twitter, hypeLabel(p.signals.twitter)],
+          ['Transfer market value',p.signals.transfermarkt, '€'+effTmVal+'M '+(p.tmTrendUp?'▲':'▼')]];
+        const signals=sigDefs.map(([label,val,display],i)=>({label,pct:Math.round(val)+'%',display,
+          barColor:i===1?formBarColor(val):i===2?hypeBarColor(val):(val>=66?GREEN:val>=42?'#e2a32b':RED), valColor:'#46504a'}));
 
         const evDisp=p.events.slice().sort((a,b)=>a.offset-b.offset).map(e=>{ const impact=e._impactPct||0; const up=impact>=0; const dt=new Date(today.getTime()-e.offset*86400000);
           const isBench = e.bench || e.min===0;
@@ -2840,14 +4223,14 @@ Yan Diomande|RB Leipzig|CM|21|4
         else if(p.atWC) driverSummary='Live at the 2026 World Cup with '+p.nation+(recentNote?(' — '+recentNote):'')+'.';
         else if(p.news) driverSummary=p.news.text+'.';
         else driverSummary='The club season is over and '+lastName+' is not at the World Cup — the price stays quiet until transfer news moves it.';
-        const moodText = p.mood || (p.change7d>3?'Search interest spiking — fans piling in':p.change7d>0?'Mild positive buzz':p.change7d<-3?'Sentiment souring online':'Quiet search interest right now');
+        const moodText = p.mood || (detailWkChg>3?'Search interest spiking — fans piling in':detailWkChg>0?'Mild positive buzz':detailWkChg<-3?'Sentiment souring online':'Quiet search interest right now');
         const relatedArticles = p.articles.slice().sort((a,b)=>offOf(a.d)-offOf(b.d)).map(a=>({
           id:a.d+'|'+a.headline, date:this.dateShort(new Date(today.getTime()-offOf(a.d)*86400000)),
           tag:a.tag, headline:a.headline, dek:a.dek, onClick:()=>this.openArticle(a.d+'|'+a.headline) }));
 
         d={ name:p.name,team:p.team,pos:p.pos,age:p.age,lg:p.abbr,price:this.money(price),
           relatedArticles, hasRelatedArticles:relatedArticles.length>0, noRelatedArticles:relatedArticles.length===0,
-          wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',wkColor:cc,wkBg:up7?GBG:RBG,
+          wkAbs:Math.abs(detailWkChg).toFixed(1)+'%',wkArrow:up7?'▲':'▼',wkColor:cc,wkBg:up7?GBG:RBG,
           volDisplay:dVolPct.toFixed(1)+'%',rangeDisplay:this.money(dLoAll)+' – '+this.money(dHiAll),
           chartColor:cc,linePath,areaPath,gridY,markers,axisLabels,signals,events:evDisp,driverSummary,
           hover,dragSel,tooltip,onChartMove,onChartDown,onChartUp,onChartLeave,
@@ -2926,14 +4309,15 @@ Yan Diomande|RB Leipzig|CM|21|4
     // ---- leaderboard ----
     const lb=this.leaderboardData(); const medals={1:'🥇',2:'🥈',3:'🥉'};
     const avatarColors=['#16a85f','#0c1f15','#2a6fdb','#b8543a','#7a4fbf','#c98a1e','#1f8a5b','#4a5568'];
-    const leaderboard=lb.map((x,i)=>{ const rk=i+1; const profit=(x.netWorth||10000)-10000; const up=profit>=0;
+    const leaderboard=lb.map((x,i)=>{ const rk=i+1; const profit=x.netWorth||0; const up=profit>=0;
       const initials=x.me?'YOU':x.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       return { medal:medals[rk]||String(rk), rankColor:rk<=3?'#16201a':'#aab2ab', name:x.me?(x.name+' (you)'):x.name,
         initials, avatarBg:x.me?'#16a85f':avatarColors[this.hash(x.name)%avatarColors.length],
-        netWorth:this.money0(x.netWorth||10000), profit:this.money0(Math.abs(profit)), profitArrow:up?'▲':'▼', profitColor:up?GREEN:RED,
-        rowBg:x.me?'#f0faf4':'transparent' }; });
+        netWorth:this.money0(Math.abs(profit)), profit:this.money0(Math.abs(profit)), profitArrow:up?'▲':'▼', profitColor:up?GREEN:RED,
+        rowBg:x.me?'#f0faf4':'transparent', showFounder:x.me&&this.isFounder(),
+        onClick: x.me ? ()=>this.openProfileView(null) : ()=>this.setState({profileViewName:x.name,view:'profile'}) }; });
     const lbUsername=this.loadUsername();
-    const lbNameSave=()=>{ const n=(this._lbNameDraft||'').trim(); if(!n) return; this.saveUsername(n); this._lbNameDraft=''; setTimeout(()=>this.submitScore(),100); this.setState(s=>({tick:s.tick+1})); };
+    const lbNameSave=()=>{ const n=(this._lbNameDraft||'').trim(); if(!n) return; this.saveUsername(n); this._lbNameDraft=''; setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); },100); this.setState(s=>({tick:s.tick+1})); };
     const lbNameData={ showPrompt:!lbUsername, showEdit:!!lbUsername, current:lbUsername,
       onInput:(e)=>{ this._lbNameDraft=e.target.value; },
       onKeyDown:(e)=>{ if(e.key==='Enter') lbNameSave(); },
@@ -2945,22 +4329,25 @@ Yan Diomande|RB Leipzig|CM|21|4
       const buy=S.tradeSide==='buy'; const isHW=S.tradeSide==='hatewatch'; const isCover=S.tradeSide==='cover';
       const held=S.holdings[p.id]; const heldQty=held?held.qty:0;
       const shorted=S.shorts[p.id]; const shortedQty=shorted?shorted.qty:0;
+      const bp=this.buyingPower(); const marginUsed=this.marginUsed(); const marginLimit=this.marginLimit();
       const cashAfter=(buy||isCover)?this.state.cash-total:this.state.cash+total;
+      const onMargin=buy&&cashAfter<0;
       let error='';
-      if(buy&&total>this.state.cash) error='Not enough buying power.';
+      if(buy&&total>bp) error='Not enough buying power (cash + 50% of holdings).';
       if(S.tradeSide==='sell'&&qty>heldQty) error='You only hold '+heldQty+' shares.';
-      if(isHW&&total>this.state.cash) error='Need collateral equal to position size.';
+      if(isHW&&total>bp) error='Need collateral equal to position size.';
       if(isCover&&qty>shortedQty) error='You only have '+shortedQty+' shares hatewatched.';
       const ok=!error;
       const HW_RED='#b91c1c';
-      const maxBuy=Math.floor(this.state.cash/price);
+      const maxBuy=Math.floor(bp/price);
       const quickQtys=(buy||isHW?[1,5,10,'Max']:isCover?[1,5,'Half','All']:[1,5,'Half','All']).map(label=>{ let q; if(label==='Max')q=Math.max(1,maxBuy); else if(label==='All')q=isCover?shortedQty:heldQty; else if(label==='Half')q=Math.max(1,Math.floor((isCover?shortedQty:heldQty)/2)); else q=label; return {label:String(label),onClick:()=>this.setTradeQty(q)}; });
       const sideLabel=buy?'Buy order':isHW?'Hatewatch':isCover?'Cover hatewatch':'Sell order';
       const sideColor=isHW||isCover?HW_RED:buy?GREEN:RED;
       const confirmLabel=isHW?('Hatewatch '+qty+' · '+this.money(total)):isCover?('Cover '+qty+' · '+this.money(total)):buy?('Buy '+qty+' · '+this.money(total)):('Sell '+qty+' · '+this.money(total));
       tr={ name:p.name,team:p.team,pos:p.pos,price:this.money(price),qty,
         sideLabel,sideColor,
-        total:this.money(total),balanceLabel:'Cash after',balanceAfter:this.money(cashAfter),balanceColor:cashAfter<0?RED:'#16201a',
+        total:this.money(total),balanceLabel:onMargin?'On margin':'Cash after',balanceAfter:this.money(cashAfter),balanceColor:cashAfter<0?'#e07a1a':'#16201a',
+        buyingPower:this.money(bp),showMargin:marginUsed>0||onMargin,marginUsed:this.money(marginUsed),marginLimit:this.money(marginLimit),marginWarning:onMargin?'⚠ Using margin — 0.5%/day interest on borrowed amount.':'',
         inc:()=>this.setTradeQty(qty+1),dec:()=>this.setTradeQty(qty-1),quickQtys,error,
         confirm:()=>this.confirmTrade(),confirmLabel,
         confirmBg:ok?(isHW||isCover?HW_RED:buy?GREEN:RED):'#c4ccc3',confirmCursor:ok?'pointer':'not-allowed',confirmOpacity:ok?'1':'0.7' }; }
@@ -2991,6 +4378,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       filterNation:S.filterNation, filterTeam:S.filterTeam,
       filterAgeMin:S.filterAgeMin, filterAgeMax:S.filterAgeMax,
       filterPriceMin:S.filterPriceMin, filterPriceMax:S.filterPriceMax,
+      filterVolMin:S.filterVolMin, filterVolMax:S.filterVolMax,
+      filter1dMin:S.filter1dMin, filter1dMax:S.filter1dMax,
+      filter7dMin:S.filter7dMin, filter7dMax:S.filter7dMax,
       onFilterNationChange:(e)=>this.onFilterNationChange(e),
       onFilterTeamChange:(e)=>this.onFilterTeamChange(e),
       onFilterAgeMin:(e)=>this.onFilterAgeMin(e), onFilterAgeMax:(e)=>this.onFilterAgeMax(e),
@@ -2998,9 +4388,12 @@ Yan Diomande|RB Leipzig|CM|21|4
       clearFilters:()=>this.clearFilters(),
       goHome:()=>this.goHome(), goLeaders:()=>this.nav('leaders'),
       cashFmt:this.money(this.state.cash),
+      buyingPowerFmt:this.money(this.buyingPower()),
+      marginUsedFmt:this.money(this.marginUsed()),
+      hasMarginUsed:this.marginUsed()>0,
       rewardBtnLabel,rewardBtnColor,rewardBtnBg, openReward:()=>this.openReward(),
       // views
-      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders', isArticles:S.view==='articles',
+      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders', isArticles:S.view==='articles', isProfile:S.view==='profile', isClubs:S.view==='clubs',
       // articles
       articlesAll, hasSelectedArticle, noSelectedArticle, selectedArticle, backToArticles:()=>this.setState({selectedArticleId:null}),
       hasArticles:articlesAll.length>0, noArticles:articlesAll.length===0,
@@ -3008,7 +4401,15 @@ Yan Diomande|RB Leipzig|CM|21|4
       netWorthFmt:this.money(nw), investedFmt:this.money(hv), holdingCount:holdCount, rankFmt:'#'+rank,
       plArrow:plUp?'▲':'▼', plAbsFmt:this.money(Math.abs(pl)), plPctFmt:this.pct((pl/10000)*100),
       plChipBg:plUp?'rgba(61,220,138,.18)':'rgba(255,93,93,.18)', plChipColor:plUp?'#3ddc8a':'#ff5d5d',
-      nwSpark:nwHistPts, movers, marketList, universeNote:DB.length+' players priced — movers ranked by real World Cup form &amp; transfer activity. Players not at the World Cup sit flat until the market moves.',
+      nwSpark:nwHistPts, movers, showMovers:!isSearching, marketList, universeNote:DB.length+' players priced — movers ranked by real World Cup form &amp; transfer activity. Players not at the World Cup sit flat until the market moves.',
+      pricesStale:!this.pricesAreFresh(),
+      showRecap, recap, dismissRecap,
+      recapNoBought:recap.noBought, recapNoSold:recap.noSold,
+      recapShowBought:S.recapTab==='bought', recapShowSold:S.recapTab==='sold',
+      recapTabBought:()=>this.setState({recapTab:'bought'}),
+      recapTabSold:()=>this.setState({recapTab:'sold'}),
+      recapTabBoughtStyle:S.recapTab==='bought'?'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:none;cursor:pointer;background:#16201a;color:#fff':'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:1px solid #e1e4dd;cursor:pointer;background:#fff;color:#46504a',
+      recapTabSoldStyle:S.recapTab==='sold'?'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:none;cursor:pointer;background:#16201a;color:#fff':'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:1px solid #e1e4dd;cursor:pointer;background:#fff;color:#46504a',
       // detail
       d, rangeTabs, goBack:()=>this.goBack(),
       // portfolio
@@ -3016,11 +4417,177 @@ Yan Diomande|RB Leipzig|CM|21|4
       // watch
       hasWatch:S.watch.length>0, noWatch:S.watch.length===0, watchList,
       // leaderboard
-      leaderboard, lbNameData,
+      leaderboard, lbNameData, goLeaders:()=>this.nav('leaders'),
+      // profile
+      profileIsMe: S.profileViewName===null,
+      profileName: S.profileViewName || this.loadUsername() || 'You',
+      profileLbEntry: S.profileViewName ? (lb.find(x=>x.name===S.profileViewName)||null) : null,
+      profileStats: (()=>{ if(S.profileViewName!==null) return {}; const ps=this.profileStats(); return {...ps, nwFmt:this.money(ps.nw), plFmt:(ps.plUp?'+':'')+this.money(Math.abs(ps.pl)), plColor:ps.plUp?'#16a85f':'#d23b2c', athFmt:this.money(ps.ath), cashFmt:this.money(ps.cash), winRateFmt:ps.winRate!==null?ps.winRate+'%':'—', bestPosPctFmt:ps.bestPLName?(ps.bestPLPct>=0?'+':'')+ps.bestPLPct.toFixed(1)+'%':'', bestPLNameDisplay:ps.bestPLName||'—', diversityLabel:ps.diversity+' league'+(ps.diversity!==1?'s':'')}; })(),
+      profileOtherPL: (()=>{ if(!S.profileViewName) return '—'; const e=leaderboard.find(x=>x.name===S.profileViewName); if(!e) return '—'; const pnl=e.netWorth||0; const up=(e.profitArrow||'▲')==='▲'; return (up?'+':'-')+'$'+e.profit; })(),
+      profileOtherPLColor: (()=>{ if(!S.profileViewName) return '#8a938c'; const e=leaderboard.find(x=>x.name===S.profileViewName); return e?e.profitColor:'#8a938c'; })(),
+      profileOtherRank: (()=>{ if(!S.profileViewName) return '—'; const e=leaderboard.find(x=>x.name===S.profileViewName); return e?e.medal:'—'; })(),
+      profileOtherMedal: (()=>{ if(!S.profileViewName) return '—'; const e=leaderboard.find(x=>x.name===S.profileViewName); return e?e.medal:'—'; })(),
+      profileInitials: (S.profileViewName || this.loadUsername() || 'YO').slice(0,2).toUpperCase(),
+      profileIsOther: S.profileViewName !== null,
+      goProfile:()=>this.openProfileView(null),
+      closeProfile:()=>this.closeProfileView(),
+      // comments
+      ...(()=>{
+        const upvoted=this.loadUpvoted();
+        const avatarColors=['#16a85f','#0c1f15','#2a6fdb','#b8543a','#7a4fbf','#c98a1e','#1f8a5b','#4a5568'];
+        const cmtAvatarBg=(name)=>avatarColors[this.hash(name||'?')%avatarColors.length];
+        const cmtInitials=(name)=>(name||'?').slice(0,2).toUpperCase();
+        const timeAgo=(iso)=>{ const s=Math.floor((Date.now()-new Date(iso))/1000); if(s<60) return s+'s ago'; if(s<3600) return Math.floor(s/60)+'m ago'; if(s<86400) return Math.floor(s/3600)+'h ago'; return Math.floor(s/86400)+'d ago'; };
+        const allComments=S.comments||[];
+        const roots=allComments.filter(c=>!c.parent_id);
+        const replies=allComments.filter(c=>!!c.parent_id);
+        const sorted=[...roots].sort(S.commentSort==='top'?(a,b)=>(b.upvotes||0)-(a.upvotes||0):(a,b)=>new Date(b.created_at)-new Date(a.created_at));
+        const lbUsername=this.loadUsername();
+        const cmtVM=(c,isReply)=>{ const voted=upvoted.has(c.id); return {
+          id:c.id, username:c.username, body:c.body, upvotes:c.upvotes||0, timeAgo:timeAgo(c.created_at),
+          avatarBg:cmtAvatarBg(c.username), initials:cmtInitials(c.username),
+          upvoteBg:voted?'#e8f7ef':'transparent', upvoteColor:voted?'#16a85f':'#8a938c', upvoteBorder:voted?'#b6e8cc':'#e1e4dd',
+          upvote:()=>this.upvoteComment(c.id),
+          replyOpen:!isReply&&S.commentReplyTo===c.id,
+          replyToggle:()=>this.setState(st=>({commentReplyTo:st.commentReplyTo===c.id?null:c.id,commentReplyInput:''})),
+          replyCancel:()=>this.setState({commentReplyTo:null,commentReplyInput:''}),
+          replySubmit:()=>{ this.postComment(S.commentsPlayerId,c.id); },
+          replies:!isReply?replies.filter(r=>r.parent_id===c.id).sort((a,b)=>new Date(a.created_at)-new Date(b.created_at)).map(r=>cmtVM(r,true)):[],
+          hasReplies:!isReply&&replies.filter(r=>r.parent_id===c.id).length>0,
+        };};
+        const cmtList=sorted.map(c=>cmtVM(c,false));
+        const isTop=S.commentSort==='top';
+        return {
+          cmtCount:roots.length?'('+roots.length+')':'',
+          cmtLoading:S.commentsLoading, cmtEmpty:!S.commentsLoading&&cmtList.length===0,
+          cmtList, cmtHasUser:!!lbUsername, cmtNoUser:!lbUsername,
+          cmtSubmit:()=>this.postComment(S.commentsPlayerId,null),
+          cmtSubmitBg:'#16a85f',
+          cmtSubmitCursor:'pointer',
+          cmtSortTop:()=>this.setState({commentSort:'top'}),
+          cmtSortNew:()=>this.setState({commentSort:'new'}),
+          cmtSortTopBg:isTop?'#16201a':'#fff', cmtSortTopColor:isTop?'#fff':'#46504a', cmtSortTopBorder:isTop?'#16201a':'#e3e6e0',
+          cmtSortNewBg:!isTop?'#16201a':'#fff', cmtSortNewColor:!isTop?'#fff':'#46504a', cmtSortNewBorder:!isTop?'#16201a':'#e3e6e0',
+        };
+      })(),
       // trade modal
       tradeOpen:S.tradeOpen, tr, closeTrade:()=>this.closeTrade(), stop:(e)=>this.stop(e), shortsList,hasShorts,noShorts,
       // reward modal
       showReward:S.showReward, rw, closeReward:()=>this.closeReward(),
+      // feedback
+      showLoginGate:!S.loggedIn, portfolioLoading:S.portfolioLoading,
+      loginStepEmail:S.loginStep==='email', loginStepOtp:S.loginStep==='otp',
+      loginEmail:S.loginEmail, loginError:S.loginError,
+      loginBtnBg:S.loginSending?'#4a7a5f':'#16a85f',
+      loginBtnLabel:S.loginSending?(S.loginStep==='otp'?'Verifying…':'Sending…'):(S.loginStep==='otp'?'Verify code':'Send code →'),
+      doSendOtp:()=>this.doSendOtp(),
+      doVerifyOtp:()=>this.doVerifyOtp(),
+      loginBack:()=>this.setState({loginStep:'email',loginError:''}),
+      openFeedback:()=>this.openFeedback(),
+      feedbackOpen:S.feedbackOpen,
+      closeFeedback:()=>this.closeFeedback(),
+      stopFeedback:(e)=>{ e && e.stopPropagation && e.stopPropagation(); },
+      fbSent:S.feedbackSent, fbNotSent:!S.feedbackSent,
+      fbOnName:(e)=>this.setState({feedbackName:e.target.value}),
+
+      fbSubmit:()=>this.submitFeedback(),
+      fbError:S.feedbackError,
+      fbBtnBg:S.feedbackSending?'#8a938c':'#16a85f',
+      fbBtnCursor:S.feedbackSending?'not-allowed':'pointer',
+      fbBtnLabel:S.feedbackSending?'Sending…':'Send feedback',
+      // clubs
+      clubLoading:S.clubLoading, myClub:S.myClub,
+      clubMembers:(()=>{
+        const uid=this.getUserId(); const leaderId=S.myClub?.leader_id;
+        const iAmLeader=uid===leaderId;
+        const avatarColors=['#16a85f','#0c1f15','#2a6fdb','#b8543a','#7a4fbf','#c98a1e','#1f8a5b','#4a5568'];
+        return S.clubMembers.map(m=>{
+          const isLeader=m.user_id===leaderId; const isMe=m.user_id===uid;
+          const initials=m.display_name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()||'?';
+          const avatarBg=isLeader?'#16a85f':avatarColors[this.hash(m.user_id)%avatarColors.length];
+          const hasMenu=iAmLeader&&!isMe;
+          const menuOpen=S.clubMenuOpenId===m.user_id;
+          return{...m,isLeader,initials,avatarBg,hasMenu,menuOpen,
+            toggleMenu:()=>this.setState({clubMenuOpenId:menuOpen?null:m.user_id}),
+            onTransfer:()=>{ this.setState({clubMenuOpenId:null}); this.transferOwnership(m.user_id,m.display_name); },
+            onRemove:()=>{ this.setState({clubMenuOpenId:null}); this.removeMember(m.id); },
+          };
+        });
+      })(),
+      clubPublicList:S.clubPublicList.map(c=>({...c,onJoin:()=>this.joinClubById(c.id)})),
+      isMyClubLeader:S.myClub&&S.myClub.leader_id===this.getUserId(),
+      clubInviteCode:S.myClub?S.myClub.invite_code:'',
+      clubError:S.clubError, clubSuccess:S.clubSuccess,
+      clubView:S.clubView,
+      noClub:!S.myClub&&!S.clubLoading,
+      hasClub:!!S.myClub,
+      isClubHome:S.clubView==='home',
+      isClubCreate:S.clubView==='create',
+      isClubJoin:S.clubView==='join',
+      noClubHome:!S.myClub&&!S.clubLoading&&S.clubView==='home',
+      hasClubHome:!!S.myClub&&S.clubView==='home',
+      goClubHome:()=>this.setState({clubView:'home',clubError:'',clubSuccess:''}),
+      goClubCreate:()=>this.setState({clubView:'create',clubError:'',clubSuccess:''}),
+      goClubJoin:()=>this.setState({clubView:'join',clubError:'',clubSuccess:''}),
+      onClubCreateName:(e)=>this.setState({clubCreateName:e.target.value}),
+      onClubCreateDesc:(e)=>this.setState({clubCreateDesc:e.target.value}),
+      onClubCreatePublic:(v)=>this.setState({clubCreatePublic:v}),
+      setClubPublic:()=>this.setState({clubCreatePublic:true}),
+      setClubPrivate:()=>this.setState({clubCreatePublic:false}),
+      onClubCreateMinNW:(e)=>this.setState({clubCreateMinNW:e.target.value}),
+      clubCreateName:S.clubCreateName, clubCreateDesc:S.clubCreateDesc,
+      clubCreatePublic:S.clubCreatePublic, clubCreateMinNW:S.clubCreateMinNW,
+      clubPublicBtnStyle:S.clubCreatePublic?'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #16a85f;background:#f0fdf4;color:#16a85f':'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #e1e4dd;background:#fff;color:#46504a',
+      clubPrivateBtnStyle:!S.clubCreatePublic?'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #16a85f;background:#f0fdf4;color:#16a85f':'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #e1e4dd;background:#fff;color:#46504a',
+      submitCreateClub:()=>this.createClub(),
+      onClubJoinCode:(e)=>this.setState({clubJoinCode:e.target.value}),
+      clubJoinCode:S.clubJoinCode,
+      submitJoinClub:()=>this.joinClubByCode(),
+      leaveClub:()=>this.leaveClub(),
+      copyInviteCode:()=>{if(S.myClub)navigator.clipboard.writeText(S.myClub.invite_code).then(()=>this.setState({clubSuccess:'Invite code copied!'}));},
+      clubChatReady:S.clubChatReady===true,
+      clubChatSetupNeeded:S.clubChatReady===false,
+      clubChatLoading:S.clubChatReady===null,
+      clubChatInput:S.clubChatInput,
+      onClubChatInput:(e)=>this.setState({clubChatInput:e.target.value}),
+      onClubChatKeydown:(e)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();this.sendChatMessage();}},
+      submitClubChat:()=>this.sendChatMessage(),
+      sharePortfolio:()=>this.sharePortfolio(),
+      clubChatSending:S.clubChatSending,
+      clubMessages:(()=>{
+        const uid=this.getUserId();
+        return (S.clubMessages||[]).map(m=>{
+          const isMe=m.user_id===uid;
+          const initials=(m.display_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+          const avatarColors=['#e05c5c','#e0a85c','#5c9ee0','#a85ce0','#5ce0b8','#e05ca8','#5ce05c'];
+          const avatarBg=avatarColors[this.hash(m.user_id)%avatarColors.length];
+          const ts=new Date(m.created_at);
+          const timeStr=ts.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+          const portfolio=m.type==='portfolio'?m.payload:null;
+          const trade=m.type==='trade'?m.payload:null;
+          return {id:m.id,isMe,name:m.display_name,initials,avatarBg,body:m.body,type:m.type,
+            portfolio,trade,timeStr,
+            isText:m.type==='text',isPortfolio:m.type==='portfolio',isTrade:m.type==='trade',
+            onViewPlayer:trade?()=>this.openPlayer(trade.playerId):()=>{},
+          };
+        });
+      })(),
+      // share / referral / founder / phone
+      shareOpen: S.shareOpen, openShare:()=>this.setState({shareOpen:true}), closeShare:()=>this.setState({shareOpen:false}),
+      stopShare:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
+      shareLink: window.location.origin+window.location.pathname+'?ref='+this.getRefCode(),
+      copyShareLink:()=>{ const link=window.location.origin+window.location.pathname+'?ref='+this.getRefCode(); navigator.clipboard.writeText(link).then(()=>this.setState({shareCopied:true}),()=>{}); setTimeout(()=>this.setState({shareCopied:false}),2000); },
+      shareCopied: S.shareCopied,
+      shareCopiedLabel: S.shareCopied ? 'Copied!' : 'Copy link',
+      whatsappShareLink: 'https://wa.me/?text='+encodeURIComponent('Join me on FootyStock — the football stock market game! Use my link: '+window.location.origin+window.location.pathname+'?ref='+this.getRefCode()),
+      referralCount: this._referralCount||0,
+      mysteryOpen: S.mysteryOpen, closeMystery:()=>this.setState({mysteryOpen:false}),
+      stopMystery:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
+      mysteryPacks: S.mysteryPacks||[],
+      isFounder: this.isFounder(),
+      myEmail: this.loadEmail()||'—',
+      recoverOpen: S.recoverOpen, closeRecover:()=>this.setState({recoverOpen:false}),
+      stopRecover:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
     };
   }
 }
