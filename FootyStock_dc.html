@@ -2824,17 +2824,8 @@ Yan Diomande|RB Leipzig|CM|21|4
       const rHist = this.priceHistory(id, wobbledPrice, dayKey);
       const RN = rHist.length;
 
-      // All % changes come from rHist so they always match the chart.
-      // Only compare within real stored data — never reach into synthetic backfill.
-      const realDays = (this._histStore?.[id]?.r?.length) || 1;
-      const lookback7 = Math.min(7, realDays - 1);
-      const change7d = lookback7 > 0
-        ? parseFloat((((rHist[RN-1]-rHist[RN-1-lookback7])/rHist[RN-1-lookback7])*100).toFixed(1))
-        : 0;
-      if (realDays >= 31) {
-        const lb30 = Math.min(30, realDays - 1);
-        change30d=parseFloat((((rHist[RN-1]-rHist[RN-1-lb30])/rHist[RN-1-lb30])*100).toFixed(1));
-      }
+      // change7d/change30d are placeholders — actual values computed in decorate()
+      // directly off p.hist so badge always matches the chart.
 
       // Articles mentioning this player — only elite/notable performances get
       // a writeup (see DATA().ARTICLES), shown under the player page when
@@ -3392,49 +3383,50 @@ Yan Diomande|RB Leipzig|CM|21|4
       return { volPct, hiAll:Math.max(...hist), loAll:Math.min(...hist) };
     };
     const decorate=(p)=>{
-      const price=this.curPrice(p); const up7=p.change7d>=0;
-      // 1D is a daily close-to-close metric read off the SAME recorded history
-      // the 7D/chart use (today's recorded close vs yesterday's), not the
-      // wobbled live price — otherwise it jiggled every render with the
-      // intraday noise and disagreed with the chart.
-      const hN=p.hist.length; const todayClose=p.hist[hN-1];
-      // Only use yesterday's close if we have at least 2 real stored days —
-      // otherwise hist[hN-2] is synthetic backfill and would freeze the 1D ordering.
-      const prevClose=(p.realDays>=2)?p.hist[hN-2]:null;
-      const dayChg=(prevClose?((todayClose-prevClose)/prevClose)*100:0);
+      const price=this.curPrice(p);
+      // Compute 1D and 7D directly off the chart data (p.hist) so badge always matches.
+      const hN=p.hist.length;
+      const todayClose=p.hist[hN-1];
+      const prev1=p.hist[hN-2]??todayClose;
+      const prev7=p.hist[Math.max(0,hN-8)]??p.hist[0];
+      const dayChg=((todayClose-prev1)/prev1)*100;
+      const wkChg=((todayClose-prev7)/prev7)*100;
+      const up7=wkChg>=0;
       const upDay=dayChg>=0;
       const {volPct,hiAll,loAll}=riskStats(p);
       return {
         id:p.id,name:p.name,last:p.name.split(' ').slice(-1)[0],team:p.team,abbr:p.abbr,lg:p.abbr,
         league:p.lgName,pos:p.pos,rank:p.rank,price:this.money(price),rawPrice:price,
-        chg:this.pct(p.change7d),arrow:up7?'▲':'▼',cd:cd(p.change7d),
-        wkAbs:Math.abs(p.change7d).toFixed(1)+'%',wkArrow:up7?'▲':'▼',
+        chg:this.pct(wkChg),arrow:up7?'▲':'▼',cd:cd(wkChg),
+        wkAbs:Math.abs(wkChg).toFixed(1)+'%',wkArrow:up7?'▲':'▼',
         wkColor:up7?GREEN:RED,wkBg:up7?GBG:RBG,
         dayAbs:Math.abs(dayChg).toFixed(1)+'%',dayArrow:upDay?'▲':'▼',dayColor:upDay?GREEN:RED,
         volDisplay:volPct.toFixed(1)+'%',rangeDisplay:this.money(loAll)+' – '+this.money(hiAll),
-        priceNum:price,dayChgNum:dayChg,wkChgNum:p.change7d,volNum:volPct,hiAllNum:hiAll,loAllNum:loAll,
+        priceNum:price,dayChgNum:dayChg,wkChgNum:wkChg,volNum:volPct,hiAllNum:hiAll,loAllNum:loAll,
         spark:this.sparkPts(p.hist,120,26),
         onClick:()=>this.openPlayer(p.id),
       };
     };
 
+    // Decorate all players once so wkChgNum (chart-derived) drives all sorting.
+    const decoratedDB = DB.map(decorate);
+
     // ticker
-    const tickerSrc=[...DB].sort((a,b)=>Math.abs(b.change7d)-Math.abs(a.change7d)).slice(0,26);
-    const ticker=tickerSrc.map(decorate);
+    const ticker=[...decoratedDB].sort((a,b)=>Math.abs(b.wkChgNum)-Math.abs(a.wkChgNum)).slice(0,26);
 
     // movers
-    const movers=[...DB].sort((a,b)=>b.change7d-a.change7d).slice(0,4).map(decorate);
+    const movers=[...decoratedDB].sort((a,b)=>b.wkChgNum-a.wkChgNum).slice(0,4);
 
     // morning recap
     const isSearching=S.search.trim().length>0;
     const showRecap=DB.length>0&&!S.recapDismissed&&!isSearching;
     const recap=(()=>{
       if(!DB.length) return {date:'',sentiment:'',gainers:[],losers:[],mostBought:[],mostSold:[],noBought:true,noSold:true,headline:''};
-      const byChg=[...DB].sort((a,b)=>b.change7d-a.change7d);
-      const recapGainers=byChg.slice(0,3).map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
-      const recapLosers=byChg.slice(-3).reverse().map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
-      const upCount=DB.filter(p=>p.change7d>0).length;
-      const downCount=DB.filter(p=>p.change7d<0).length;
+      const byChg=[...decoratedDB].sort((a,b)=>b.wkChgNum-a.wkChgNum);
+      const recapGainers=byChg.slice(0,3).map(d=>({ name:d.name,team:d.team,price:d.price,chg:d.wkAbs,onClick:d.onClick }));
+      const recapLosers=byChg.slice(-3).reverse().map(d=>({ name:d.name,team:d.team,price:d.price,chg:d.wkAbs,onClick:d.onClick }));
+      const upCount=decoratedDB.filter(d=>d.wkChgNum>0).length;
+      const downCount=decoratedDB.filter(d=>d.wkChgNum<0).length;
       const topGainer=byChg[0], topLoser=byChg[byChg.length-1];
       const recapDate=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
       const bullish=upCount>=downCount;
@@ -3452,7 +3444,7 @@ Yan Diomande|RB Leipzig|CM|21|4
           globalTally[h.id].qty+=h.qty;
         }
       }
-      const mkGlobal=(obj)=>{ const p=DB.find(x=>x.id===obj.id); const d=p?decorate(p):null; return {name:p?p.name:obj.id,qty:obj.holders,price:d?d.price:'—',onClick:p?()=>this.openPlayer(p.id):()=>{}}; };
+      const mkGlobal=(obj)=>{ const d=decoratedDB.find(x=>x.id===obj.id); return {name:d?d.name:obj.id,qty:obj.holders,price:d?d.price:'—',onClick:d?d.onClick:()=>{}}; };
       const mostBought=Object.values(globalTally).sort((a,b)=>b.holders-a.holders).slice(0,3).map(mkGlobal);
       const mostSold=[];
       return {
@@ -3460,7 +3452,7 @@ Yan Diomande|RB Leipzig|CM|21|4
         sentiment:`${upCount} rising · ${downCount} falling`,
         gainers:recapGainers, losers:recapLosers, mostBought, mostSold,
         noBought:mostBought.length===0, noSold:mostSold.length===0,
-        headline:`${topGainer?.name??'—'} leads the risers (+${topGainer?.change7d?.toFixed(1)??0}%), while ${topLoser?.name??'—'} is the biggest faller (${topLoser?.change7d?.toFixed(1)??0}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up.`,
+        headline:`${topGainer?.name??'—'} leads the risers (+${topGainer?.wkChgNum?.toFixed(1)??0}%), while ${topLoser?.name??'—'} is the biggest faller (${topLoser?.wkChgNum?.toFixed(1)??0}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up.`,
       };
     })();
     const dismissRecap=()=>this.setState({recapDismissed:true});
@@ -3489,17 +3481,20 @@ Yan Diomande|RB Leipzig|CM|21|4
     const f1dMax=S.filter1dMax!==''?parseFloat(S.filter1dMax):null;
     const f7dMin=S.filter7dMin!==''?parseFloat(S.filter7dMin):null;
     const f7dMax=S.filter7dMax!==''?parseFloat(S.filter7dMax):null;
-    let list=DB.filter(p=>{
+    // Filter on decoratedDB so 1D/7D filters use chart-derived values.
+    let list=decoratedDB.filter(d=>{
+      const p=DB.find(x=>x.id===d.id);
+      if(!p) return false;
       if(S.league!=='ALL' && p.lg!==S.league) return false;
       if(S.filterNation!=='ALL' && p.nation!==S.filterNation) return false;
       if(S.filterTeam!=='ALL' && p.team!==S.filterTeam) return false;
       if(fAgeMin!==null && p.age<fAgeMin) return false;
       if(fAgeMax!==null && p.age>fAgeMax) return false;
-      if(fPrMin!==null || fPrMax!==null){ const pr=this.curPrice(p); if(fPrMin!==null && pr<fPrMin) return false; if(fPrMax!==null && pr>fPrMax) return false; }
-      if(fVolMin!==null || fVolMax!==null){ const {volPct}=riskStats(p); if(fVolMin!==null && volPct<fVolMin) return false; if(fVolMax!==null && volPct>fVolMax) return false; }
-      if(f1dMin!==null || f1dMax!==null){ const hN=p.hist.length; const dayChg=p.hist[hN-2]?((p.hist[hN-1]-p.hist[hN-2])/p.hist[hN-2])*100:0; if(f1dMin!==null && dayChg<f1dMin) return false; if(f1dMax!==null && dayChg>f1dMax) return false; }
-      if(f7dMin!==null || f7dMax!==null){ if(f7dMin!==null && p.change7d<f7dMin) return false; if(f7dMax!==null && p.change7d>f7dMax) return false; }
-      if(q && !(fold(p.name).includes(q)||fold(p.team).includes(q))) return false;
+      if(fPrMin!==null || fPrMax!==null){ if(fPrMin!==null && d.priceNum<fPrMin) return false; if(fPrMax!==null && d.priceNum>fPrMax) return false; }
+      if(fVolMin!==null || fVolMax!==null){ if(fVolMin!==null && d.volNum<fVolMin) return false; if(fVolMax!==null && d.volNum>fVolMax) return false; }
+      if(f1dMin!==null || f1dMax!==null){ if(f1dMin!==null && d.dayChgNum<f1dMin) return false; if(f1dMax!==null && d.dayChgNum>f1dMax) return false; }
+      if(f7dMin!==null || f7dMax!==null){ if(f7dMin!==null && d.wkChgNum<f7dMin) return false; if(f7dMax!==null && d.wkChgNum>f7dMax) return false; }
+      if(q && !(fold(d.name).includes(q)||fold(d.team).includes(q))) return false;
       return true;
     });
     // nation + team dropdown options
@@ -3514,7 +3509,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     const teamOptions=[{val:'ALL',label:'All Clubs',selected:sel(S.filterTeam==='ALL')},...allTeams.map(t=>({val:t,label:t,selected:sel(S.filterTeam===t)}))];
     const activeFilterCount=[S.filterNation!=='ALL',S.filterTeam!=='ALL',S.league!=='ALL',S.filterAgeMin!=='',S.filterAgeMax!=='',S.filterPriceMin!=='',S.filterPriceMax!=='',S.filterVolMin!=='',S.filterVolMax!=='',S.filter1dMin!=='',S.filter1dMax!=='',S.filter7dMin!=='',S.filter7dMax!==''].filter(Boolean).length;
     const hasActiveFilters=activeFilterCount>0;
-    const marketList=list.map(decorate);
+    const marketList=[...list];
     const sortFieldMap={name:'name',price:'priceNum',day:'dayChgNum',week:'wkChgNum',vol:'volNum',range:'hiAllNum',rank:'rank'};
     const sortField=sortFieldMap[S.sortKey]||'rank';
     const sortDir=S.sortDir==='desc'?-1:1;
