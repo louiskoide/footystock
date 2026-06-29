@@ -3049,7 +3049,12 @@ Yan Diomande|RB Leipzig|CM|21|4
         // More expensive players face slightly larger downside on bad games
         // (notoriety already in scope): notoriety∈[0,1], adds up to 25% extra
         // penalty on negative delta only — subtle, not dramatic.
-        const downScale = e.delta < 0 ? 0.4 * (1 + notoriety * 0.25) : 0.4;
+        // Bump is the primary per-match price driver — fairValue's avgR-based approach
+        // dilutes incremental match impact (2nd good game barely moves avgR), so the
+        // bump must carry the visible match-day spike. 1.0 multiplier → delta≈4 (goal
+        // + good rating) creates ~4% chart move on match day, decaying naturally.
+        // Expensive players get up to 25% more downside only.
+        const downScale = e.delta < 0 ? 1.0 * (1 + notoriety * 0.25) : 1.0;
         const bump=(e.delta/100)*price*downScale, ramp=1, halfLife=6;
         for(let j=idx;j<N;j++){ const daysIn=j-idx+1; // +1: the match day itself is already day 1, not day 0 — otherwise a same-day event (idx===N-1) eases in at 0 and never visibly moves today's price.
           const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
@@ -4051,14 +4056,12 @@ Yan Diomande|RB Leipzig|CM|21|4
         // render the latest day's move as a seeded hourly (or, for 90m, match-minute)
         // curve instead of a second data source
         const slice=is90m?(()=>{ const prevClose=p.hist[N-2]??p.hist[N-1]; const MINS=matchMinute; const s=[];
-          // The live ticker must land exactly on the headline price at "now" —
-          // buildDB already bakes today's *full* match bump into hist[N-1]/price
-          // the same day (full strength immediately, see the comment by the
-          // ease-in loop), so the target swing is simply price-prevClose. Using
-          // a separately recomputed delta*multiplier here (the old approach)
-          // drifted from that actual bump and made the chart cap far below the
-          // real current price.
-          const fullSwing = price-prevClose;
+          // Use the event's delta directly for fullSwing rather than price-prevClose.
+          // price-prevClose breaks when a player has multiple matches (avgR barely
+          // shifts game-to-game so fairValue is nearly flat), making the live ticker
+          // show a horizontal line even during a goal. Delta captures what THIS match
+          // is actually doing, matching the bump loop's 1.0 multiplier.
+          const fullSwing = prevClose*((todaysEvent.delta||0)/100)*1.0;
           if(todaysMarks){
             const totalW=todaysMarks.reduce((sum,mk)=>sum+(markWeight[mk.kind]||0),0);
             for(let m=0;m<=MINS;m++){
