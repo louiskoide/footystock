@@ -233,6 +233,34 @@
           </sc-for>
         </div>
       </div>
+      <sc-if value="{{ recap.mostBought.length > 0 || recap.mostSold.length > 0 }}">
+      <div class="fs-recap-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px;padding-top:14px;border-top:1px solid #f3f4f0">
+        <div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#2563eb;text-transform:uppercase;margin-bottom:8px">Most Bought · All time</div>
+          <sc-for list="{{ recap.mostBought }}" as="b" hint-placeholder-count="3">
+            <div onClick="{{ b.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ b.qty }} shares</span>
+              </div>
+              <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ b.price }}</span>
+            </div>
+          </sc-for>
+        </div>
+        <div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#8a938c;text-transform:uppercase;margin-bottom:8px">Most Sold · All time</div>
+          <sc-for list="{{ recap.mostSold }}" as="s" hint-placeholder-count="3">
+            <div onClick="{{ s.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ s.qty }} shares</span>
+              </div>
+              <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ s.price }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      </sc-if>
       <div style="padding-top:12px;border-top:1px solid #f3f4f0;font:500 13px 'Hanken Grotesk';color:#46504a;line-height:1.5">{{ recap.headline }}</div>
     </div>
     </sc-if>
@@ -2862,11 +2890,22 @@ Yan Diomande|RB Leipzig|CM|21|4
     const topGainer=byWk[0], topLoser=byWk[byWk.length-1];
     const recapDate=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
     const bullish=upCount>=downCount;
+    // tally shares bought/sold per player from user's own trade history
+    const buyTally={}, sellTally={};
+    for(const t of (S.txns||[])){
+      if(t.side==='BUY'){ buyTally[t.id]=(buyTally[t.id]||{id:t.id,name:t.name,qty:0}); buyTally[t.id].qty+=t.qty; }
+      else if(t.side==='SELL'){ sellTally[t.id]=(sellTally[t.id]||{id:t.id,name:t.name,qty:0}); sellTally[t.id].qty+=t.qty; }
+    }
+    const mkTrade=(obj)=>{ const p=DB.find(x=>x.id===obj.id); const d=p?decorate(p):null; return {name:obj.name,qty:obj.qty,price:d?d.price:'—',onClick:p?()=>this.openPlayer(p.id):()=>{}}; };
+    const recapMostBought=Object.values(buyTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade);
+    const recapMostSold=Object.values(sellTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade);
     const recap={
       date:recapDate,
       sentiment:`${upCount} rising · ${downCount} falling`,
       gainers:recapGainers,
       losers:recapLosers,
+      mostBought:recapMostBought,
+      mostSold:recapMostSold,
       headline:`${topGainer.name} leads this week's risers (+${topGainer.change7d.toFixed(1)}%), while ${topLoser.name} is the week's biggest faller (${topLoser.change7d.toFixed(1)}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up over the past 7 days.`,
     };
     const showRecap=!S.recapDismissed;
