@@ -54,6 +54,7 @@
     .fs-card-pad{padding:16px 16px!important}
 
     .fs-banner-grid{grid-template-columns:1fr!important}
+    .fs-recap-grid{grid-template-columns:1fr!important}
     .fs-movers-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
     .fs-stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
 
@@ -184,6 +185,55 @@
         </div>
       </sc-for>
     </div>
+
+    <!-- morning market recap -->
+    <sc-if value="{{ showRecap }}" hint-placeholder-val="{{ true }}">
+    <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:20px 24px;margin-bottom:26px;position:relative">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font:600 10px 'Hanken Grotesk';letter-spacing:.08em;text-transform:uppercase;color:#16a85f;background:#e8f7ef;padding:4px 9px;border-radius:6px">MORNING RECAP</span>
+          <span style="font:500 12px 'Hanken Grotesk';color:#a7afa7">{{ recap.date }}</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ recap.sentiment }}</span>
+          <button onClick="{{ dismissRecap }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#aab2ab;padding:2px 4px;line-height:1">✕</button>
+        </div>
+      </div>
+      <div class="fs-recap-grid" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:14px">
+        <div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#16a85f;text-transform:uppercase;margin-bottom:8px">Top Gainers · 7d</div>
+          <sc-for list="{{ recap.gainers }}" as="g" hint-placeholder-count="3">
+            <div onClick="{{ g.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer;opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ g.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ g.team }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:12px">
+                <span style="font:700 14px 'Space Grotesk'">{{ g.price }}</span>
+                <span style="font:600 12px 'Hanken Grotesk';color:#16a85f">▲ {{ g.chg }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.06em;color:#e03e3e;text-transform:uppercase;margin-bottom:8px">Biggest Drops · 7d</div>
+          <sc-for list="{{ recap.losers }}" as="l" hint-placeholder-count="3">
+            <div onClick="{{ l.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer;opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ l.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ l.team }}</span>
+              </div>
+              <div style="display:flex;flex-direction:column;align-items:flex-end;flex-shrink:0;margin-left:12px">
+                <span style="font:700 14px 'Space Grotesk'">{{ l.price }}</span>
+                <span style="font:600 12px 'Hanken Grotesk';color:#e03e3e">▼ {{ l.chg }}</span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="padding-top:12px;border-top:1px solid #f3f4f0;font:500 13px 'Hanken Grotesk';color:#46504a;line-height:1.5">{{ recap.headline }}</div>
+    </div>
+    </sc-if>
 
     <!-- filters bar -->
     <div style="margin:0 0 16px">
@@ -704,7 +754,7 @@ class Component extends DCLogic {
       filterOpen:false, filterNation:'ALL', filterTeam:'ALL', filterAgeMin:'', filterAgeMax:'', filterPriceMin:'', filterPriceMax:'',
       chartHoverIdx:null, chartDragStart:null,
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
-      showReward:false, tick:0, pendingOrders:[], ready:false,
+      showReward:false, tick:0, pendingOrders:[], ready:false, recapDismissed:false,
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
       streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
     };
@@ -2501,6 +2551,25 @@ Yan Diomande|RB Leipzig|CM|21|4
 
     // movers
     const movers=[...DB].sort((a,b)=>b.change7d-a.change7d).slice(0,4).map(decorate);
+
+    // morning recap
+    const byWk=[...DB].sort((a,b)=>b.change7d-a.change7d);
+    const recapGainers=byWk.slice(0,3).map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
+    const recapLosers=byWk.slice(-3).reverse().map(p=>{ const d=decorate(p); return {name:p.name,team:p.team,price:d.price,chg:d.wkAbs,onClick:()=>this.openPlayer(p.id)}; });
+    const upCount=DB.filter(p=>p.change7d>0).length;
+    const downCount=DB.filter(p=>p.change7d<0).length;
+    const topGainer=byWk[0], topLoser=byWk[byWk.length-1];
+    const recapDate=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+    const bullish=upCount>=downCount;
+    const recap={
+      date:recapDate,
+      sentiment:`${upCount} rising · ${downCount} falling`,
+      gainers:recapGainers,
+      losers:recapLosers,
+      headline:`${topGainer.name} leads this week's risers (+${topGainer.change7d.toFixed(1)}%), while ${topLoser.name} is the week's biggest faller (${topLoser.change7d.toFixed(1)}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up over the past 7 days.`,
+    };
+    const showRecap=!S.recapDismissed;
+    const dismissRecap=()=>this.setState({recapDismissed:true});
 
     // league chips
     const LG=[['ALL','All'],['EPL','Premier League'],['LAL','La Liga'],['SEA','Serie A'],['BUN','Bundesliga'],['LI1','Ligue 1'],['PROS','Prospects']];
