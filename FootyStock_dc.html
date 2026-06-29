@@ -55,6 +55,8 @@
 
     .fs-banner-grid{grid-template-columns:1fr!important}
     .fs-recap-grid{grid-template-columns:1fr!important}
+    .fs-profile-grid4{grid-template-columns:repeat(2,1fr)!important}
+    .fs-profile-grid3{grid-template-columns:repeat(2,1fr)!important}
     .fs-movers-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
     .fs-stats-grid{grid-template-columns:repeat(2,1fr)!important;gap:10px!important}
 
@@ -648,8 +650,11 @@
   <!-- ============ LEADERBOARD VIEW ============ -->
   <sc-if value="{{ isLeaders }}" hint-placeholder-val="{{ false }}">
   <div class="fs-page-pad" style="padding:24px 26px 0">
-    <div style="font:700 20px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 4px">Leaderboard</div>
-    <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 18px">Ranked by net worth across all traders.</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+      <div style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Leaderboard</div>
+      <button onClick="{{ goProfile }}" style="font:600 13px 'Hanken Grotesk';background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:9px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">👤 My Profile</button>
+    </div>
+    <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 18px">Ranked by net worth — click any row to view a profile.</div>
     <!-- name prompt: shown when user hasn't set a display name yet -->
     <sc-if value="{{ lbNameData.showPrompt }}" hint-placeholder-val="{{ false }}">
     <div style="background:#f0faf4;border:1px solid #b6e8cc;border-radius:14px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -669,7 +674,7 @@
     <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
       <div class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Rank</span><span>Trader</span><span style="text-align:right">Net worth</span><span style="text-align:right">Profit</span></div>
       <sc-for list="{{ leaderboard }}" as="l" hint-placeholder-count="12">
-        <div class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }}">
+        <div onClick="{{ l.onClick }}" class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }};cursor:pointer" style-hover="display:grid;grid-template-columns:60px 1fr 130px 120px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background:#fafbf8;cursor:pointer">
           <span style="font:700 15px 'Space Grotesk';color: {{ l.rankColor }}">{{ l.medal }}</span>
           <span style="display:flex;align-items:center;gap:10px"><span class="fs-avatar-badge" style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk'">{{ l.name }}</b></span>
           <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ l.netWorth }}</span>
@@ -677,6 +682,117 @@
         </div>
       </sc-for>
     </div>
+  </div>
+  </sc-if>
+
+  <!-- ============ PROFILE VIEW ============ -->
+  <sc-if value="{{ isProfile }}" hint-placeholder-val="{{ false }}">
+  <div class="fs-page-pad" style="padding:24px 26px 0">
+    <button onClick="{{ closeProfile }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#16a85f;padding:6px 0;margin-bottom:18px">← Back to leaderboard</button>
+
+    <!-- own profile: full stats -->
+    <sc-if value="{{ profileIsMe }}" hint-placeholder-val="{{ true }}">
+      <!-- header card -->
+      <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:20px;padding:26px 28px;color:#eaf3ed;display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+        <div style="width:64px;height:64px;border-radius:999px;background:#16a85f;display:flex;align-items:center;justify-content:center;font:700 22px 'Space Grotesk';color:#fff;flex-shrink:0">{{ profileInitials }}</div>
+        <div style="flex:1;min-width:0">
+          <div style="font:700 24px 'Space Grotesk';letter-spacing:-.01em">{{ profileName }}</div>
+          <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-top:3px">Member since {{ profileStats.joinDate }} · #{{ profileStats.streak }} day streak 🔥</div>
+        </div>
+        <div style="text-align:right">
+          <div style="font:600 11px 'Hanken Grotesk';color:#7fb89a;letter-spacing:.08em;text-transform:uppercase">Net worth</div>
+          <div style="font:700 32px 'Space Grotesk';letter-spacing:-.02em;margin-top:2px">{{ profileStats.nwFmt }}</div>
+        </div>
+      </div>
+
+      <!-- key numbers row -->
+      <div class="fs-profile-grid4" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:12px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">All-time P/L</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px;color: {{ profileStats.plColor }}">{{ profileStats.plFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">from §10,000 start</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">All-time peak</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.athFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">highest net worth</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Total trades</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.totalTrades }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ profileStats.totalBuys }} buys · {{ profileStats.totalSells }} sells</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Win rate</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.winRateFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">profitable open positions</div>
+        </div>
+      </div>
+
+      <!-- detail stats row -->
+      <div class="fs-profile-grid3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:12px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Stocks bought</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.totalBuyQty }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">shares across all buys</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Players traded</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.playersTraded }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">unique players ever</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Portfolio diversity</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.diversityLabel }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ profileStats.positions }} open positions</div>
+        </div>
+      </div>
+
+      <!-- bottom row: flavor stats -->
+      <div class="fs-profile-grid3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Favourite player</div>
+          <div style="font:700 16px 'Space Grotesk';margin-top:6px;line-height:1.2">{{ profileStats.favPlayer }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">most shares bought</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Best open position</div>
+          <div style="font:700 16px 'Space Grotesk';margin-top:6px;line-height:1.2">{{ profileStats.bestPLNameDisplay }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#16a85f;margin-top:2px">{{ profileStats.bestPosPctFmt }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Cash on hand</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.cashFmt }}</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">buying power</div>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- other user's profile: limited public view -->
+    <sc-if value="{{ profileIsOther }}" hint-placeholder-val="{{ false }}">
+      <div style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:20px;padding:26px 28px;color:#eaf3ed;display:flex;align-items:center;gap:20px;flex-wrap:wrap;margin-bottom:20px">
+        <div style="width:64px;height:64px;border-radius:999px;background:#2a6fdb;display:flex;align-items:center;justify-content:center;font:700 22px 'Space Grotesk';color:#fff;flex-shrink:0">{{ profileInitials }}</div>
+        <div style="flex:1">
+          <div style="font:700 24px 'Space Grotesk';letter-spacing:-.01em">{{ profileName }}</div>
+          <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-top:3px">Public profile</div>
+        </div>
+      </div>
+      <div class="fs-profile-grid3" style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:28px">
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Net worth</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileOtherNW }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">All-time P/L</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px;color: {{ profileOtherPLColor }}">{{ profileOtherPL }}</div>
+        </div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Global rank</div>
+          <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileOtherMedal }}</div>
+        </div>
+      </div>
+      <div style="text-align:center;padding:20px;font:500 13px 'Hanken Grotesk';color:#8a938c">Detailed stats are only visible to the account holder.</div>
+    </sc-if>
   </div>
   </sc-if>
 
@@ -789,8 +905,10 @@ class Component extends DCLogic {
       tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
       showReward:false, tick:0, pendingOrders:[], ready:false, recapDismissed:false,
       feedbackOpen:false, feedbackText:'', feedbackName:'', feedbackSending:false, feedbackSent:false, feedbackError:'',
+      profileViewName: null,
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
       streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
+      joinDate: saved.joinDate, allTimeHigh: saved.allTimeHigh,
     };
   }
   componentDidMount(){
@@ -865,7 +983,8 @@ class Component extends DCLogic {
       // orders fill at the next price tick, not the price shown when confirmed —
       // closes the "watch it happen on TV, buy before the price reacts" window.
       this.fillPendingOrders(DB);
-      this.setState(s=>({tick:s.tick+1}));
+      const nwNow=this.netWorth();
+      this.setState(s=>{ const ath=Math.max(s.allTimeHigh||10000,nwNow); if(ath>s.allTimeHigh) setTimeout(()=>this.persist(),0); return {tick:s.tick+1,allTimeHigh:ath}; });
     }, 9000);
     // Leaderboard: read/write Supabase directly from the browser — no worker
     // hop needed since the anon key is public and RLS handles access control.
@@ -888,11 +1007,12 @@ class Component extends DCLogic {
   // ---------- persistence ----------
   load(){
     let s=null; try{ s = JSON.parse(localStorage.getItem('footystock_v3')); }catch(e){}
-    if(!s) return { cash:10000, holdings:{}, txns:[], watch:['lamine-yamal','desire-doue','mika-godts','florian-wirtz'], streak:0, lastClaim:null, shorts:{} };
-    return { cash:s.cash??10000, holdings:s.holdings||{}, txns:s.txns||[], watch:s.watch||[], streak:s.streak||0, lastClaim:s.lastClaim||null, shorts:s.shorts||{} };
+    const today=new Date().toISOString().slice(0,10);
+    if(!s) return { cash:10000, holdings:{}, txns:[], watch:['lamine-yamal','desire-doue','mika-godts','florian-wirtz'], streak:0, lastClaim:null, shorts:{}, joinDate:today, allTimeHigh:10000 };
+    return { cash:s.cash??10000, holdings:s.holdings||{}, txns:s.txns||[], watch:s.watch||[], streak:s.streak||0, lastClaim:s.lastClaim||null, shorts:s.shorts||{}, joinDate:s.joinDate||today, allTimeHigh:s.allTimeHigh||10000 };
   }
   persist(extra){
-    const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim, shorts:this.state.shorts }, extra||{});
+    const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim, shorts:this.state.shorts, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh }, extra||{});
     try{ localStorage.setItem('footystock_v3', JSON.stringify(s)); }catch(e){}
   }
 
@@ -2527,6 +2647,53 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
   stop(e){ e.stopPropagation(); }
 
+  // ---------- profile ----------
+  openProfileView(name){ this.setState({profileViewName:name||null,view:'profile'}); }
+  closeProfileView(){ this.setState({view:'leaders',profileViewName:null}); }
+  profileStats(){
+    const S=this.state; const txns=S.txns||[];
+    const buys=txns.filter(t=>t.side==='BUY');
+    const sells=txns.filter(t=>t.side==='SELL');
+    const totalBuyQty=buys.reduce((a,t)=>a+t.qty,0);
+    const totalSellQty=sells.reduce((a,t)=>a+t.qty,0);
+    const totalBuyValue=buys.reduce((a,t)=>a+t.total,0);
+    // favorite player: most total qty bought
+    const buyByPlayer={};
+    buys.forEach(t=>{ buyByPlayer[t.id]=(buyByPlayer[t.id]||{name:t.name,qty:0}); buyByPlayer[t.id].qty+=t.qty; });
+    const favEntry=Object.values(buyByPlayer).sort((a,b)=>b.qty-a.qty)[0]||null;
+    // unique players ever traded
+    const tradedIds=new Set(txns.map(t=>t.id));
+    // current holdings analysis
+    const h=S.holdings; const DB=this.getDB();
+    let bestPL=null, bestPLName='', bestPLPct=0;
+    let worstPL=null, worstPLName='', worstPLPct=0;
+    let winCount=0, totalLong=0;
+    for(const id in h){
+      const holding=h[id]; const p=this.byId(id);
+      if(!p) continue;
+      const cur=this.curPrice(p); const pl=(cur-holding.avg)*holding.qty; const plPct=(cur-holding.avg)/holding.avg*100;
+      totalLong++;
+      if(pl>=0) winCount++;
+      if(bestPL===null||pl>bestPL){ bestPL=pl; bestPLName=p.name; bestPLPct=plPct; }
+      if(worstPL===null||pl<worstPL){ worstPL=pl; worstPLName=p.name; worstPLPct=plPct; }
+    }
+    const winRate=totalLong>0?Math.round(winCount/totalLong*100):null;
+    // portfolio diversity: unique leagues in holdings
+    const heldLeagues=new Set(Object.keys(h).map(id=>{ const p=this.byId(id); return p?p.lg:''; }).filter(Boolean));
+    const nw=this.netWorth(); const pl=nw-10000;
+    return {
+      nw, pl, plUp:pl>=0, ath:S.allTimeHigh||nw,
+      totalTrades:txns.length, totalBuys:buys.length, totalSells:sells.length,
+      totalBuyQty, totalSellQty, totalBuyValue,
+      favPlayer:favEntry?favEntry.name:'—',
+      playersTraded:tradedIds.size,
+      positions:totalLong, diversity:heldLeagues.size,
+      winRate, bestPLName, bestPLPct, worstPLName, worstPLPct,
+      streak:S.streak||0, cash:S.cash,
+      joinDate:S.joinDate||'—',
+    };
+  }
+
   // ---------- identity (leaderboard) ----------
   loadToken(){ try{ let t=localStorage.getItem('fs_token'); if(!t){ t=Math.random().toString(36).slice(2)+Date.now().toString(36); localStorage.setItem('fs_token',t); } return t; }catch(e){ return 'anon'; } }
   loadUsername(){ try{ return localStorage.getItem('fs_username')||''; }catch(e){ return ''; } }
@@ -2686,7 +2853,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     ];
 
     // nav tabs
-    const tabsDef=[['market','Market'],['articles','Articles'],['portfolio','Portfolio'],['watch','Watchlist'],['leaders','Leaderboard']];
+    const tabsDef=[['market','Market'],['articles','Articles'],['portfolio','Portfolio'],['watch','Watchlist'],['leaders','Leaderboard'],['profile','Profile']];
     const navTabs=tabsDef.map(([k,label])=>{ const on=S.view===k||(k==='market'&&S.view==='detail'); return {label,onClick:()=>this.nav(k),
       color:on?'#16201a':'#9aa39b',underline:on?'#16a85f':'transparent'}; });
 
@@ -2984,7 +3151,8 @@ Yan Diomande|RB Leipzig|CM|21|4
       return { medal:medals[rk]||String(rk), rankColor:rk<=3?'#16201a':'#aab2ab', name:x.me?(x.name+' (you)'):x.name,
         initials, avatarBg:x.me?'#16a85f':avatarColors[this.hash(x.name)%avatarColors.length],
         netWorth:this.money0(x.netWorth||10000), profit:this.money0(Math.abs(profit)), profitArrow:up?'▲':'▼', profitColor:up?GREEN:RED,
-        rowBg:x.me?'#f0faf4':'transparent' }; });
+        rowBg:x.me?'#f0faf4':'transparent',
+        onClick: x.me ? ()=>this.openProfileView(null) : ()=>this.setState({profileViewName:x.name,view:'profile'}) }; });
     const lbUsername=this.loadUsername();
     const lbNameSave=()=>{ const n=(this._lbNameDraft||'').trim(); if(!n) return; this.saveUsername(n); this._lbNameDraft=''; setTimeout(()=>this.submitScore(),100); this.setState(s=>({tick:s.tick+1})); };
     const lbNameData={ showPrompt:!lbUsername, showEdit:!!lbUsername, current:lbUsername,
@@ -3053,7 +3221,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       cashFmt:this.money(this.state.cash),
       rewardBtnLabel,rewardBtnColor,rewardBtnBg, openReward:()=>this.openReward(),
       // views
-      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders', isArticles:S.view==='articles',
+      isMarket:S.view==='market', isDetail:S.view==='detail', isPortfolio:S.view==='portfolio', isWatch:S.view==='watch', isLeaders:S.view==='leaders', isArticles:S.view==='articles', isProfile:S.view==='profile',
       // articles
       articlesAll, hasSelectedArticle, noSelectedArticle, selectedArticle, backToArticles:()=>this.setState({selectedArticleId:null}),
       hasArticles:articlesAll.length>0, noArticles:articlesAll.length===0,
@@ -3069,7 +3237,20 @@ Yan Diomande|RB Leipzig|CM|21|4
       // watch
       hasWatch:S.watch.length>0, noWatch:S.watch.length===0, watchList,
       // leaderboard
-      leaderboard, lbNameData,
+      leaderboard, lbNameData, goLeaders:()=>this.nav('leaders'),
+      // profile
+      profileIsMe: S.profileViewName===null,
+      profileName: S.profileViewName || this.loadUsername() || 'You',
+      profileLbEntry: S.profileViewName ? (lb.find(x=>x.name===S.profileViewName)||null) : null,
+      profileStats: (()=>{ if(S.profileViewName!==null) return {}; const ps=this.profileStats(); return {...ps, nwFmt:this.money(ps.nw), plFmt:(ps.plUp?'+':'')+this.money(Math.abs(ps.pl)), plColor:ps.plUp?'#16a85f':'#d23b2c', athFmt:this.money(ps.ath), cashFmt:this.money(ps.cash), winRateFmt:ps.winRate!==null?ps.winRate+'%':'—', bestPosPctFmt:ps.bestPLName?(ps.bestPLPct>=0?'+':'')+ps.bestPLPct.toFixed(1)+'%':'', bestPLNameDisplay:ps.bestPLName||'—', diversityLabel:ps.diversity+' league'+(ps.diversity!==1?'s':'')}; })(),
+      profileOtherNW: (()=>{ if(!S.profileViewName) return '—'; const e=lb.find(x=>x.name===S.profileViewName); return e?e.netWorth:'—'; })(),
+      profileOtherPL: (()=>{ if(!S.profileViewName) return '—'; const e=lb.find(x=>x.name===S.profileViewName); return e?(e.profitArrow+e.profit):'—'; })(),
+      profileOtherPLColor: (()=>{ if(!S.profileViewName) return '#8a938c'; const e=lb.find(x=>x.name===S.profileViewName); return e?e.profitColor:'#8a938c'; })(),
+      profileOtherMedal: (()=>{ if(!S.profileViewName) return '—'; const e=lb.find(x=>x.name===S.profileViewName); return e?e.medal:'—'; })(),
+      profileInitials: (S.profileViewName || this.loadUsername() || 'YO').slice(0,2).toUpperCase(),
+      profileIsOther: S.profileViewName !== null,
+      goProfile:()=>this.openProfileView(null),
+      closeProfile:()=>this.closeProfileView(),
       // trade modal
       tradeOpen:S.tradeOpen, tr, closeTrade:()=>this.closeTrade(), stop:(e)=>this.stop(e), shortsList,hasShorts,noShorts,
       // reward modal
