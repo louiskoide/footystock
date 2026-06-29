@@ -225,21 +225,20 @@
       <!-- most bought / most sold tabs -->
       <div style="padding-top:14px;border-top:1px solid #f3f4f0">
         <div style="display:flex;gap:6px;margin-bottom:12px">
-          <button onClick="{{ recapTabBought }}" style="{{ recapTabBoughtStyle }}">Most Bought</button>
-          <button onClick="{{ recapTabSold }}" style="{{ recapTabSoldStyle }}">Most Sold</button>
+          <button onClick="{{ recapTabBought }}" style="{{ recapTabBoughtStyle }}">Most Held</button>
         </div>
         <sc-if value="{{ recapShowBought }}">
           <sc-for list="{{ recap.mostBought }}" as="b" hint-placeholder-count="3">
             <div onClick="{{ b.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
               <div style="display:flex;flex-direction:column;min-width:0">
                 <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</span>
-                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ b.qty }} shares bought</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ b.qty }} holders</span>
               </div>
               <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ b.price }}</span>
             </div>
           </sc-for>
           <sc-if value="{{ recapNoBought }}">
-            <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;padding:8px 0">No buy transactions yet.</div>
+            <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;padding:8px 0">No global holders data yet.</div>
           </sc-if>
         </sc-if>
         <sc-if value="{{ recapShowSold }}">
@@ -1390,7 +1389,7 @@ class Component extends DCLogic {
     this._sbUrl=SB_URL; this._sbHdr=SB_HDR;
     const pollLeaderboard = ()=>{
       fetch(SB_URL+'?order=net_worth.desc&limit=100',{headers:SB_HDR}).then(r=>r.ok?r.json():null).then(data=>{
-        if(data){ this._liveLeaderboard=data.map(r=>({name:r.name,netWorth:r.net_worth})); this.setState(s=>({tick:s.tick+1})); }
+        if(data){ this._liveLeaderboard=data.map(r=>({name:r.name,netWorth:r.net_worth,topHoldings:r.top_holdings||[]})); this.setState(s=>({tick:s.tick+1})); }
       }).catch(()=>{});
     };
     pollLeaderboard();
@@ -3244,8 +3243,11 @@ Yan Diomande|RB Leipzig|CM|21|4
   submitScore(){
     const name=this.loadUsername(); if(!name||!this._sbUrl) return;
     const pnl=Math.round(this.tradingPnl());
+    const topH=Object.entries(this.state.holdings||{})
+      .sort((a,b)=>(b[1].qty||0)-(a[1].qty||0)).slice(0,10)
+      .map(([id,h])=>({id,qty:h.qty||0}));
     fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({token:this.loadToken(),name,net_worth:pnl,updated_at:new Date().toISOString()})}).catch(()=>{});
+      body:JSON.stringify({token:this.loadToken(),name,net_worth:pnl,top_holdings:topH,updated_at:new Date().toISOString()})}).catch(()=>{});
   }
   leaderboardData(){
     const myName=this.loadUsername()||'You';
@@ -3448,14 +3450,23 @@ Yan Diomande|RB Leipzig|CM|21|4
       const topGainer=byChg[0], topLoser=byChg[byChg.length-1];
       const recapDate=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
       const bullish=upCount>=downCount;
-      const buyTally={}, sellTally={};
-      for(const t of (S.txns||[])){
-        if(t.side==='BUY'){ buyTally[t.id]=(buyTally[t.id]||{id:t.id,name:t.name,qty:0}); buyTally[t.id].qty+=t.qty; }
-        else if(t.side==='SELL'){ sellTally[t.id]=(sellTally[t.id]||{id:t.id,name:t.name,qty:0}); sellTally[t.id].qty+=t.qty; }
+      // Global most-held: aggregate top_holdings across all leaderboard users + self
+      const globalTally={};
+      const allUsers=[...(this._liveLeaderboard||[])];
+      // include self
+      const selfH=Object.entries(S.holdings||{}).map(([id,h])=>({id,qty:h.qty||0}));
+      allUsers.push({topHoldings:selfH});
+      for(const u of allUsers){
+        for(const h of (u.topHoldings||[])){
+          if(!h.id||!h.qty) continue;
+          globalTally[h.id]=(globalTally[h.id]||{id:h.id,holders:0,qty:0});
+          globalTally[h.id].holders+=1;
+          globalTally[h.id].qty+=h.qty;
+        }
       }
-      const mkTrade=(obj)=>{ const p=DB.find(x=>x.id===obj.id); const d=p?decorate(p):null; return {name:obj.name,qty:obj.qty,price:d?d.price:'—',onClick:p?()=>this.openPlayer(p.id):()=>{}}; };
-      const mostBought=Object.values(buyTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade);
-      const mostSold=Object.values(sellTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkTrade);
+      const mkGlobal=(obj)=>{ const p=DB.find(x=>x.id===obj.id); const d=p?decorate(p):null; return {name:p?p.name:obj.id,qty:obj.holders,price:d?d.price:'—',onClick:p?()=>this.openPlayer(p.id):()=>{}}; };
+      const mostBought=Object.values(globalTally).sort((a,b)=>b.holders-a.holders).slice(0,3).map(mkGlobal);
+      const mostSold=[];
       return {
         date:recapDate,
         sentiment:`${upCount} rising · ${downCount} falling`,
