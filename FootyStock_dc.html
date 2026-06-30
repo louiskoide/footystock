@@ -4448,7 +4448,11 @@ Yan Diomande|RB Leipzig|CM|21|4
         Supa.get('club_members','club_id=eq.'+clubId+'&order=joined_at.asc'),
       ]);
       const club=clubs[0]||null;
-      this.setState({myClub:club,clubMembers:members,clubLoading:false});
+      // Skip the state update (and the full-page re-render it triggers) when
+      // nothing actually changed — otherwise the 30s poll timer rebuilds the
+      // whole DOM every cycle and jolts the page even when idle.
+      const unchanged=this.state.clubLoading===false&&JSON.stringify(club)===JSON.stringify(this.state.myClub)&&JSON.stringify(members)===JSON.stringify(this.state.clubMembers);
+      if(!unchanged) this.setState({myClub:club,clubMembers:members,clubLoading:false});
       // Pass clubId directly — setState may not flush before loadClubMessages runs.
       this.loadClubMessages(club?.id);
     }catch(e){this.setState({clubLoading:false,clubError:e.message});}
