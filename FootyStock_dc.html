@@ -903,17 +903,15 @@
               <span style="font:600 11px 'Hanken Grotesk';background:rgba(255,255,255,.12);color:#c5d9cc;padding:4px 10px;border-radius:999px">Led by {{ myClub.leader_name }}</span>
             </div>
           </div>
-          <div style="display:flex;gap:8px;flex-shrink:0">
-            <sc-if value="{{ isMyClubLeader }}"><button onClick="{{ goClubEdit }}" style="background:rgba(255,255,255,.12);border:none;color:#c5d9cc;font:600 12px 'Hanken Grotesk';padding:8px 14px;border-radius:999px;cursor:pointer">Edit settings</button></sc-if>
-            <button onClick="{{ leaveClub }}" style="background:rgba(255,255,255,.12);border:none;color:#c5d9cc;font:600 12px 'Hanken Grotesk';padding:8px 14px;border-radius:999px;cursor:pointer">Leave</button>
-          </div>
+          <button onClick="{{ leaveClub }}" style="flex-shrink:0;background:rgba(255,255,255,.12);border:none;color:#c5d9cc;font:600 12px 'Hanken Grotesk';padding:8px 14px;border-radius:999px;cursor:pointer">Leave</button>
         </div>
-        <!-- invite code (leader only) -->
+        <!-- invite code + edit settings (leader only) -->
         <sc-if value="{{ isMyClubLeader }}">
         <div style="margin-top:18px;padding-top:16px;border-top:1px solid rgba(255,255,255,.12);display:flex;align-items:center;gap:12px;flex-wrap:wrap">
           <span style="font:500 12px 'Hanken Grotesk';color:#7fb89a">Invite code:</span>
           <span style="font:700 18px 'Space Grotesk';letter-spacing:.15em;color:#fff">{{ clubInviteCode }}</span>
           <button onClick="{{ copyInviteCode }}" style="background:rgba(61,220,138,.2);border:none;color:#3ddc8a;font:600 12px 'Hanken Grotesk';padding:6px 14px;border-radius:999px;cursor:pointer">Copy</button>
+          <button onClick="{{ goClubEdit }}" style="background:rgba(255,255,255,.12);border:none;color:#c5d9cc;font:600 12px 'Hanken Grotesk';padding:6px 14px;border-radius:999px;cursor:pointer">Edit settings</button>
         </div>
         </sc-if>
       </div>
