@@ -4494,6 +4494,8 @@ Yan Diomande|RB Leipzig|CM|21|4
     try{
       await Supa.post('club_messages',{club_id:clubId,user_id:uid,display_name:dname,type,body,payload});
       await this.loadClubMessages();
+      // After sending, always scroll to bottom regardless of scroll position.
+      setTimeout(()=>{ const el=document.getElementById('club-chat-scroll'); if(el) el.scrollTop=el.scrollHeight; },50);
     }catch(e){ this.setState({clubChatSending:false,clubChatReady:false}); return; }
     this.setState({clubChatSending:false});
   }

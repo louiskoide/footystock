@@ -130,7 +130,8 @@
         if (v != null && typeof v !== 'function' && typeof v !== 'boolean') {
           node.setAttribute(name, String(v));
         } else if (typeof v === 'boolean') {
-          node.setAttribute(name, String(v));
+          if (v) node.setAttribute(name, '');
+          else node.removeAttribute(name);
         }
       } else {
         node.setAttribute(name, substitute(value, scopeStack));
