@@ -154,6 +154,26 @@ export async function decrementShares(id, qty, price) {
   } catch (e) { console.error('shares decrement error:', e.message); return { ok: false, remaining: shares.remaining, total: shares.total }; }
 }
 
+// Referral/mystery award: bypasses supply check. If remaining < qty, expands
+// total by the shortfall so the award always goes through as new issuance.
+export async function expandAndDecrementShares(id, qty, price) {
+  await ensureRow(id, price);
+  const shares = (await loadShares())[id];
+  if (!shares) return;
+  const shortfall = Math.max(0, qty - shares.remaining);
+  const newTotal = shares.total + shortfall;
+  const newRemaining = shares.remaining + shortfall - qty;
+  try {
+    const r = await sbFetch(`shares?player_id=eq.${encodeURIComponent(id)}`, {
+      method: 'PATCH',
+      headers: { ...HEADERS, 'Prefer': 'return=representation' },
+      body: JSON.stringify({ remaining: newRemaining, total: newTotal }),
+    });
+    if (!r.ok) { console.error('shares expand error:', await r.text()); return; }
+    if (cache && cache[id]) cache[id] = { remaining: newRemaining, total: newTotal };
+  } catch (e) { console.error('shares expand error:', e.message); }
+}
+
 // Increment remaining (sell/cover) — capped at total.
 export async function incrementShares(id, qty, price) {
   await ensureRow(id, price);

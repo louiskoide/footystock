@@ -13,7 +13,7 @@ import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses } from '.
 import { refreshHype } from './hype.mjs';
 import { tickDemand, recordTrade, recordHatewatch } from './demand.mjs';
 import { submitScore, getLeaderboard } from './leaderboard.mjs';
-import { loadShares, decrementShares, incrementShares, reconcileShares } from './shares.mjs';
+import { loadShares, decrementShares, incrementShares, expandAndDecrementShares, reconcileShares } from './shares.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -152,20 +152,26 @@ const server = createServer((req, res) => {
     req.on('data', chunk => { body += chunk; });
     req.on('end', async () => {
       try {
-        const { id, side, qty, price } = JSON.parse(body);
+        const { id, side, qty, price, referral } = JSON.parse(body);
         const q = typeof qty === 'number' && qty > 0 ? qty : 1;
         if (typeof id !== 'string' || !['buy', 'sell', 'hatewatch', 'cover'].includes(side)) {
           res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request'); return;
         }
         if (side === 'buy') {
-          const result = await decrementShares(id, q, price || 100);
-          if (!result.ok) {
-            res.writeHead(409, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ ok: false, reason: 'no_shares', remaining: result.remaining }));
-            return;
+          if (referral) {
+            // Referral awards are new issuance — bypass supply check, expand total if sold out.
+            await expandAndDecrementShares(id, q, price || 100);
+          } else {
+            const result = await decrementShares(id, q, price || 100);
+            if (!result.ok) {
+              res.writeHead(409, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, reason: 'no_shares', remaining: result.remaining }));
+              return;
+            }
           }
+          const sh = await loadShares();
           state.shares = state.shares || {};
-          state.shares[id] = { remaining: result.remaining, total: result.total };
+          if (sh[id]) state.shares[id] = { remaining: sh[id].remaining, total: sh[id].total };
           recordTrade(state, id, 'buy', q);
         } else if (side === 'sell') {
           await incrementShares(id, q, price || 100);
