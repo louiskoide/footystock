@@ -3702,6 +3702,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       this.saveUsername(displayName);
       this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
       setTimeout(()=>{ this.submitScore(); this.syncFromCloud(); },300);
+    }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
   }
 
   // ---------- leaderboard ----------
