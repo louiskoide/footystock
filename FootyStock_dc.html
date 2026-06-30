@@ -3665,7 +3665,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       if(emailInput&&emailInput.includes('@')) this.saveEmail(emailInput);
       const payload={token,name,password_hash:hash,net_worth:0,updated_at:new Date().toISOString()};
       const res=await fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload)});
-      if(!res.ok){ const e=await res.json().catch(()=>{}); this.setState({loginError:(e&&(e.message||e.msg))||'Signup failed.',loginSending:false}); return; }
+      if(!res.ok){ const e=await res.json().catch(()=>{}); console.error('signup fail',e); this.setState({loginError:(e&&(e.message||e.hint||e.msg||e.error))||'Signup failed ('+res.status+')',loginSending:false}); return; }
       try{ localStorage.setItem('fs_token',token); localStorage.setItem('fs_loggedin','1'); }catch(e){}
       this.saveUsername(name);
       this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
