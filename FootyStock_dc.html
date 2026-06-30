@@ -3336,8 +3336,9 @@ Yan Diomande|RB Leipzig|CM|21|4
 
       // change7d is a placeholder — actual value computed in decorate() off p.hist.
       const change7d = 0;
-      // realDays: how many real (non-synthetic) closes are stored for this player.
-      const realDays = (this._histStore?.[id]?.r?.length) || 1;
+      // realDays: how many real closes are stored (worker history preferred, then local).
+      const workerHist = this._wcLive?.priceHist?.[id];
+      const realDays = workerHist ? workerHist.length : ((this._histStore?.[id]?.r?.length) || 1);
 
       // Articles mentioning this player — only elite/notable performances get
       // a writeup (see DATA().ARTICLES), shown under the player page when
@@ -3352,6 +3353,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     db.sort((a,b)=>b.price-a.price);
     db.forEach((p,i)=>p.rank=i+1);
     this.saveHist(); // flush any newly seeded / updated history in one write
+    this.postPriceCloses(db, dayKey);
     return db;
   }
 
@@ -3443,26 +3445,37 @@ Yan Diomande|RB Leipzig|CM|21|4
     return out.slice(0,count);
   }
   priceHistory(id, todayClose, dayKey, synthHist){
-    const store=this._histStore||(this._histStore=this.loadHist());
     const close=Math.round(todayClose*100)/100;
+    // Prefer shared worker history (same for all users) over per-browser localStorage.
+    const workerRec = this._wcLive?.priceHist?.[id];
+    if(workerRec && workerRec.length){
+      const real=workerRec.map(e=>e.p);
+      if(real.length>=90) return real.slice(-90);
+      return this.histBackfill(id, real[0], 90-real.length).concat(real);
+    }
+    // Fallback: local history (used until worker has accumulated closes).
+    const store=this._histStore||(this._histStore=this.loadHist());
     let rec=store[id];
     if(!rec || !Array.isArray(rec.r) || !rec.r.length){
-      // First sight: seed with the full model-computed history (includes all
-      // match bumps) so the chart immediately shows event spikes rather than a
-      // smooth synthetic curve that hides them.
       const seed=synthHist?synthHist.map(v=>Math.round(v*100)/100):[close];
       rec={d:dayKey,r:seed}; store[id]=rec; this._histDirty=true;
     } else if(rec.d!==dayKey){
-      // a real calendar day rolled over — append today's close, keep 90 days,
-      // never touch the frozen past.
       rec.r.push(close); while(rec.r.length>90) rec.r.shift(); rec.d=dayKey; this._histDirty=true;
     } else if(rec.r[rec.r.length-1]!==close){
-      // same day, the fundamental moved — update only today's point.
       rec.r[rec.r.length-1]=close; this._histDirty=true;
     }
     const real=rec.r;
     if(real.length>=90) return real.slice(-90);
     return this.histBackfill(id, real[0], 90-real.length).concat(real);
+  }
+  postPriceCloses(db, dayKey){
+    if(!this._liveWorkerBase) return;
+    const key='_priceClosesSent_'+dayKey;
+    if(this[key]) return; // only POST once per calendar day per session
+    this[key]=true;
+    const closes={};
+    for(const p of db) closes[p.id]=p.price;
+    fetch(this._liveWorkerBase+'/price-closes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dayKey,closes})}).catch(()=>{});
   }
   byId(id){ return this.getDB().find(p=>p.id===id); }
 

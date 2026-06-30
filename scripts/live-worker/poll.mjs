@@ -285,7 +285,26 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
 }
 
 export function makeInitialState(season) {
-  return { generatedAt: null, season, teams: {}, players: {}, demand: {}, _finalPolls: new Map() };
+  return { generatedAt: null, season, teams: {}, players: {}, demand: {}, priceHist: {}, _finalPolls: new Map() };
+}
+
+// Record daily price closes sent by clients. All clients compute the same
+// price from the same worker data, so last-writer-wins per dayKey is fine.
+export function recordPriceCloses(state, closes, dayKey) {
+  if (!state.priceHist) state.priceHist = {};
+  for (const [id, price] of Object.entries(closes)) {
+    if (typeof price !== 'number' || !isFinite(price) || price <= 0) continue;
+    const p = Math.round(price * 100) / 100;
+    let arr = state.priceHist[id] || [];
+    const last = arr[arr.length - 1];
+    if (last && last.d === dayKey) {
+      last.p = p;
+    } else {
+      arr = [...arr, { d: dayKey, p }];
+      if (arr.length > 90) arr = arr.slice(-90);
+    }
+    state.priceHist[id] = arr;
+  }
 }
 
 // Public snapshot strips the internal bookkeeping (_fid, _processedFinal)
@@ -300,5 +319,5 @@ export function publicSnapshot(state) {
   for (const [id, p] of Object.entries(state.players)) {
     players[id] = { nation: (state._nationOf && state._nationOf[id]) || null, events: p.events.map(({ _fid, ...rest }) => rest) };
   }
-  return { generatedAt: state.generatedAt, season: state.season, teams, players, hype: state.hype || {}, demand: state.demand || {} };
+  return { generatedAt: state.generatedAt, season: state.season, teams, players, hype: state.hype || {}, demand: state.demand || {}, priceHist: state.priceHist || {} };
 }

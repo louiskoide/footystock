@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 import path from 'path';
 import { loadCrosswalk } from '../lib/crosswalk.mjs';
 import { makeClient } from './api-football.mjs';
-import { pollOnce, makeInitialState, publicSnapshot } from './poll.mjs';
+import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses } from './poll.mjs';
 import { refreshHype } from './hype.mjs';
 import { tickDemand, recordTrade } from './demand.mjs';
 import { submitScore, getLeaderboard } from './leaderboard.mjs';
@@ -106,6 +106,25 @@ const server = createServer((req, res) => {
           res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request'); return;
         }
         recordTrade(state, id, side);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ ok: true }));
+      } catch (e) {
+        res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request');
+      }
+    });
+    return;
+  }
+
+  if (url.pathname === '/price-closes' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const { dayKey, closes } = JSON.parse(body);
+        if (typeof dayKey !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(dayKey) || typeof closes !== 'object') {
+          res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request'); return;
+        }
+        recordPriceCloses(state, closes, dayKey);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (e) {
