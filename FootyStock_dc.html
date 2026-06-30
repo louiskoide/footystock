@@ -3528,7 +3528,7 @@ Yan Diomande|RB Leipzig|CM|21|4
   dateShort(dt){ return dt.toLocaleDateString('en-US',{month:'short',day:'numeric'}); }
   timeShort(dt){ return dt.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'}); }
   sparkPts(hist,w,h){
-    const N=Math.min(hist.length,30); const slice=hist.slice(hist.length-N);
+    const N=Math.min(hist.length,7); const slice=hist.slice(hist.length-N);
     let min=Math.min(...slice),max=Math.max(...slice); const pad=2;
     // don't auto-zoom into noise: a quiet player with near-zero movement
     // should read as a flat line, not a wild zigzag stretched to fill the chart
