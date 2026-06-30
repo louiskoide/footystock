@@ -1624,7 +1624,7 @@ class Component extends DCLogic {
       profileViewName: null,
       comments:[], commentSort:'top', commentInput:'', commentReplyTo:null, commentReplyInput:'', commentsLoading:false, commentsPlayerId:null,
       cash: 10000, holdings: {}, txns: [], watch: ['lamine-yamal','desire-doue','mika-godts','florian-wirtz'],
-      streak: 0, lastClaim: null, shorts: {},
+      streak: 0, lastClaim: null, shorts: {}, bonusCash: 0,
       joinDate: today, allTimeHigh: 10000,
       portfolioLoading: true, username: '',
       clubLoading: false, myClub: null, clubMembers: [], clubPublicList: [],
@@ -1764,7 +1764,7 @@ class Component extends DCLogic {
   _persistToCloud(s){
     if(!this._sbUrl) return;
     const token=this.loadToken(); if(!token||token==='anon') return;
-    const payload={ token, cash:s.cash, holdings:s.holdings, txns:(s.txns||[]).slice(0,500), shorts:s.shorts||{}, streak:s.streak||0, last_claim:s.lastClaim||null, join_date:s.joinDate||null, all_time_high:s.allTimeHigh||10000, updated_at:new Date().toISOString() };
+    const payload={ token, cash:s.cash, holdings:s.holdings, txns:(s.txns||[]).slice(0,500), shorts:s.shorts||{}, streak:s.streak||0, last_claim:s.lastClaim||null, join_date:s.joinDate||null, all_time_high:s.allTimeHigh||10000, bonus_cash:s.bonusCash||0, updated_at:new Date().toISOString() };
     fetch(this._sbUrl.replace('/leaderboard','/portfolios'),{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload)}).catch(()=>{});
   }
   async syncFromCloud(){
@@ -1797,7 +1797,7 @@ class Component extends DCLogic {
       }
       const r=rows[0];
       const today=new Date().toISOString().slice(0,10);
-      this.setState({ cash:r.cash??10000, holdings:r.holdings||{}, txns:r.txns||[], shorts:r.shorts||{}, streak:r.streak||0, lastClaim:r.last_claim||null, joinDate:r.join_date||today, allTimeHigh:r.all_time_high||10000, portfolioLoading:false });
+      this.setState({ cash:r.cash??10000, holdings:r.holdings||{}, txns:r.txns||[], shorts:r.shorts||{}, streak:r.streak||0, lastClaim:r.last_claim||null, joinDate:r.join_date||today, allTimeHigh:r.all_time_high||10000, bonusCash:r.bonus_cash||0, portfolioLoading:false });
       // After portfolio is loaded, check referral (for referred user) and referrer reward queue
       await this.checkPendingRef();
       const pendingRewards=r.pending_ref_rewards||0;
@@ -3679,7 +3679,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     const continues=this.state.lastClaim===this.yesterdayStr();
     const newStreak=continues?this.state.streak+1:1;
     const amt=this.rewardSchedule()[((newStreak-1)%7)];
-    this.setState({cash:this.state.cash+amt,streak:newStreak,lastClaim:this.todayStr(),showReward:false},()=>{ this.persist(); this.submitScore(); });
+    this.setState({cash:this.state.cash+amt,bonusCash:(this.state.bonusCash||0)+amt,streak:newStreak,lastClaim:this.todayStr(),showReward:false},()=>{ this.persist(); this.submitScore(); });
   }
   stop(e){ e.stopPropagation(); }
 
@@ -3809,7 +3809,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       const ref_code=token.replace(/-/g,'').slice(0,6).toUpperCase();
       const emailVal=(emailInput&&emailInput.includes('@'))?emailInput:null;
       if(emailVal) this.saveEmail(emailVal);
-      const payload={token,name,password_hash:hash,email:emailVal,ref_code,net_worth:0,updated_at:new Date().toISOString()};
+      const payload={token,name,password_hash:hash,email:emailVal,ref_code,net_worth:10000,updated_at:new Date().toISOString()};
       const res=await fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload)});
       if(!res.ok){ const e=await res.json().catch(()=>{}); console.error('signup fail',e); this.setState({loginError:(e&&(e.message||e.hint||e.msg||e.error))||'Signup failed ('+res.status+')',loginSending:false}); return; }
       try{ localStorage.setItem('fs_token',token); }catch(e){}
@@ -3936,7 +3936,7 @@ Yan Diomande|RB Leipzig|CM|21|4
   submitScore(){
     const name=this.loadUsername(); if(!name||!this._sbUrl) return;
     const trading_pnl=Math.round(this.tradingPnl());
-    const net_worth=Math.round(this.netWorth());
+    const net_worth=Math.round(this.netWorth()-(this.state.bonusCash||0));
     const topH=Object.entries(this.state.holdings||{})
       .sort((a,b)=>(b[1].qty||0)-(a[1].qty||0)).slice(0,10)
       .map(([id,h])=>({id,qty:h.qty||0}));
@@ -4066,7 +4066,7 @@ Yan Diomande|RB Leipzig|CM|21|4
         await fetch(this._sbUrl,{
           method:'POST',
           headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
-          body:JSON.stringify({token,name,net_worth:0,phone:val.trim()})
+          body:JSON.stringify({token,name,net_worth:10000,phone:val.trim()})
         });
       }
       this._myPhone=val.trim();
