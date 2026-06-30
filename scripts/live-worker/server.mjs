@@ -109,11 +109,11 @@ const server = createServer((req, res) => {
     req.on('data', chunk => { body += chunk; });
     req.on('end', () => {
       try {
-        const { id, side } = JSON.parse(body);
+        const { id, side, qty } = JSON.parse(body);
         if (typeof id !== 'string' || !['buy', 'sell'].includes(side)) {
           res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request'); return;
         }
-        recordTrade(state, id, side);
+        recordTrade(state, id, side, typeof qty === 'number' && qty > 0 ? qty : 1);
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (e) {

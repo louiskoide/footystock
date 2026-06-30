@@ -238,7 +238,7 @@
             <div onClick="{{ b.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
               <div style="display:flex;flex-direction:column;min-width:0">
                 <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</span>
-                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ b.qty }} holders</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ b.qty }} stocks held</span>
               </div>
               <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ b.price }}</span>
             </div>
@@ -252,7 +252,7 @@
             <div onClick="{{ b.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
               <div style="display:flex;flex-direction:column;min-width:0">
                 <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</span>
-                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ b.qty }} buys</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ b.qty }} stocks bought</span>
               </div>
               <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ b.price }}</span>
             </div>
@@ -266,7 +266,7 @@
             <div onClick="{{ s.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
               <div style="display:flex;flex-direction:column;min-width:0">
                 <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span>
-                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ s.qty }} sells</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ s.qty }} stocks sold</span>
               </div>
               <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ s.price }}</span>
             </div>
@@ -3716,7 +3716,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // Tell the worker about this trade so real user demand moves the shared
       // market price (same signal as virtual agents). Fire-and-forget: if the
       // worker is down, the trade still executes locally.
-      if(this._liveWorkerBase){ fetch(this._liveWorkerBase+'/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:order.id,side:order.side})}).catch(()=>{}); }
+      if(this._liveWorkerBase){ fetch(this._liveWorkerBase+'/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:order.id,side:order.side,qty:order.qty})}).catch(()=>{}); }
       // Share to club chat (fire-and-forget).
       const p2=this.byId(order.id);
       if(p2 && this.state.myClub){ this.shareTradeInChat(order.side,p2.name,order.id,order.qty,parseFloat(this.curPrice(p2).toFixed(2))); }
@@ -4373,8 +4373,8 @@ Yan Diomande|RB Leipzig|CM|21|4
           globalTally[h.id].qty+=h.qty;
         }
       }
-      const mkGlobal=(obj)=>{ const d=decoratedDB.find(x=>x.id===obj.id); return {name:d?d.name:obj.id,qty:obj.holders,price:d?d.price:'—',onClick:d?d.onClick:()=>{}}; };
-      const mostHeld=Object.values(globalTally).sort((a,b)=>b.holders-a.holders).slice(0,3).map(mkGlobal);
+      const mkGlobal=(obj)=>{ const d=decoratedDB.find(x=>x.id===obj.id); return {name:d?d.name:obj.id,qty:obj.qty,price:d?d.price:'—',onClick:d?d.onClick:()=>{}}; };
+      const mostHeld=Object.values(globalTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkGlobal);
       // Global most-bought / most-sold from the live worker's accumulated trade counters
       const tradeTotals=(this._wcLive&&this._wcLive.tradeTotals)||{buy:{},sell:{}};
       const mkTradeRow=(id,count)=>{ const d=decoratedDB.find(x=>x.id===id); return {name:d?d.name:id,qty:count,price:d?d.price:'—',onClick:d?d.onClick:()=>{}}; };
