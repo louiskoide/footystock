@@ -194,9 +194,11 @@
     if (!componentInstance) return;
     const active = document.activeElement;
     const wasInput = active && active.tagName === 'INPUT' && rootEl.contains(active);
+    const wasTextarea = active && active.tagName === 'TEXTAREA' && rootEl.contains(active);
     const activeInputId = wasInput ? active.id : null;
-    const selStart = wasInput ? active.selectionStart : null;
-    const selEnd = wasInput ? active.selectionEnd : null;
+    const activeTextareaId = wasTextarea ? active.id : null;
+    const selStart = (wasInput || wasTextarea) ? active.selectionStart : null;
+    const selEnd = (wasInput || wasTextarea) ? active.selectionEnd : null;
     const scrollEntries = captureScroll();
 
     // snapshot textarea and uncontrolled input values before wiping the DOM
@@ -227,7 +229,15 @@
       if (inp) inp.value = val;
     });
 
-    if (wasInput) {
+    if (wasTextarea) {
+      const newTa = activeTextareaId
+        ? rootEl.querySelector('textarea#' + activeTextareaId)
+        : rootEl.querySelector('textarea');
+      if (newTa) {
+        newTa.focus();
+        try { newTa.setSelectionRange(selStart, selEnd); } catch (e) {}
+      }
+    } else if (wasInput) {
       const newInput = activeInputId
         ? rootEl.querySelector('input#' + activeInputId)
         : rootEl.querySelector('input');
