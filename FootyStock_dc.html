@@ -4359,6 +4359,15 @@ Yan Diomande|RB Leipzig|CM|21|4
       packs.push({name:p.name,team:p.team,qty:3,price:this.money(price)});
     }
     this.setState({holdings,txns,mysteryOpen:true,mysteryPacks:packs},()=>{ this.persist(); });
+    // Decrement global supply for each awarded share so referral stocks
+    // count against the market cap just like normal buys.
+    if(this._liveWorkerBase){
+      for(const p of picks){
+        const price=parseFloat(this.curPrice(p).toFixed(2));
+        fetch(this._liveWorkerBase+'/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:p.id,side:'buy',qty:3,price})}).catch(()=>{});
+        if(this._wcLive){ this._wcLive.shares=this._wcLive.shares||{}; const ls=this._wcLive.shares[p.id]; const tot=ls?ls.total:Math.round(120000/Math.max(1,price)); const rem=ls?ls.remaining:tot; this._wcLive.shares[p.id]={remaining:Math.max(0,rem-3),total:tot}; }
+      }
+    }
   }
   async getReferralCount(){
     try{
