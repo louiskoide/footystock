@@ -3662,8 +3662,8 @@ Yan Diomande|RB Leipzig|CM|21|4
     try{
       const hash=await this._hashPw(pw, name.toLowerCase());
       const token=(()=>{ try{ return crypto.randomUUID(); }catch(e){ return Math.random().toString(36).slice(2)+Date.now().toString(36); } })();
+      if(emailInput&&emailInput.includes('@')) this.saveEmail(emailInput);
       const payload={token,name,password_hash:hash,net_worth:0,updated_at:new Date().toISOString()};
-      if(emailInput&&emailInput.includes('@')){ payload.email=emailInput; this.saveEmail(emailInput); }
       const res=await fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload)});
       if(!res.ok){ const e=await res.json().catch(()=>{}); this.setState({loginError:(e&&(e.message||e.msg))||'Signup failed.',loginSending:false}); return; }
       try{ localStorage.setItem('fs_token',token); localStorage.setItem('fs_loggedin','1'); }catch(e){}
@@ -3680,9 +3680,8 @@ Yan Diomande|RB Leipzig|CM|21|4
     if(!pw){ this.setState({loginError:'Enter your password.'}); return; }
     this.setState({loginError:'',loginSending:true});
     try{
-      // Look up by username or email
-      const field=input.includes('@')?'email':'name';
-      const rows=await Supa.get('leaderboard',field+'=eq.'+encodeURIComponent(input)+'&select=token,name,password_hash');
+      // Look up by username only
+      const rows=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(input)+'&select=token,name,password_hash');
       if(!rows||!rows.length){ this.setState({loginError:'Account not found.',loginSending:false}); return; }
       const row=rows[0];
       const hash=await this._hashPw(pw,(row.name||input).toLowerCase());
