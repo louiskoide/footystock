@@ -1626,9 +1626,9 @@ class Component extends DCLogic {
     setTimeout(()=>this.submitScore(), 3000);
     // clear legacy localStorage keys from pre-email-auth era
     try{ localStorage.removeItem('footystock_v3'); localStorage.removeItem('footystock_uid'); localStorage.removeItem('fs_username'); localStorage.removeItem('fs_email'); }catch(e){}
-    // one-time migration: wipe all display names from Supabase leaderboard
-    if(this._sbUrl && !localStorage.getItem('fs_names_wiped_v1')){
-      fetch(this._sbUrl+'?token=not.is.null',{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({name:''})}).then(()=>{ try{ localStorage.setItem('fs_names_wiped_v1','1'); }catch(e){} }).catch(()=>{});
+    // delete leaderboard rows with no display name (nameless accounts)
+    if(this._sbUrl && !localStorage.getItem('fs_nameless_deleted_v1')){
+      fetch(this._sbUrl+'?or=(name.is.null,name.eq.)',{method:'DELETE',headers:{...this._sbHdr}}).then(()=>{ try{ localStorage.setItem('fs_nameless_deleted_v1','1'); }catch(e){} }).catch(()=>{});
     }
     // sync portfolio from cloud (handles cross-device and cross-domain merge)
     setTimeout(()=>this.syncFromCloud(), 1000);
