@@ -4339,7 +4339,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     const DB=this.getDB(); if(!DB||!DB.length) return;
     const token=this.loadToken();
     const useSeed=seed||token;
-    const eligible=DB.filter(p=>this.curPrice(p)>=5).sort((a,b)=>this.curPrice(b)-this.curPrice(a)).slice(0,30);
+    const eligible=DB.filter(p=>this.curPrice(p)>=200).sort((a,b)=>this.curPrice(b)-this.curPrice(a)).slice(0,30);
     if(!eligible.length) return;
     // Pick 3 players, preferring those with supply remaining but never blocking
     // the award — referral shares are new issuance, not a market purchase.
