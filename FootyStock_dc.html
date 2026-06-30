@@ -3152,7 +3152,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       const stars=D.STARS[id]||null;
       const news=D.NEWS[id]||null;
       const mood=D.MOOD[id]||null;
-      const offOf=(d)=>Math.round((today-new Date('2026-'+d+'T18:00:00Z'))/86400000);
+      const offOf=(d)=>Math.round((new Date(dayKey+'T00:00:00Z')-new Date('2026-'+d+'T00:00:00Z'))/86400000);
       const sum=(arr)=>arr.reduce((a,b)=>a+b,0);
       let events=[]; let atWC=false; let wcStatus='';
       // Players with curated, confirmed individual match data (STARS) count
@@ -4645,16 +4645,20 @@ Yan Diomande|RB Leipzig|CM|21|4
           // intraday wobble is consistent across views and identical for all users.
           const STEP_H=6, TOTAL=28; // 28 steps × 6h = 7 days
           const nowSec=Math.floor(Date.now()/1000);
-          const todayMidnight=(()=>{ const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
+          const todayUTCMidnight=(()=>{ const d=new Date(); d.setUTCHours(0,0,0,0); return d.getTime(); })();
           const s=[];
           for(let i=0;i<=TOTAL;i++){
             const fromEnd=TOTAL-i;
             const tSec=nowSec-fromEnd*STEP_H*3600;
-            // Align to calendar days so the price bump appears after midnight
-            // of the match day, not offset by time-of-day.
-            const ptMidnight=(()=>{ const d=new Date(tSec*1000); d.setHours(0,0,0,0); return d.getTime(); })();
-            const daysAgo=Math.min(6,Math.round((todayMidnight-ptMidnight)/86400000));
-            const base=p.hist[N-1-daysAgo]??p.hist[0];
+            const tMs=tSec*1000;
+            const ptUTCMidnight=(()=>{ const d=new Date(tMs); d.setUTCHours(0,0,0,0); return d.getTime(); })();
+            const daysAgo=Math.min(6,Math.round((todayUTCMidnight-ptUTCMidnight)/86400000));
+            // On an event day, hold at the prev-day close until 18:00 UTC so
+            // the spike appears at/after match time rather than at midnight.
+            const tUTCHour=new Date(tMs).getUTCHours();
+            const hasEventOnDay=p.events.some(e=>e.offset===daysAgo&&e.delta!==0);
+            const effectiveDays=(hasEventOnDay&&tUTCHour<18) ? Math.min(daysAgo+1,N-1) : daysAgo;
+            const base=p.hist[N-1-effectiveDays]??p.hist[0];
             s.push(base*this.intradayMult(p,tSec));
           }
           return s; })()
@@ -4709,13 +4713,17 @@ Yan Diomande|RB Leipzig|CM|21|4
           : range===7
           ? (()=>{
               const nowSec7=Math.floor(Date.now()/1000);
-              const todayMidSec=(()=>{ const d=new Date(); d.setHours(0,0,0,0); return d.getTime()/1000; })();
+              const todayUTCMidSec=(()=>{ const d=new Date(); d.setUTCHours(0,0,0,0); return d.getTime()/1000; })();
               return p.events.filter(e=>e.offset<7).map(e=>{
-                // Find the first slice index (i) that uses the match day's close —
-                // i.e., the 6h step where tSec first crosses match midnight.
-                // Using floor() gives the first POST-midnight step.
-                const matchMidSec=todayMidSec-e.offset*86400;
-                const k=Math.max(0,Math.min(28,28-Math.floor((nowSec7-matchMidSec)/(6*3600))));
+                // Marker lands at the first 6h step on or after 18:00 UTC on match day
+                // (approximate match time), matching where the price spike begins.
+                const match18ZSec=todayUTCMidSec-e.offset*86400+18*3600;
+                let k=28;
+                for(let i=0;i<=28;i++){
+                  const tSec=nowSec7-(28-i)*6*3600;
+                  if(tSec>=match18ZSec){ k=i; break; }
+                }
+                k=Math.max(0,Math.min(28,k));
                 return {x:X(k).toFixed(1),y:Y(slice[k]).toFixed(1),ty:(Y(slice[k])+3.5).toFixed(1),r:4.5,color:e.delta>=0?GREEN:RED,icon:'',hasIcon:false};
               });
             })()
@@ -4769,7 +4777,7 @@ Yan Diomande|RB Leipzig|CM|21|4
              line1:this.money(slice[hoverIdx]), line2:pointLabel(hoverIdx), color:'#fff'};
 
         // axis labels
-        const offOf=(dStr)=>Math.round((today-new Date('2026-'+dStr+'T18:00:00Z'))/86400000);
+        const offOf=(dStr)=>Math.round((new Date(today.toISOString().slice(0,10)+'T00:00:00Z')-new Date('2026-'+dStr+'T00:00:00Z'))/86400000);
         const axisLabels=is90m
           ? [0,0.25,0.5,0.75,1].map(f=>{ const minute=Math.round(matchMinute*f); return {label:minute===0?'KO':minute===matchMinute?'now':minute+"'"}; })
           : is24h
@@ -4885,7 +4893,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     // ---- articles ----
     const D=this.DATA();
     const today0=new Date();
-    const offOf0=(d)=>Math.round((today0-new Date('2026-'+d+'T18:00:00Z'))/86400000);
+    const offOf0=(d)=>Math.round((new Date(today0.toISOString().slice(0,10)+'T00:00:00Z')-new Date('2026-'+d+'T00:00:00Z'))/86400000);
     const articleVM=(a)=>{
       const refsResolved=a.refs.map(rid=>this.byId(rid)).filter(Boolean).map(p=>({name:p.name,onClick:()=>this.openPlayer(p.id)}));
       const bodySegs=a.body.split(/(<<[^>]+>>)/).filter(Boolean).map(seg=>{
