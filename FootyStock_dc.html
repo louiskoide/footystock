@@ -3476,16 +3476,30 @@ Yan Diomande|RB Leipzig|CM|21|4
     if(sbRec && sbRec.length){
       const real=sbRec.map(e=>e.p);
       if(real.length>=90) return real.slice(-90);
-      return this.histBackfill(id, real[0], 90-real.length).concat(real);
+      const need=90-real.length;
+      // Use the match-event synthHist as backfill when available — it already
+      // ends exactly at today's price so there's no cliff at the join point.
+      // histBackfill is seeded by id/anchor and leaves a small gap by design
+      // (so 1D isn't zero), which shows as a visible jump when real.length is small.
+      if(synthHist && synthHist.length>=need){
+        const back=synthHist.slice(0,need).map(v=>Math.round(v*100)/100);
+        return back.concat(real);
+      }
+      return this.histBackfill(id, real[0], need).concat(real);
     }
     // Fallback: worker in-memory history (available within 60s of a restart).
     const workerRec = this._wcLive?.priceHist?.[id];
     if(workerRec && workerRec.length){
       const real=workerRec.map(e=>e.p);
       if(real.length>=90) return real.slice(-90);
-      return this.histBackfill(id, real[0], 90-real.length).concat(real);
+      const need=90-real.length;
+      if(synthHist && synthHist.length>=need){
+        const back=synthHist.slice(0,need).map(v=>Math.round(v*100)/100);
+        return back.concat(real);
+      }
+      return this.histBackfill(id, real[0], need).concat(real);
     }
-    // Last resort: local synthetic seed only (no real history yet).
+    // No shared history yet — use full synthHist as the seed.
     const seed=synthHist?synthHist.map(v=>Math.round(v*100)/100):[close];
     return this.histBackfill(id, seed[0], 90-seed.length).concat(seed);
   }
