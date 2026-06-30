@@ -650,6 +650,29 @@
             </div>
           </div>
         </div>
+
+        <!-- price alerts card -->
+        <div class="fs-card-pad" style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:20px 22px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+            <span style="font:600 12px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase">Price alerts</span>
+            <button onClick="{{ d.onOpenTrigger }}" style="font:600 12px 'Hanken Grotesk';color:#16a85f;background:none;border:none;cursor:pointer;padding:0">{{ d.triggerBtnLabel }}</button>
+          </div>
+          <sc-if value="{{ d.hasTriggers }}" hint-placeholder-val="{{ false }}">
+            <sc-if value="{{ d.triggerHasSellTop }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:space-between;font:500 12.5px 'Hanken Grotesk';padding:3px 0"><span style="color:#8a938c">Sell if price &ge;</span><span style="font:700 13px 'Space Grotesk';color:#16a85f">{{ d.triggerSellTop }}</span></div>
+            </sc-if>
+            <sc-if value="{{ d.triggerHasSellBottom }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:space-between;font:500 12.5px 'Hanken Grotesk';padding:3px 0"><span style="color:#8a938c">Sell if price &le;</span><span style="font:700 13px 'Space Grotesk';color:#d23b2c">{{ d.triggerSellBottom }}</span></div>
+            </sc-if>
+            <sc-if value="{{ d.triggerHasBuyAt }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:space-between;font:500 12.5px 'Hanken Grotesk';padding:3px 0"><span style="color:#8a938c">Buy {{ d.triggerBuyQty }}x if &le;</span><span style="font:700 13px 'Space Grotesk';color:#16a85f">{{ d.triggerBuyAt }}</span></div>
+            </sc-if>
+            <button onClick="{{ d.onClearTrigger }}" style="width:100%;margin-top:11px;font:600 12px 'Hanken Grotesk';color:#8a938c;background:#f5f6f3;border:none;padding:8px;border-radius:9px;cursor:pointer">Clear all alerts</button>
+          </sc-if>
+          <sc-if value="{{ d.noTriggers }}" hint-placeholder-val="{{ true }}">
+            <div style="font:500 12.5px 'Hanken Grotesk';color:#a7afa7;text-align:center;padding:4px 0">No alerts set</div>
+          </sc-if>
+        </div>
       </div>
     </div>
   </div>
@@ -1182,6 +1205,62 @@
 </div>
 </sc-if>
 
+<!-- ============ TRIGGER MODAL ============ -->
+<sc-if value="{{ triggerOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:90;background:rgba(12,20,15,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeTriggerModal }}">
+  <div onClick="{{ stop }}" class="fs-modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:440px;padding:26px;box-shadow:0 30px 80px rgba(10,20,14,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Price alerts · {{ trig.name }}</span>
+      <button onClick="{{ closeTriggerModal }}" style="background:none;border:none;cursor:pointer;font:400 22px 'Hanken Grotesk';color:#aab2ab;line-height:1">×</button>
+    </div>
+
+    <!-- auto-sell section -->
+    <div style="background:#f5f6f3;border-radius:14px;padding:16px;margin-bottom:12px">
+      <div style="font:700 13px 'Space Grotesk';letter-spacing:-.005em;margin-bottom:10px">Auto-sell</div>
+      <div style="display:flex;gap:10px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px">Top cap — sell if price &ge;</div>
+          <input type="number" value="{{ trig.editTop }}" onInput="{{ trig.onTop }}" placeholder="e.g. 150" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        </div>
+        <div style="flex:1">
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px">Bottom cap — sell if price &le;</div>
+          <input type="number" value="{{ trig.editBottom }}" onInput="{{ trig.onBottom }}" placeholder="e.g. 80" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        </div>
+      </div>
+      <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">Sells all your shares when the price hits either cap. Leave blank to skip.</div>
+    </div>
+
+    <!-- auto-buy section -->
+    <div style="background:#f5f6f3;border-radius:14px;padding:16px;margin-bottom:14px">
+      <div style="font:700 13px 'Space Grotesk';letter-spacing:-.005em;margin-bottom:10px">Auto-buy</div>
+      <div style="display:flex;gap:10px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px">Buy if price &le;</div>
+          <input type="number" value="{{ trig.editBuyAt }}" onInput="{{ trig.onBuyAt }}" placeholder="e.g. 90" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        </div>
+        <div style="flex:1">
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px">Shares to buy</div>
+          <input type="number" value="{{ trig.editBuyQty }}" onInput="{{ trig.onBuyQty }}" placeholder="1" min="1" step="1" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        </div>
+      </div>
+      <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">Buys automatically when the price drops to your target and adds the player to your watchlist.</div>
+    </div>
+
+    <div style="font:600 12.5px 'Hanken Grotesk';color:#d23b2c;min-height:16px;margin-bottom:8px">{{ trig.error }}</div>
+
+    <div style="display:flex;gap:10px">
+      <button onClick="{{ closeTriggerModal }}" style="flex:1;font:700 14px 'Hanken Grotesk';background:#f5f6f3;color:#46504a;border:none;padding:13px;border-radius:11px;cursor:pointer">Cancel</button>
+      <button onClick="{{ trig.save }}" style="flex:1;font:700 14px 'Hanken Grotesk';background: {{ trig.saveBg }};color:#fff;border:none;padding:13px;border-radius:11px;cursor: {{ trig.saveCursor }}">Save alerts</button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ TRIGGER NOTICE TOAST ============ -->
+<sc-if value="{{ triggerNotice }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ dismissTriggerNotice }}" style="position:fixed;bottom:86px;left:50%;transform:translateX(-50%);z-index:85;background:#16201a;color:#eaf3ed;font:600 13px 'Hanken Grotesk';padding:12px 20px;border-radius:13px;max-width:360px;width:max-content;text-align:center;box-shadow:0 6px 20px rgba(10,20,14,.3);cursor:pointer;white-space:pre-line">{{ triggerNotice }}</div>
+</sc-if>
+
 <!-- ============ FEEDBACK BUTTON ============ -->
 <button onClick="{{ openFeedback }}" style="position:fixed;bottom:28px;right:24px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
   <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13a2 2 0 0 1-2 2H6l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/></svg>
@@ -1298,6 +1377,10 @@ class Component extends DCLogic {
       cash: saved.cash, holdings: saved.holdings, txns: saved.txns, watch: saved.watch,
       streak: saved.streak, lastClaim: saved.lastClaim, shorts: saved.shorts,
       joinDate: saved.joinDate, allTimeHigh: saved.allTimeHigh,
+      triggers: saved.triggers,
+      triggerOpen:false, triggerId:null,
+      triggerEditTop:'', triggerEditBottom:'', triggerEditBuyAt:'', triggerEditBuyQty:'1',
+      triggerNotice:null,
       clubLoading: false, myClub: null, clubMembers: [], clubPublicList: [],
       clubView: 'home', clubMenuOpenId: null, recapTab: 'bought',
       clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
@@ -1378,6 +1461,8 @@ class Component extends DCLogic {
     this.clubTimer = setInterval(()=>{ if(this.state.myClub) this.loadMyClub(); }, 30000);
     this.timer = setInterval(()=>{
       const DB = this.getDB();
+      // Check price-triggered auto buy/sell orders before filling pending orders.
+      this.checkTriggers();
       // orders fill at the next price tick, not the price shown when confirmed —
       // closes the "watch it happen on TV, buy before the price reacts" window.
       this.fillPendingOrders(DB);
@@ -1406,11 +1491,11 @@ class Component extends DCLogic {
   load(){
     let s=null; try{ s = JSON.parse(localStorage.getItem('footystock_v3')); }catch(e){}
     const today=new Date().toISOString().slice(0,10);
-    if(!s) return { cash:10000, holdings:{}, txns:[], watch:['lamine-yamal','desire-doue','mika-godts','florian-wirtz'], streak:0, lastClaim:null, shorts:{}, joinDate:today, allTimeHigh:10000 };
-    return { cash:s.cash??10000, holdings:s.holdings||{}, txns:s.txns||[], watch:s.watch||[], streak:s.streak||0, lastClaim:s.lastClaim||null, shorts:s.shorts||{}, joinDate:s.joinDate||today, allTimeHigh:s.allTimeHigh||10000 };
+    if(!s) return { cash:10000, holdings:{}, txns:[], watch:['lamine-yamal','desire-doue','mika-godts','florian-wirtz'], streak:0, lastClaim:null, shorts:{}, joinDate:today, allTimeHigh:10000, triggers:{} };
+    return { cash:s.cash??10000, holdings:s.holdings||{}, txns:s.txns||[], watch:s.watch||[], streak:s.streak||0, lastClaim:s.lastClaim||null, shorts:s.shorts||{}, joinDate:s.joinDate||today, allTimeHigh:s.allTimeHigh||10000, triggers:s.triggers||{} };
   }
   persist(extra){
-    const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim, shorts:this.state.shorts, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh }, extra||{});
+    const s = Object.assign({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, watch:this.state.watch, streak:this.state.streak, lastClaim:this.state.lastClaim, shorts:this.state.shorts, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh, triggers:this.state.triggers }, extra||{});
     try{ localStorage.setItem('footystock_v3', JSON.stringify(s)); }catch(e){}
   }
 
@@ -3056,6 +3141,78 @@ Yan Diomande|RB Leipzig|CM|21|4
   onSearch(e){ if(e.target.classList.contains('fs-search-input')) this.setState({search:e.target.value}); }
   toggleWatch(id){ const w=this.state.watch.slice(); const i=w.indexOf(id); if(i>=0)w.splice(i,1); else w.push(id); this.setState({watch:w},()=>this.persist()); }
 
+  // ---------- price triggers ----------
+  checkTriggers(){
+    const S=this.state;
+    if(!S.triggers||!Object.keys(S.triggers).length) return;
+    const newOrders=[]; const triggersUpdate={...S.triggers};
+    let watchUpdate=null; const notices=[];
+    for(const id in S.triggers){
+      const t=S.triggers[id]; if(!t) continue;
+      const p=this.byId(id); if(!p) continue;
+      const price=this.curPrice(p); const held=S.holdings[id];
+      // Auto-sell: top cap
+      if(t.sellTop!=null && held && held.qty>0 && price>=t.sellTop){
+        newOrders.push({id,side:'sell',qty:held.qty});
+        triggersUpdate[id]={...triggersUpdate[id],sellTop:null};
+        notices.push(p.name+' auto-sold (≥'+this.money(t.sellTop)+')');
+      }
+      // Auto-sell: bottom cap — skip if a sell was already queued for this player
+      if(t.sellBottom!=null && held && held.qty>0 && price<=t.sellBottom){
+        if(!newOrders.find(o=>o.id===id&&o.side==='sell')){
+          newOrders.push({id,side:'sell',qty:held.qty});
+        }
+        triggersUpdate[id]={...triggersUpdate[id],sellBottom:null};
+        notices.push(p.name+' auto-sold (≤'+this.money(t.sellBottom)+')');
+      }
+      // Auto-buy
+      if(t.buyAt!=null && price<=t.buyAt){
+        const qty=t.buyQty||1;
+        if(price*qty<=S.cash){
+          newOrders.push({id,side:'buy',qty});
+          triggersUpdate[id]={...triggersUpdate[id],buyAt:null};
+          notices.push(p.name+' auto-bought x'+qty+' (≤'+this.money(t.buyAt)+')');
+          if(!watchUpdate) watchUpdate=S.watch.slice();
+          if(!watchUpdate.includes(id)) watchUpdate.push(id);
+        }
+      }
+      // Remove fully consumed triggers
+      const u=triggersUpdate[id];
+      if(u&&u.sellTop==null&&u.sellBottom==null&&u.buyAt==null) delete triggersUpdate[id];
+    }
+    if(!newOrders.length) return;
+    const upd={pendingOrders:S.pendingOrders.concat(newOrders),triggers:triggersUpdate,triggerNotice:notices.join('\n')};
+    if(watchUpdate) upd.watch=watchUpdate;
+    this.setState(upd,()=>this.persist());
+  }
+  openTriggerModal(id){
+    const t=this.state.triggers[id]||{};
+    this.setState({triggerOpen:true,triggerId:id,
+      triggerEditTop:t.sellTop!=null?String(t.sellTop):'',
+      triggerEditBottom:t.sellBottom!=null?String(t.sellBottom):'',
+      triggerEditBuyAt:t.buyAt!=null?String(t.buyAt):'',
+      triggerEditBuyQty:t.buyQty!=null?String(t.buyQty):'1'});
+  }
+  closeTriggerModal(){ this.setState({triggerOpen:false}); }
+  saveTrigger(){
+    const S=this.state; const id=S.triggerId; if(!id) return;
+    const sellTop=S.triggerEditTop!==''?parseFloat(S.triggerEditTop):null;
+    const sellBottom=S.triggerEditBottom!==''?parseFloat(S.triggerEditBottom):null;
+    const buyAt=S.triggerEditBuyAt!==''?parseFloat(S.triggerEditBuyAt):null;
+    const buyQty=Math.max(1,parseInt(S.triggerEditBuyQty)||1);
+    if((sellTop!=null&&isNaN(sellTop))||(sellBottom!=null&&isNaN(sellBottom))||(buyAt!=null&&isNaN(buyAt))) return;
+    if(sellTop!=null&&sellBottom!=null&&sellTop<=sellBottom) return;
+    const triggers={...S.triggers}; const watch=S.watch.slice();
+    if(sellTop==null&&sellBottom==null&&buyAt==null){ delete triggers[id]; }
+    else {
+      triggers[id]={sellTop,sellBottom,buyAt,buyQty};
+      if(buyAt!=null&&!watch.includes(id)) watch.push(id);
+    }
+    this.setState({triggers,watch,triggerOpen:false},()=>this.persist());
+  }
+  clearTrigger(id){ const triggers={...this.state.triggers}; delete triggers[id]; this.setState({triggers},()=>this.persist()); }
+  dismissTriggerNotice(){ this.setState({triggerNotice:null}); }
+
   openTrade(id,side){ const p=this.byId(id); const held=this.state.holdings[id]; const shorted=this.state.shorts[id]; if(side==='sell'&&(!held||held.qty<1))return; if(side==='cover'&&(!shorted||shorted.qty<1))return; this.setState({tradeOpen:true,tradeId:id,tradeSide:side,tradeQty:1}); }
   closeTrade(){ this.setState({tradeOpen:false}); }
   openFeedback(){ this.setState({feedbackOpen:true,feedbackSent:false,feedbackError:'',feedbackText:'',feedbackName:''}); }
@@ -3778,7 +3935,23 @@ Yan Diomande|RB Leipzig|CM|21|4
           shortAvg:S.shorts[p.id]?this.money(S.shorts[p.id].avg):'—',
           shortValue:S.shorts[p.id]?this.money(this.curPrice(p)*S.shorts[p.id].qty):'—',
           shortPl:(()=>{ const sh=S.shorts[p.id]; if(!sh) return '—'; const pl=(sh.avg-this.curPrice(p))*sh.qty; const up=pl>=0; return (up?'+':'−')+this.money(Math.abs(pl)).slice(1); })(),
-          shortPlColor:(()=>{ const sh=S.shorts[p.id]; if(!sh) return '#46504a'; return (sh.avg-this.curPrice(p))>=0?GREEN:RED; })() };
+          shortPlColor:(()=>{ const sh=S.shorts[p.id]; if(!sh) return '#46504a'; return (sh.avg-this.curPrice(p))>=0?GREEN:RED; })(),
+          // price alert triggers
+          ...(()=>{
+            const t=S.triggers[p.id]||{};
+            const hasTrig=!!(t.sellTop!=null||t.sellBottom!=null||t.buyAt!=null);
+            return {
+              hasTriggers:hasTrig, noTriggers:!hasTrig,
+              triggerBtnLabel:hasTrig?'Edit alerts':'Set alerts',
+              triggerHasSellTop:t.sellTop!=null, triggerHasSellBottom:t.sellBottom!=null, triggerHasBuyAt:t.buyAt!=null,
+              triggerSellTop:t.sellTop!=null?this.money(t.sellTop):'',
+              triggerSellBottom:t.sellBottom!=null?this.money(t.sellBottom):'',
+              triggerBuyAt:t.buyAt!=null?this.money(t.buyAt):'',
+              triggerBuyQty:t.buyQty||1,
+              onOpenTrigger:()=>this.openTriggerModal(p.id),
+              onClearTrigger:()=>this.clearTrigger(p.id),
+            };
+          })() };
       }
     }
     const rangeTabs=[['90m',"90'"],['24h','24H'],[7,'7D'],[30,'30D'],[90,'90D']]
@@ -3989,6 +4162,37 @@ Yan Diomande|RB Leipzig|CM|21|4
           cmtSortNew:()=>this.setState({commentSort:'new'}),
           cmtSortTopBg:isTop?'#16201a':'#fff', cmtSortTopColor:isTop?'#fff':'#46504a', cmtSortTopBorder:isTop?'#16201a':'#e3e6e0',
           cmtSortNewBg:!isTop?'#16201a':'#fff', cmtSortNewColor:!isTop?'#fff':'#46504a', cmtSortNewBorder:!isTop?'#16201a':'#e3e6e0',
+        };
+      })(),
+      // trigger modal
+      triggerOpen:S.triggerOpen,
+      closeTriggerModal:()=>this.closeTriggerModal(),
+      triggerNotice:S.triggerNotice, dismissTriggerNotice:()=>this.dismissTriggerNotice(),
+      trig:(()=>{
+        if(!S.triggerOpen||!S.triggerId) return {name:'',editTop:'',editBottom:'',editBuyAt:'',editBuyQty:'1',error:'',saveBg:'#b6c4bb',saveCursor:'not-allowed',onTop:()=>{},onBottom:()=>{},onBuyAt:()=>{},onBuyQty:()=>{},save:()=>{}};
+        const p=this.byId(S.triggerId);
+        const topV=S.triggerEditTop!==''?parseFloat(S.triggerEditTop):null;
+        const bottomV=S.triggerEditBottom!==''?parseFloat(S.triggerEditBottom):null;
+        const buyAtV=S.triggerEditBuyAt!==''?parseFloat(S.triggerEditBuyAt):null;
+        let error='';
+        if(topV!=null&&isNaN(topV)) error='Invalid top cap value';
+        else if(bottomV!=null&&isNaN(bottomV)) error='Invalid bottom cap value';
+        else if(buyAtV!=null&&isNaN(buyAtV)) error='Invalid buy price';
+        else if(topV!=null&&bottomV!=null&&topV<=bottomV) error='Top cap must be above bottom cap';
+        const hasAny=topV!=null||bottomV!=null||buyAtV!=null;
+        const canSave=!error;
+        return {
+          name:p?p.name:'',
+          editTop:S.triggerEditTop, editBottom:S.triggerEditBottom,
+          editBuyAt:S.triggerEditBuyAt, editBuyQty:S.triggerEditBuyQty,
+          onTop:(e)=>this.setState({triggerEditTop:e.target.value}),
+          onBottom:(e)=>this.setState({triggerEditBottom:e.target.value}),
+          onBuyAt:(e)=>this.setState({triggerEditBuyAt:e.target.value}),
+          onBuyQty:(e)=>this.setState({triggerEditBuyQty:e.target.value}),
+          save:()=>{ if(!canSave) return; this.saveTrigger(); },
+          error,
+          saveBg:canSave?'#16a85f':'#b6c4bb',
+          saveCursor:canSave?'pointer':'not-allowed',
         };
       })(),
       // trade modal
