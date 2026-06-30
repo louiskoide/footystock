@@ -4528,7 +4528,7 @@ Yan Diomande|RB Leipzig|CM|21|4
             if(liveNow){ lvl = (fromEnd>=koSteps) ? prevClose : prevClose+(base-prevClose)*(1-fromEnd/koSteps); }
             s.push(lvl*this.intradayMult(p,tSec)); }
           return s; })() : p.hist.slice(N-range);
-        const W=760,H=240,top=6;
+        const W=760,H=240,top=20;
         let min=Math.min(...slice),max=Math.max(...slice);
         if(is24h||range===7){
           min=Math.floor(min); max=Math.ceil(max);
