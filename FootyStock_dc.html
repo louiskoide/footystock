@@ -1716,7 +1716,7 @@ class Component extends DCLogic {
     // handle ?ref= referral param
     const refParam=new URLSearchParams(window.location.search).get('ref');
     if(refParam){ localStorage.setItem('fs_pending_ref',refParam); history.replaceState(null,'',window.location.pathname); }
-    if(this.loadUsername()) this.checkPendingRef();
+    // checkPendingRef is now called at the end of syncFromCloud after portfolio is loaded
     // handle ?recover= param
     const recoverParam=new URLSearchParams(window.location.search).get('recover');
     if(recoverParam){ this.setState({recoverOpen:true}); history.replaceState(null,'',window.location.pathname); }
@@ -1756,11 +1756,17 @@ class Component extends DCLogic {
       const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(token));
       if(!rows||!rows.length){
         this.setState({portfolioLoading:false});
+        // Still check referral (new user who just signed up via referral link)
+        await this.checkPendingRef();
+        this.getReferralCount();
         return;
       }
       const r=rows[0];
       const today=new Date().toISOString().slice(0,10);
       this.setState({ cash:r.cash??10000, holdings:r.holdings||{}, txns:r.txns||[], shorts:r.shorts||{}, streak:r.streak||0, lastClaim:r.last_claim||null, joinDate:r.join_date||today, allTimeHigh:r.all_time_high||10000, portfolioLoading:false });
+      // After portfolio is loaded, check referral and award referrer stocks
+      await this.checkPendingRef();
+      this.getReferralCount();
     }catch(e){ this.setState({portfolioLoading:false}); }
   }
 
@@ -3748,7 +3754,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       try{ localStorage.setItem('fs_token',token); }catch(e){}
       this.saveUsername(name);
       this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
-      setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); this.syncFromCloud(); },300);
+      setTimeout(()=>{ this.submitScore(); this.syncFromCloud(); },300);
     }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
   }
 
@@ -3878,23 +3884,25 @@ Yan Diomande|RB Leipzig|CM|21|4
     const pending=localStorage.getItem("fs_pending_ref");
     if(!pending) return;
     if(pending===this.getRefCode()){ localStorage.removeItem("fs_pending_ref"); return; }
-    if(localStorage.getItem("fs_ref_claimed")) return;
     const token=this.loadToken();
     try{
+      // Check Supabase — not localStorage — to prevent double-claiming
+      const existing=await Supa.get("referrals","referred_token=eq."+encodeURIComponent(token)+"&select=id");
+      if(existing&&existing.length){ localStorage.removeItem("fs_pending_ref"); return; }
       await Supa.post("referrals",{ref_code:pending,referred_token:token});
-      localStorage.setItem("fs_ref_claimed","1");
       localStorage.removeItem("fs_pending_ref");
-      await this.awardMysteryStocks();
-    }catch(e){ /* already claimed */ }
+      await this.awardMysteryStocks("ref_"+pending);
+    }catch(e){ /* referrals table may not exist yet or already claimed */ }
   }
-  async awardMysteryStocks(){
+  async awardMysteryStocks(seed){
     const DB=this.getDB(); if(!DB||!DB.length) return;
     const token=this.loadToken();
+    const useSeed=seed||token;
     const eligible=DB.filter(p=>this.curPrice(p)>=5).sort((a,b)=>this.curPrice(b)-this.curPrice(a)).slice(0,30);
     if(!eligible.length) return;
     const picks=[];
     for(let i=0;i<3;i++){
-      const r=this.rand01(token+"mystery"+i);
+      const r=this.rand01(useSeed+"mystery"+i);
       const idx=Math.floor(r*eligible.length);
       picks.push(eligible[idx]);
     }
@@ -3914,8 +3922,17 @@ Yan Diomande|RB Leipzig|CM|21|4
   async getReferralCount(){
     try{
       const code=this.getRefCode();
-      const rows=await Supa.get("referrals","ref_code=eq."+code+"&select=id");
+      const rows=await Supa.get("referrals","ref_code=eq."+code+"&select=id,rewarded");
       this._referralCount=rows.length;
+      // Award mystery stocks for each new referral the referrer hasn't been rewarded for yet
+      const unawarded=(rows||[]).filter(r=>!r.rewarded);
+      if(unawarded.length>0){
+        for(const r of unawarded){
+          await this.awardMysteryStocks("referrer_"+r.id);
+          // Mark rewarded so we don't double-award
+          fetch(this._sbUrl.replace('/leaderboard','/referrals')+'?id=eq.'+encodeURIComponent(r.id),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({rewarded:true})}).catch(()=>{});
+        }
+      }
       this.setState(s=>({tick:s.tick+1}));
     }catch(e){ this._referralCount=0; }
   }
