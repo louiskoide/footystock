@@ -17,6 +17,7 @@
   ::-webkit-scrollbar{width:10px;height:10px}
   ::-webkit-scrollbar-thumb{background:#cdd3cc;border-radius:6px;border:2px solid #eef0ec}
   @keyframes spin{to{transform:rotate(360deg)}}
+  @keyframes fs-login-in{0%,60%{opacity:0;pointer-events:none}100%{opacity:1}}
   @keyframes fs-ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
   @keyframes fs-pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
   @keyframes fs-fade{from{opacity:0}to{opacity:1}}
@@ -1358,7 +1359,7 @@
 
 <!-- ============ LOGIN GATE ============ -->
 <sc-if value="{{ showLoginGate }}" hint-placeholder-val="{{ false }}">
-<div style="position:fixed;inset:0;z-index:200;background:linear-gradient(160deg,#0c1f15 0%,#11321f 60%,#0a180f 100%);display:flex;align-items:center;justify-content:center;padding:24px">
+<div style="position:fixed;inset:0;z-index:200;background:linear-gradient(160deg,#0c1f15 0%,#11321f 60%,#0a180f 100%);display:flex;align-items:center;justify-content:center;padding:24px;animation:fs-login-in 0.8s ease both">
   <div style="width:100%;max-width:400px">
     <div style="text-align:center;margin-bottom:36px">
       <div style="font:800 32px 'Space Grotesk';color:#eaf3ed;letter-spacing:-.02em">FootyStock</div>
