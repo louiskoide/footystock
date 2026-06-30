@@ -1864,10 +1864,15 @@ class Component extends DCLogic {
     };
     const pollLive = ()=>{
       fetch(LIVE_WORKER_URL).then(r=>r.ok?r.json():null).then(data=>{
+        // Only force the full-app re-render (which wipes and rebuilds the entire
+        // DOM, jolting scroll position) when the snapshot actually moved forward —
+        // an unchanged generatedAt every 30s was re-rendering the whole page,
+        // including whatever tab you're on, for no visible reason.
+        const changed = data && fresher(data) && data.generatedAt !== this._wcLive?.generatedAt;
         if(data && fresher(data)){ this._wcLive = data; this._db = null; this.saveCachedLive(data); }
         this._lastFetchMs = Date.now();
         settleFirstLoad();
-        this.setState(s=>({tick:s.tick+1}));
+        if(changed) this.setState(s=>({tick:s.tick+1}));
       }).catch(()=>settleFirstLoad());
     };
     // Drive the ticker strip with requestAnimationFrame so DOM replacement
