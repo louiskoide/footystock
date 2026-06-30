@@ -4932,7 +4932,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     const avatarColors=['#16a85f','#0c1f15','#2a6fdb','#b8543a','#7a4fbf','#c98a1e','#1f8a5b','#4a5568'];
     const lbSortBy=S.lbSortBy||'netWorth';
     const leaderboard=lb.map((x,i)=>{ const rk=i+1;
-      const profit=lbSortBy==='tradingPnl'?(x.tradingPnl||0):(x.netWorth||0); const up=profit>=0;
+      const profit=x.tradingPnl||0; const up=profit>=0;
       const initials=x.me?'YOU':x.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       return { medal:medals[rk]||String(rk), rankColor:rk<=3?'#16201a':'#aab2ab', name:x.me?(x.name+' (you)'):x.name,
         initials, avatarBg:x.me?'#16a85f':avatarColors[this.hash(x.name)%avatarColors.length],
@@ -5056,7 +5056,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       lbSortPnlBg: lbSortBy==='tradingPnl'?'#16201a':'transparent', lbSortPnlColor: lbSortBy==='tradingPnl'?'#fff':'#9aa39b',
       lbSortNetWorth: ()=>this.setState({lbSortBy:'netWorth'}),
       lbSortTradingPnl: ()=>this.setState({lbSortBy:'tradingPnl'}),
-      lbColLabel: lbSortBy==='tradingPnl'?'Trading P/L':'Net Worth',
+      lbColLabel: 'Trading P/L',
       // profile
       profileIsMe: S.profileViewName===null,
       profileName: S.profileViewName || this.loadUsername() || 'You',
