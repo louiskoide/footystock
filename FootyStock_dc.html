@@ -1910,7 +1910,16 @@ class Component extends DCLogic {
       // closes the "watch it happen on TV, buy before the price reacts" window.
       this.fillPendingOrders(DB);
       const nwNow=this.netWorth();
-      this.setState(s=>{ const ath=Math.max(s.allTimeHigh||10000,nwNow); if(ath>s.allTimeHigh) setTimeout(()=>this.persist(),0); return {tick:s.tick+1,allTimeHigh:ath}; });
+      const ath=Math.max(this.state.allTimeHigh||10000,nwNow);
+      const athChanged=ath>this.state.allTimeHigh;
+      if(athChanged) setTimeout(()=>this.persist(),0);
+      // Only force the full-app re-render this causes when the current view
+      // actually shows live prices, or the all-time-high actually moved —
+      // bumping tick every 9s regardless of tab was wiping and rebuilding the
+      // whole DOM (and jolting scroll) even on screens like clubs that don't
+      // display prices at all.
+      const showsLivePrices=['market','detail','portfolio','watch'].includes(this.state.view);
+      if(showsLivePrices||athChanged) this.setState(s=>({tick:s.tick+1,allTimeHigh:ath}));
     }, 9000);
     // Leaderboard: read/write Supabase directly from the browser — no worker
     // hop needed since the anon key is public and RLS handles access control.
