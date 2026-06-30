@@ -31,6 +31,20 @@
 
   function resolve(scopeStack, path) {
     const trimmed = path.trim();
+    // Ternary: cond ? a : b  (find the ? and : at top level, not inside quotes)
+    let depth = 0, qPos = -1, cPos = -1;
+    for (let i = 0; i < trimmed.length; i++) {
+      const c = trimmed[i];
+      if (c === "'" || c === '"') { const q = c; i++; while (i < trimmed.length && trimmed[i] !== q) i++; continue; }
+      if (c === '(' || c === '[') { depth++; continue; }
+      if (c === ')' || c === ']') { depth--; continue; }
+      if (depth === 0 && c === '?' && trimmed[i+1] !== '?' && trimmed[i-1] !== '!' && trimmed[i-1] !== '=') { qPos = i; continue; }
+      if (depth === 0 && c === ':' && qPos !== -1) { cPos = i; break; }
+    }
+    if (qPos !== -1 && cPos !== -1) {
+      const cond = resolve(scopeStack, trimmed.slice(0, qPos));
+      return cond ? resolve(scopeStack, trimmed.slice(qPos + 1, cPos)) : resolve(scopeStack, trimmed.slice(cPos + 1));
+    }
     // Negation: !expr
     if (trimmed.startsWith('!')) return !resolve(scopeStack, trimmed.slice(1));
     // Equality/inequality: a === b, a !== b, a == b, a != b
@@ -49,14 +63,21 @@
       if (cmpMatch[2] === '<') return l < r;
       return l <= r;
     }
+    // String concatenation: a + b (only when one side is a string literal)
+    const plusMatch = trimmed.match(/^(.+?)\s*\+\s*(.+)$/);
+    if (plusMatch) {
+      const l = resolve(scopeStack, plusMatch[1]), r = resolve(scopeStack, plusMatch[2]);
+      if (l == null && r == null) return undefined;
+      return String(l ?? '') + String(r ?? '');
+    }
     const parts = trimmed.split('.');
     if (parts[0] === 'true') return true;
     if (parts[0] === 'false') return false;
     // Numeric literal
-    if (!isNaN(parts[0]) && parts.length === 1) return Number(parts[0]);
+    if (!isNaN(trimmed) && trimmed !== '') return Number(trimmed);
     // String literal
-    if ((parts[0].startsWith("'") && trimmed.endsWith("'")) ||
-        (parts[0].startsWith('"') && trimmed.endsWith('"'))) return trimmed.slice(1, -1);
+    if ((trimmed.startsWith("'") && trimmed.endsWith("'")) ||
+        (trimmed.startsWith('"') && trimmed.endsWith('"'))) return trimmed.slice(1, -1);
     let val;
     let found = false;
     for (let i = scopeStack.length - 1; i >= 0; i--) {

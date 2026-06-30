@@ -1007,10 +1007,8 @@
               <div style="width:28px;height:28px;border-radius:999px;background:{{ msg.avatarBg }};color:#fff;display:flex;align-items:center;justify-content:center;font:700 11px 'Space Grotesk';flex-shrink:0">{{ msg.initials }}</div>
             </sc-if>
             <div style="max-width:80%;display:flex;flex-direction:column;gap:3px;align-items:{{ msg.isMe ? 'flex-end' : 'flex-start' }}">
-              <!-- name + time (others only) -->
-              <sc-if value="{{ !msg.isMe }}">
-                <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-left:2px">{{ msg.name }} · {{ msg.timeStr }}</span>
-              </sc-if>
+              <!-- name + time -->
+              <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-right:2px">{{ msg.name }} · {{ msg.timeStr }}</span>
               <!-- text bubble -->
               <sc-if value="{{ msg.isText }}">
                 <div style="background:{{ msg.isMe ? '#16a85f' : '#f3f5f1' }};color:{{ msg.isMe ? '#fff' : '#16201a' }};border-radius:{{ msg.isMe ? '16px 16px 4px 16px' : '16px 16px 16px 4px' }};padding:10px 14px;font:500 14px 'Hanken Grotesk';line-height:1.45;word-break:break-word">{{ msg.body }}</div>
@@ -1045,10 +1043,6 @@
                   <div style="font:600 14px 'Hanken Grotesk';color:{{ msg.isMe ? '#eaf3ed' : '#16201a' }}">{{ msg.trade.player }}</div>
                   <div style="font:500 12px 'Hanken Grotesk';color:{{ msg.isMe ? '#7fb89a' : '#8a938c' }};margin-top:2px">{{ msg.trade.qty }}× @ ${{ msg.trade.price }}</div>
                 </div>
-              </sc-if>
-              <!-- timestamp (own messages) -->
-              <sc-if value="{{ msg.isMe }}">
-                <span style="font:500 11px 'Hanken Grotesk';color:#a7afa7">{{ msg.timeStr }}</span>
               </sc-if>
             </div>
           </div>
