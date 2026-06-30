@@ -4666,13 +4666,25 @@ Yan Diomande|RB Leipzig|CM|21|4
     const showRecap=DB.length>0&&!S.recapDismissed&&!isSearching;
     const recap=(()=>{
       if(!DB.length) return {date:'',sentiment:'',gainers:[],losers:[],mostHeld:[],mostBought:[],mostSold:[],noHeld:true,noBought:true,noSold:true,headline:''};
-      const byChg=[...decoratedDB].sort((a,b)=>b.wkChgNum-a.wkChgNum);
-      const recapGainers=byChg.slice(0,3).map(d=>({ name:d.name,team:d.team,price:d.price,chg:d.wkAbs,onClick:d.onClick }));
-      const recapLosers=byChg.slice(-3).reverse().map(d=>({ name:d.name,team:d.team,price:d.price,chg:d.wkAbs,onClick:d.onClick }));
-      const upCount=decoratedDB.filter(d=>d.wkChgNum>0).length;
-      const downCount=decoratedDB.filter(d=>d.wkChgNum<0).length;
+      // Use yesterday's 1-day change (hist[hN-2] vs hist[hN-3]) so the recap
+      // reflects what actually happened the previous day, not the live price.
+      const withYday=DB.map(p=>{
+        const h=p.hist; const n=h.length;
+        if(n<3) return null;
+        const yClose=h[n-2], prev=h[n-3];
+        const ydayChg=prev>0?((yClose-prev)/prev)*100:0;
+        return {p, ydayChg, yClose};
+      }).filter(Boolean);
+      if(!withYday.length) return {date:'',sentiment:'',gainers:[],losers:[],mostHeld:[],mostBought:[],mostSold:[],noHeld:true,noBought:true,noSold:true,headline:''};
+      const byChg=[...withYday].sort((a,b)=>b.ydayChg-a.ydayChg);
+      const mkRow=x=>{ const d=decoratedDB.find(dd=>dd.id===x.p.id)||{}; return {name:x.p.name,team:x.p.team,price:this.money(x.yClose),chg:Math.abs(x.ydayChg).toFixed(1)+'%',onClick:d.onClick||(() => this.openPlayer(x.p.id))}; };
+      const recapGainers=byChg.filter(x=>x.ydayChg>0).slice(0,3).map(mkRow);
+      const recapLosers=byChg.filter(x=>x.ydayChg<0).slice(-3).reverse().map(mkRow);
+      const upCount=withYday.filter(x=>x.ydayChg>0).length;
+      const downCount=withYday.filter(x=>x.ydayChg<0).length;
       const topGainer=byChg[0], topLoser=byChg[byChg.length-1];
-      const recapDate=new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+      const yday=new Date(); yday.setDate(yday.getDate()-1);
+      const recapDate=yday.toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
       const bullish=upCount>=downCount;
       // Global most-held: aggregate top_holdings across all leaderboard users + self
       const globalTally={};
@@ -4700,7 +4712,7 @@ Yan Diomande|RB Leipzig|CM|21|4
         sentiment:`${upCount} rising · ${downCount} falling`,
         gainers:recapGainers, losers:recapLosers, mostHeld, mostBought, mostSold,
         noHeld:mostHeld.length===0, noBought:mostBought.length===0, noSold:mostSold.length===0,
-        headline:`${topGainer?.name??'—'} leads the risers (+${topGainer?.wkChgNum?.toFixed(1)??0}%), while ${topLoser?.name??'—'} is the biggest faller (${topLoser?.wkChgNum?.toFixed(1)??0}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up.`,
+        headline:`${topGainer?.p?.name??'—'} led yesterday's risers (+${topGainer?.ydayChg?.toFixed(1)??0}%), while ${topLoser?.p?.name??'—'} was the biggest faller (${topLoser?.ydayChg?.toFixed(1)??0}%). The market was ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${withYday.length} stocks closed up.`,
       };
     })();
     const dismissRecap=()=>this.setState({recapDismissed:true});
