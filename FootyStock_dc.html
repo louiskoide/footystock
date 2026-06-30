@@ -69,14 +69,13 @@
     /* Watchlist: player | price | 7D | remove — hide sparkline(2) */
     .fs-row-watch{min-width:0!important;padding:10px 12px!important;gap:8px!important;grid-template-columns:minmax(0,1fr) 72px 60px 36px!important}
     .fs-row-watch>*:nth-child(2){display:none!important}
-    /* Leaderboard: rank | trader | profit — hide net worth(3) */
-    .fs-row-leader{min-width:0!important;padding:10px 12px!important;gap:10px!important;grid-template-columns:36px minmax(0,1fr) 90px!important}
-    .fs-row-leader>*:nth-child(3){display:none!important}
+    /* Leaderboard: rank | trader | P/L — show all 3 columns on mobile */
+    .fs-row-leader{min-width:0!important;padding:10px 12px!important;gap:8px!important;grid-template-columns:32px minmax(0,1fr) 78px!important}
     /* Avatar badge: switch to system font to avoid Space Grotesk glyph artifacts */
     .fs-avatar-badge{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif!important}
-    /* Events table: hide rating col(4), shrink to fit */
-    .fs-row-events{min-width:0!important;grid-template-columns:60px minmax(0,1fr) 46px 52px!important;gap:8px!important}
-    .fs-row-events>*:nth-child(5){display:none!important}
+    /* Events table: hide mins col(3), keep rating+delta — date | fixture | rating | delta */
+    .fs-row-events{min-width:0!important;grid-template-columns:55px minmax(0,1fr) 50px 58px!important;gap:6px!important}
+    .fs-row-events>*:nth-child(3){display:none!important}
     .fs-row-txn{padding:10px 12px!important}
 
     .fs-detail-grid{grid-template-columns:minmax(0,1fr)!important}
@@ -108,7 +107,7 @@
 
       <div class="fs-search-wrap" style="flex:1;max-width:380px;position:relative">
         <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#9aa39b;font-size:14px">⌕</span>
-        <input class="fs-search-input" onInput="{{ onSearch }}" placeholder="Search players, clubs…" style="width:100%;border:1px solid #e1e4dd;background:#fff;border-radius:999px;padding:10px 16px 10px 36px;font:500 14px 'Hanken Grotesk';color:#16201a;outline:none" />
+        <input id="fs-search-q" class="fs-search-input" onInput="{{ onSearch }}" placeholder="Search players, clubs…" style="width:100%;border:1px solid #e1e4dd;background:#fff;border-radius:999px;padding:10px 16px 10px 36px;font:500 14px 'Hanken Grotesk';color:#16201a;outline:none" />
       </div>
 
       <div class="fs-header-actions" style="display:flex;align-items:center;gap:10px;flex-shrink:0">
@@ -1131,10 +1130,7 @@
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin:0 2px 18px;flex-wrap:wrap;gap:8px">
       <div style="font:500 13px 'Hanken Grotesk';color:#8a938c">Click any row to view a profile.</div>
-      <div style="display:flex;background:#f0f2ee;border-radius:8px;padding:3px;gap:2px">
-        <button onClick="{{ lbSortNetWorth }}" style="font:600 12px 'Hanken Grotesk';border:none;border-radius:6px;padding:6px 12px;cursor:pointer;background:{{ lbSortNWBg }};color:{{ lbSortNWColor }}">Net Worth</button>
-        <button onClick="{{ lbSortTradingPnl }}" style="font:600 12px 'Hanken Grotesk';border:none;border-radius:6px;padding:6px 12px;cursor:pointer;background:{{ lbSortPnlBg }};color:{{ lbSortPnlColor }}">Trading P/L</button>
-      </div>
+      <div style="font:600 12px 'Hanken Grotesk';color:#16201a;background:#f0f2ee;border-radius:8px;padding:6px 12px">Trading P/L</div>
     </div>
     <!-- name prompt: shown when user hasn't set a display name yet -->
     <sc-if value="{{ lbNameData.showPrompt }}" hint-placeholder-val="{{ false }}">
@@ -1718,7 +1714,7 @@ class Component extends DCLogic {
       profileResetPwOpen: false, profileResetPwError: '', profileResetPwOk: '',
       profileLinkEmailOpen: false, profileLinkEmailError: '', profileLinkEmailOk: '',
       profileEmail: '', profileRefClaimed: false, profileRefError: '', profileRefOk: '',
-      myRefCode: '', copyRefCodeLabel: 'Copy code', lbSortBy: 'netWorth',
+      myRefCode: '', copyRefCodeLabel: 'Copy code', lbSortBy: 'tradingPnl',
     };
   }
   componentDidMount(){
@@ -4764,14 +4760,19 @@ Yan Diomande|RB Leipzig|CM|21|4
         // is the touch equivalent of mouse-move-while-hovering, so mirror the
         // mouse handlers off touch coordinates (and block page scroll while
         // dragging across the chart, since the swipe is meant for the chart).
-        const onChartTouchStart=(e)=>{ e.preventDefault(); const t=e.touches[0]; const k=idxFromClientX(t.clientX,e.currentTarget.getBoundingClientRect());
-          // If no selection active yet, start one; if one already exists, start a fresh one
+        // Cache rect at touchStart so DOM rebuilds during move don't lose it.
+        // RAF-throttle setState in move so we don't trigger a rebuild on every pixel.
+        const onChartTouchStart=(e)=>{ e.preventDefault(); const t=e.touches[0];
+          this._chartTouchRect=e.currentTarget.getBoundingClientRect();
+          this._chartMoveScheduled=false;
+          const k=idxFromClientX(t.clientX,this._chartTouchRect);
           this.setState({chartDragStart:k,chartHoverIdx:k}); };
-        const onChartTouchMove=(e)=>{ e.preventDefault(); const t=e.touches[0]; const k=idxFromClientX(t.clientX,e.currentTarget.getBoundingClientRect());
-          if(this.state.chartHoverIdx!==k) this.setState({chartHoverIdx:k}); };
-        // On touch end, keep the selection visible so the user can read the comparison.
-        // If they tapped a single point (no drag), clear the selection instead.
-        const onChartTouchEnd=()=>{
+        const onChartTouchMove=(e)=>{ e.preventDefault(); if(!this._chartTouchRect) return;
+          const t=e.touches[0]; const k=idxFromClientX(t.clientX,this._chartTouchRect);
+          if(this._chartMoveScheduled) return;
+          this._chartMoveScheduled=true;
+          requestAnimationFrame(()=>{ this._chartMoveScheduled=false; if(this.state.chartHoverIdx!==k) this.setState({chartHoverIdx:k}); }); };
+        const onChartTouchEnd=()=>{ this._chartTouchRect=null; this._chartMoveScheduled=false;
           const ds=this.state.chartDragStart, hi=this.state.chartHoverIdx;
           if(ds!=null && hi!=null && ds===hi) this.setState({chartDragStart:null,chartHoverIdx:null});
         };
@@ -5062,10 +5063,6 @@ Yan Diomande|RB Leipzig|CM|21|4
       hasWatch:S.watch.length>0, noWatch:S.watch.length===0, watchList,
       // leaderboard
       leaderboard, lbNameData, goLeaders:()=>this.nav('leaders'),
-      lbSortByNW: lbSortBy==='netWorth', lbSortByPnl: lbSortBy==='tradingPnl',
-      lbSortNWBg: lbSortBy==='netWorth'?'#16201a':'transparent', lbSortNWColor: lbSortBy==='netWorth'?'#fff':'#9aa39b',
-      lbSortPnlBg: lbSortBy==='tradingPnl'?'#16201a':'transparent', lbSortPnlColor: lbSortBy==='tradingPnl'?'#fff':'#9aa39b',
-      lbSortNetWorth: ()=>this.setState({lbSortBy:'netWorth'}),
       lbSortTradingPnl: ()=>this.setState({lbSortBy:'tradingPnl'}),
       lbColLabel: 'Trading P/L',
       // profile
