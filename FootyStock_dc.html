@@ -1017,21 +1017,24 @@
               </sc-if>
               <!-- portfolio card -->
               <sc-if value="{{ msg.isPortfolio }}">
-                <div style="background:{{ msg.isMe ? '#0c1f15' : '#f3f5f1' }};border-radius:14px;padding:14px 16px;min-width:220px">
+                <div style="background:{{ msg.isMe ? '#0c1f15' : '#f3f5f1' }};border-radius:14px;padding:14px 16px;min-width:240px">
                   <div style="font:700 12px 'Hanken Grotesk';letter-spacing:.05em;text-transform:uppercase;color:{{ msg.isMe ? '#3ddc8a' : '#16a85f' }};margin-bottom:8px">📊 Portfolio share</div>
                   <sc-for list="{{ msg.portfolio.holdings }}" as="h" hint-placeholder-count="3">
-                    <div style="display:flex;justify-content:space-between;font:500 13px 'Hanken Grotesk';color:{{ msg.isMe ? '#c5d9cc' : '#46504a' }};padding:2px 0">
+                    <div style="display:flex;justify-content:space-between;align-items:baseline;font:500 13px 'Hanken Grotesk';color:{{ msg.isMe ? '#c5d9cc' : '#46504a' }};padding:3px 0">
                       <span>{{ h.name }} <span style="color:{{ msg.isMe ? '#7fb89a' : '#8a938c' }}">×{{ h.qty }}</span></span>
-                      <span style="font-weight:600">${{ h.price }}</span>
+                      <div style="display:flex;flex-direction:column;align-items:flex-end;margin-left:10px">
+                        <span style="font-weight:600">{{ h.priceStr }}</span>
+                        <span style="font:500 11px 'Hanken Grotesk';color:{{ h.plPos ? '#3ddc8a' : '#ff5d5d' }}">{{ h.plStr }}</span>
+                      </div>
                     </div>
                   </sc-for>
                   <div style="border-top:1px solid {{ msg.isMe ? 'rgba(255,255,255,.12)' : '#e8eae4' }};margin-top:8px;padding-top:8px;display:flex;justify-content:space-between;font:600 13px 'Hanken Grotesk';color:{{ msg.isMe ? '#fff' : '#16201a' }}">
                     <span>Net worth</span>
-                    <span>${{ msg.portfolio.totalValue.toFixed(0) }}</span>
+                    <span>{{ msg.portfolio.totalValueStr }}</span>
                   </div>
-                  <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';color:{{ msg.portfolio.pnl >= 0 ? '#3ddc8a' : '#ff5d5d' }};margin-top:3px">
+                  <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';color:{{ msg.portfolio.pnlPos ? '#3ddc8a' : '#ff5d5d' }};margin-top:3px">
                     <span>P&amp;L</span>
-                    <span>{{ msg.portfolio.pnl >= 0 ? '+' : '' }}${{ msg.portfolio.pnl.toFixed(2) }}</span>
+                    <span>{{ msg.portfolio.pnlStr }}</span>
                   </div>
                 </div>
               </sc-if>
@@ -4499,11 +4502,15 @@ Yan Diomande|RB Leipzig|CM|21|4
     const DB=this.getDB(); const S=this.state;
     const holdings=Object.entries(S.holdings||{}).map(([id,h])=>{
       const p=DB.find(x=>x.id===id); if(!p||!h.qty) return null;
-      return {id,name:p.name,team:p.team,qty:h.qty,price:parseFloat(this.curPrice(p).toFixed(2))};
+      const price=parseFloat(this.curPrice(p).toFixed(2));
+      const pl=(price-h.avg)*h.qty;
+      const plSign=pl>=0?'+':'';
+      return {id,name:p.name,team:p.team,qty:h.qty,priceStr:this.money(price),plStr:plSign+this.money(pl),plPos:pl>=0};
     }).filter(Boolean);
-    const totalValue=holdings.reduce((s,h)=>s+h.qty*h.price,0)+(S.cash||0);
+    const totalValue=holdings.reduce((s,h)=>{const p=DB.find(x=>x.id===h.id);return s+(p?this.curPrice(p)*h.qty:0);},0)+(S.cash||0);
     const pnl=this.tradingPnl();
-    this.sendChatMessage('portfolio',{holdings,cash:S.cash||0,totalValue,pnl});
+    const pnlSign=pnl>=0?'+':'';
+    this.sendChatMessage('portfolio',{holdings,cash:S.cash||0,totalValueStr:this.money(totalValue),pnlStr:pnlSign+this.money(pnl),pnlPos:pnl>=0});
   }
 
   shareTradeInChat(action,playerName,playerId,qty,price){
