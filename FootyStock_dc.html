@@ -17,11 +17,10 @@
   ::-webkit-scrollbar{width:10px;height:10px}
   ::-webkit-scrollbar-thumb{background:#cdd3cc;border-radius:6px;border:2px solid #eef0ec}
   @keyframes spin{to{transform:rotate(360deg)}}
-  @keyframes fs-ticker{from{transform:translateX(0)}to{transform:translateX(-50%)}}
   @keyframes fs-pop{from{transform:scale(.96);opacity:0}to{transform:scale(1);opacity:1}}
   @keyframes fs-fade{from{opacity:0}to{opacity:1}}
   @keyframes fs-rise{from{transform:translateY(10px);opacity:0}to{transform:translateY(0);opacity:1}}
-  .fs-tape:hover{animation-play-state:paused}
+  .fs-tape:hover{cursor:pointer}
   /* sc-if/sc-for tags sit in the DOM as raw, un-interpolated {{ }} markup
      until the heavy initial DB-build script finishes and the framework's
      first render consumes and replaces them — hide them for that window
@@ -136,7 +135,7 @@
 
   <!-- ============ TICKER STRIP (from direction A) ============ -->
   <div style="overflow:hidden;background:#0a0d0b;border-bottom:1px solid #1d2622">
-    <div class="fs-tape" style="display:flex;gap:30px;white-space:nowrap;padding:9px 0;width:max-content;animation:fs-ticker 48s linear infinite;animation-delay:{{ tickerDelay }};font:500 12.5px 'Space Grotesk'">
+    <div class="fs-tape" style="display:flex;gap:30px;white-space:nowrap;padding:9px 0;width:max-content;font:500 12.5px 'Space Grotesk'">
       <sc-for list="{{ ticker }}" as="p" hint-placeholder-count="20"><span onClick="{{ p.onClick }}" style="display:inline-flex;gap:7px;align-items:center;cursor:pointer"><b style="color:#6c7a71;font-weight:600">{{ p.abbr }}</b><span style="color:#dfe5e1">{{ p.last }}</span><span style="color:#fff">{{ p.price }}</span><span style="color: {{ p.cd }};font-weight:600">{{ p.arrow }}{{ p.chg }}</span></span></sc-for>
       <sc-for list="{{ ticker }}" as="p" hint-placeholder-count="20"><span onClick="{{ p.onClick }}" style="display:inline-flex;gap:7px;align-items:center;cursor:pointer"><b style="color:#6c7a71;font-weight:600">{{ p.abbr }}</b><span style="color:#dfe5e1">{{ p.last }}</span><span style="color:#fff">{{ p.price }}</span><span style="color: {{ p.cd }};font-weight:600">{{ p.arrow }}{{ p.chg }}</span></span></sc-for>
     </div>
@@ -1751,6 +1750,20 @@ class Component extends DCLogic {
         this.setState(s=>({tick:s.tick+1}));
       }).catch(()=>settleFirstLoad());
     };
+    // Drive the ticker strip with requestAnimationFrame so DOM replacement
+    // (from sc-for re-renders) never resets its scroll position. The transform
+    // is re-applied every frame; a brief DOM swap is invisible at 60fps.
+    const TICKER_MS = 48000;
+    const tickerLoop = () => {
+      const el = document.querySelector('.fs-tape');
+      if(el && !el.matches(':hover')){
+        const pct = (Date.now() % TICKER_MS) / TICKER_MS;
+        el.style.transform = `translateX(-${pct * 50}%)`;
+      }
+      requestAnimationFrame(tickerLoop);
+    };
+    requestAnimationFrame(tickerLoop);
+
     pollLive();
     this.loadSbHist(); // load shared price history from Supabase (same for all users)
     // If we already have a cached live snapshot we can paint immediately from
@@ -4401,10 +4414,6 @@ Yan Diomande|RB Leipzig|CM|21|4
     // Decorate all players once so wkChgNum (chart-derived) drives all sorting.
     const decoratedDB = DB.map(decorate);
 
-    // ticker — animation-delay is set to the current phase of the 48s cycle so
-    // when the DOM is recreated on re-render the tape resumes from the right spot
-    // instead of jumping back to position 0.
-    const tickerDelay=`-${(Date.now()%48000)/1000}s`;
     const ticker=[...decoratedDB].sort((a,b)=>Math.abs(b.wkChgNum)-Math.abs(a.wkChgNum)).slice(0,26);
 
     // movers
@@ -4915,7 +4924,7 @@ Yan Diomande|RB Leipzig|CM|21|4
 
     return {
       // shell
-      navTabs, ticker, tickerDelay, leagueChips, marketCols, search:S.search, onSearch:(e)=>this.onSearch(e),
+      navTabs, ticker, leagueChips, marketCols, search:S.search, onSearch:(e)=>this.onSearch(e),
       filterOpen:S.filterOpen, toggleFilters:()=>this.toggleFilters(),
       nationOptions, teamOptions, activeFilterCount, hasActiveFilters,
       filterNation:S.filterNation, filterTeam:S.filterTeam,
