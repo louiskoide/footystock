@@ -6,7 +6,7 @@ import { computeRating } from './rating.mjs';
 
 const WC_LEAGUE_ID = 1;
 const LIVE_STATUSES = new Set(['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE', 'INT']);
-const FINAL_GRACE_POLLS = 3; // re-check a finished fixture this many extra times for late stat corrections
+const FINAL_GRACE_POLLS = 24; // re-check a finished fixture up to 24 times (~2h at 5-min idle) for late API stat corrections
 
 function buildFlatIndex(crosswalkPlayers) {
   return crosswalkPlayers.map(p => ({ id: p.id, name: p.name, norm: normName(p.name) }));
