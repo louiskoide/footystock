@@ -1065,7 +1065,13 @@
       <div style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Leaderboard</div>
       <button onClick="{{ goProfile }}" style="font:600 13px 'Hanken Grotesk';background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:9px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">👤 My Profile</button>
     </div>
-    <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin:0 2px 18px">Ranked by net worth — click any row to view a profile.</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin:0 2px 18px;flex-wrap:wrap;gap:8px">
+      <div style="font:500 13px 'Hanken Grotesk';color:#8a938c">Click any row to view a profile.</div>
+      <div style="display:flex;background:#f0f2ee;border-radius:8px;padding:3px;gap:2px">
+        <button onClick="{{ lbSortNetWorth }}" style="font:600 12px 'Hanken Grotesk';border:none;border-radius:6px;padding:6px 12px;cursor:pointer;background:{{ lbSortNWBg }};color:{{ lbSortNWColor }}">Net Worth</button>
+        <button onClick="{{ lbSortTradingPnl }}" style="font:600 12px 'Hanken Grotesk';border:none;border-radius:6px;padding:6px 12px;cursor:pointer;background:{{ lbSortPnlBg }};color:{{ lbSortPnlColor }}">Trading P/L</button>
+      </div>
+    </div>
     <!-- name prompt: shown when user hasn't set a display name yet -->
     <sc-if value="{{ lbNameData.showPrompt }}" hint-placeholder-val="{{ false }}">
     <div style="background:#f0faf4;border:1px solid #b6e8cc;border-radius:14px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
@@ -1083,7 +1089,7 @@
     </div>
     </sc-if>
     <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
-      <div class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Rank</span><span>Trader</span><span style="text-align:right">Trading P/L</span></div>
+      <div class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Rank</span><span>Trader</span><span style="text-align:right">{{ lbColLabel }}</span></div>
       <sc-for list="{{ leaderboard }}" as="l" hint-placeholder-count="12">
         <div onClick="{{ l.onClick }}" class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }};cursor:pointer" style-hover="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background:#fafbf8;cursor:pointer">
           <span style="font:700 15px 'Space Grotesk';color: {{ l.rankColor }}">{{ l.medal }}</span>
@@ -1633,7 +1639,7 @@ class Component extends DCLogic {
       profileResetPwOpen: false, profileResetPwError: '', profileResetPwOk: '',
       profileLinkEmailOpen: false, profileLinkEmailError: '', profileLinkEmailOk: '',
       profileEmail: '', profileRefClaimed: false, profileRefError: '', profileRefOk: '',
-      myRefCode: '', copyRefCodeLabel: 'Copy code',
+      myRefCode: '', copyRefCodeLabel: 'Copy code', lbSortBy: 'netWorth',
     };
   }
   componentDidMount(){
@@ -1722,8 +1728,8 @@ class Component extends DCLogic {
     const SB_HDR={'apikey':'sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_','Authorization':'Bearer sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_'};
     this._sbUrl=SB_URL; this._sbHdr=SB_HDR;
     const pollLeaderboard = ()=>{
-      fetch(SB_URL+'?order=net_worth.desc&limit=100',{headers:SB_HDR}).then(r=>r.ok?r.json():null).then(data=>{
-        if(data){ this._liveLeaderboard=data.map(r=>({name:r.name,netWorth:r.net_worth,topHoldings:r.top_holdings||[]})); this.setState(s=>({tick:s.tick+1})); }
+      fetch(SB_URL+'?order=net_worth.desc&limit=100&select=name,net_worth,trading_pnl,top_holdings',{headers:SB_HDR}).then(r=>r.ok?r.json():null).then(data=>{
+        if(data){ this._liveLeaderboard=data.map(r=>({name:r.name,netWorth:r.net_worth||0,tradingPnl:r.trading_pnl||0,topHoldings:r.top_holdings||[]})); this.setState(s=>({tick:s.tick+1})); }
       }).catch(()=>{});
     };
     pollLeaderboard();
@@ -3516,13 +3522,24 @@ Yan Diomande|RB Leipzig|CM|21|4
   // bonuses, referral cash, and anything else that isn't a trade.
   tradingPnl(){
     let buyTotal=0, sellTotal=0, hwTotal=0, coverTotal=0;
+    const mysteryQty={};
     for(const t of (this.state.txns||[])){
-      if(t.side==='BUY') buyTotal+=t.total||0;
-      else if(t.side==='SELL') sellTotal+=t.total||0;
+      if(t.side==='BUY'){
+        if(t.label==='MYSTERY') mysteryQty[t.id]=(mysteryQty[t.id]||0)+(t.qty||0);
+        else buyTotal+=t.total||0;
+      } else if(t.side==='SELL') sellTotal+=t.total||0;
       else if(t.side==='HATEWATCH') hwTotal+=t.total||0;
       else if(t.side==='COVER') coverTotal+=t.total||0;
     }
-    return this.holdingsValue() + sellTotal - buyTotal + hwTotal - coverTotal - this.shortsLiability();
+    // Subtract current value of still-held mystery shares so they don't inflate P&L
+    const DB=this.getDB()||[];
+    let mysteryValue=0;
+    for(const [id,mQty] of Object.entries(mysteryQty)){
+      const p=DB.find(x=>x.id===id);
+      const heldQty=Math.min(mQty,(this.state.holdings[id]||{}).qty||0);
+      if(p&&heldQty>0) mysteryValue+=this.curPrice(p)*heldQty;
+    }
+    return this.holdingsValue()+sellTotal-buyTotal+hwTotal-coverTotal-this.shortsLiability()-mysteryValue;
   }
 
   // ---------- daily reward ----------
@@ -3918,21 +3935,23 @@ Yan Diomande|RB Leipzig|CM|21|4
   // ---------- leaderboard ----------
   submitScore(){
     const name=this.loadUsername(); if(!name||!this._sbUrl) return;
-    const pnl=Math.round(this.tradingPnl());
+    const trading_pnl=Math.round(this.tradingPnl());
+    const net_worth=Math.round(this.netWorth());
     const topH=Object.entries(this.state.holdings||{})
       .sort((a,b)=>(b[1].qty||0)-(a[1].qty||0)).slice(0,10)
       .map(([id,h])=>({id,qty:h.qty||0}));
     fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({token:this.loadToken(),name,email:this.loadEmail()||null,net_worth:pnl,top_holdings:topH,updated_at:new Date().toISOString()})}).catch(()=>{});
+      body:JSON.stringify({token:this.loadToken(),name,email:this.loadEmail()||null,trading_pnl,net_worth,top_holdings:topH,updated_at:new Date().toISOString()})}).catch(()=>{});
   }
   leaderboardData(){
     const myName=this.loadUsername()||'You';
     const myPnl=Math.round(this.tradingPnl());
+    const myNw=Math.round(this.netWorth());
+    const sortBy=this.state.lbSortBy||'netWorth';
     const real=this._liveLeaderboard||[];
-    // Merge real entries with "you" — net_worth column now stores trading P&L
-    const arr=real.filter(e=>e.name!==myName).map(e=>({name:e.name,netWorth:e.netWorth}));
-    arr.push({name:myName,netWorth:myPnl,me:true});
-    arr.sort((a,b)=>b.netWorth-a.netWorth);
+    const arr=real.filter(e=>e.name!==myName).map(e=>({name:e.name,netWorth:e.netWorth||0,tradingPnl:e.tradingPnl||0}));
+    arr.push({name:myName,netWorth:myNw,tradingPnl:myPnl,me:true});
+    arr.sort((a,b)=>sortBy==='tradingPnl'?(b.tradingPnl-a.tradingPnl):(b.netWorth-a.netWorth));
     return arr;
   }
   myRank(){ const lb=this.leaderboardData(); return lb.findIndex(x=>x.me)+1; }
@@ -4692,7 +4711,9 @@ Yan Diomande|RB Leipzig|CM|21|4
     // ---- leaderboard ----
     const lb=this.leaderboardData(); const medals={1:'🥇',2:'🥈',3:'🥉'};
     const avatarColors=['#16a85f','#0c1f15','#2a6fdb','#b8543a','#7a4fbf','#c98a1e','#1f8a5b','#4a5568'];
-    const leaderboard=lb.map((x,i)=>{ const rk=i+1; const profit=x.netWorth||0; const up=profit>=0;
+    const lbSortBy=S.lbSortBy||'netWorth';
+    const leaderboard=lb.map((x,i)=>{ const rk=i+1;
+      const profit=lbSortBy==='tradingPnl'?(x.tradingPnl||0):(x.netWorth||0); const up=profit>=0;
       const initials=x.me?'YOU':x.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
       return { medal:medals[rk]||String(rk), rankColor:rk<=3?'#16201a':'#aab2ab', name:x.me?(x.name+' (you)'):x.name,
         initials, avatarBg:x.me?'#16a85f':avatarColors[this.hash(x.name)%avatarColors.length],
@@ -4801,6 +4822,12 @@ Yan Diomande|RB Leipzig|CM|21|4
       hasWatch:S.watch.length>0, noWatch:S.watch.length===0, watchList,
       // leaderboard
       leaderboard, lbNameData, goLeaders:()=>this.nav('leaders'),
+      lbSortByNW: lbSortBy==='netWorth', lbSortByPnl: lbSortBy==='tradingPnl',
+      lbSortNWBg: lbSortBy==='netWorth'?'#16201a':'transparent', lbSortNWColor: lbSortBy==='netWorth'?'#fff':'#9aa39b',
+      lbSortPnlBg: lbSortBy==='tradingPnl'?'#16201a':'transparent', lbSortPnlColor: lbSortBy==='tradingPnl'?'#fff':'#9aa39b',
+      lbSortNetWorth: ()=>this.setState({lbSortBy:'netWorth'}),
+      lbSortTradingPnl: ()=>this.setState({lbSortBy:'tradingPnl'}),
+      lbColLabel: lbSortBy==='tradingPnl'?'Trading P/L':'Net Worth',
       // profile
       profileIsMe: S.profileViewName===null,
       profileName: S.profileViewName || this.loadUsername() || 'You',
