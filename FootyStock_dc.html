@@ -3471,35 +3471,25 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
   priceHistory(id, todayClose, dayKey, synthHist){
     const close=Math.round(todayClose*100)/100;
-    // Prefer Supabase history — shared, durable, identical for all users.
+    // Supabase history — shared, durable. Only trust it once we have 2+ real
+    // days. With just 1 day the stored close may be stale (written during a match
+    // bump that has since decayed), causing a visible cliff at the chart's right edge.
     const sbRec=this._sbHist?.[id];
-    if(sbRec && sbRec.length){
-      const real=sbRec.map(e=>e.p);
-      if(real.length>=90) return real.slice(-90);
-      const need=90-real.length;
-      // Use the match-event synthHist as backfill when available — it already
-      // ends exactly at today's price so there's no cliff at the join point.
-      // histBackfill is seeded by id/anchor and leaves a small gap by design
-      // (so 1D isn't zero), which shows as a visible jump when real.length is small.
-      if(synthHist && synthHist.length>=need){
-        const back=synthHist.slice(0,need).map(v=>Math.round(v*100)/100);
-        return back.concat(real);
-      }
-      return this.histBackfill(id, real[0], need).concat(real);
+    if(sbRec && sbRec.length>=2){
+      // Always use the current computed price for today, not the stale stored value.
+      const entries=[...sbRec];
+      const last=entries[entries.length-1];
+      if(last.d===dayKey) last.p=close; else entries.push({d:dayKey,p:close});
+      const real=entries.slice(-90).map(e=>e.p);
+      if(real.length>=90) return real;
+      return this.histBackfill(id, real[0], 90-real.length).concat(real);
     }
-    // Fallback: worker in-memory history (available within 60s of a restart).
-    const workerRec = this._wcLive?.priceHist?.[id];
-    if(workerRec && workerRec.length){
-      const real=workerRec.map(e=>e.p);
-      if(real.length>=90) return real.slice(-90);
-      const need=90-real.length;
-      if(synthHist && synthHist.length>=need){
-        const back=synthHist.slice(0,need).map(v=>Math.round(v*100)/100);
-        return back.concat(real);
-      }
-      return this.histBackfill(id, real[0], need).concat(real);
+    // Fewer than 2 real days: use synthHist as the full 90-point series.
+    // synthHist is computed fresh each render so its last point always matches
+    // today's current price — no cliff possible.
+    if(synthHist && synthHist.length>=90){
+      return synthHist.slice(0,90).map(v=>Math.round(v*100)/100);
     }
-    // No shared history yet — use full synthHist as the seed.
     const seed=synthHist?synthHist.map(v=>Math.round(v*100)/100):[close];
     return this.histBackfill(id, seed[0], 90-seed.length).concat(seed);
   }
