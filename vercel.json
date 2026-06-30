@@ -1,15 +1,11 @@
 {
   "headers": [
     {
-      "source": "/(.*\\.html)",
+      "source": "/(.*)",
       "headers": [
-        { "key": "Cache-Control", "value": "no-store, must-revalidate" }
-      ]
-    },
-    {
-      "source": "/",
-      "headers": [
-        { "key": "Cache-Control", "value": "no-store, must-revalidate" }
+        { "key": "Cache-Control", "value": "no-cache, no-store, max-age=0, must-revalidate" },
+        { "key": "Pragma", "value": "no-cache" },
+        { "key": "Expires", "value": "0" }
       ]
     }
   ]
