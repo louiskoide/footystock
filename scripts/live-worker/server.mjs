@@ -12,7 +12,7 @@ import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses } from '.
 import { refreshHype } from './hype.mjs';
 import { tickDemand, recordTrade, recordHatewatch } from './demand.mjs';
 import { submitScore, getLeaderboard } from './leaderboard.mjs';
-import { loadShares, decrementShares, incrementShares } from './shares.mjs';
+import { loadShares, decrementShares, incrementShares, reconcileShares } from './shares.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -36,11 +36,14 @@ console.log(`Loaded crosswalk: ${crosswalk.length} players across ${new Set(cros
 
 const state = makeInitialState(SEASON);
 
-// Pre-load share supply into state so publicSnapshot has it from first request.
-loadShares().then(rows => {
-  state.shares = state.shares || {};
-  for (const [id, s] of Object.entries(rows)) state.shares[id] = { remaining: s.remaining, total: s.total };
-}).catch(e => console.error('shares pre-load failed:', e.message));
+// Reconcile share rows against existing portfolio holdings, then pre-load into state.
+reconcileShares()
+  .then(() => loadShares())
+  .then(rows => {
+    state.shares = state.shares || {};
+    for (const [id, s] of Object.entries(rows)) state.shares[id] = { remaining: s.remaining, total: s.total };
+  })
+  .catch(e => console.error('shares init failed:', e.message));
 
 let nextDelay = IDLE_POLL_MS;
 let lastTickAt = Date.now();

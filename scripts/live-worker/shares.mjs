@@ -41,20 +41,77 @@ export function sharesForPrice(price) {
   return Math.max(10, Math.round(MARKET_CAP_TARGET / Math.max(1, price)));
 }
 
+// Sum shares already held across all portfolios for a given player.
+async function existingHoldings(id) {
+  try {
+    const r = await sbFetch('portfolios?select=holdings');
+    if (!r.ok) return 0;
+    const rows = await r.json();
+    let total = 0;
+    for (const row of rows) {
+      if (row.holdings && row.holdings[id]) total += (row.holdings[id].qty || 0);
+    }
+    return total;
+  } catch (e) { return 0; }
+}
+
 // Seed a row if it doesn't exist yet (called lazily on first trade for that player).
+// Subtracts already-held shares so existing portfolios are reflected from day one.
 async function ensureRow(id, price) {
   if (cache && cache[id]) return;
   const total = sharesForPrice(price);
+  const held = await existingHoldings(id);
+  const remaining = Math.max(0, total - held);
   try {
     const r = await sbFetch('shares', {
       method: 'POST',
       headers: { ...HEADERS, 'Prefer': 'resolution=ignore-duplicates' },
-      body: JSON.stringify({ player_id: id, remaining: total, total }),
+      body: JSON.stringify({ player_id: id, remaining, total }),
     });
     if (!r.ok && r.status !== 409) console.error('shares seed error:', await r.text());
     if (!cache) cache = {};
-    if (!cache[id]) cache[id] = { remaining: total, total };
+    if (!cache[id]) cache[id] = { remaining, total };
   } catch (e) { console.error('shares seed error:', e.message); }
+}
+
+// Reconcile all existing share rows against current portfolio holdings.
+// Call once on worker startup to fix any rows that were seeded before
+// existing holdings were accounted for.
+export async function reconcileShares() {
+  try {
+    const [sharesResp, portfoliosResp] = await Promise.all([
+      sbFetch('shares?select=player_id,remaining,total'),
+      sbFetch('portfolios?select=holdings'),
+    ]);
+    if (!sharesResp.ok || !portfoliosResp.ok) return;
+    const shareRows = await sharesResp.json();
+    const portfolios = await portfoliosResp.json();
+
+    // Sum held per player across all portfolios
+    const heldMap = {};
+    for (const row of portfolios) {
+      if (!row.holdings) continue;
+      for (const [pid, h] of Object.entries(row.holdings)) {
+        heldMap[pid] = (heldMap[pid] || 0) + (h.qty || 0);
+      }
+    }
+
+    // Fix any row where remaining + held != total
+    for (const row of shareRows) {
+      const held = heldMap[row.player_id] || 0;
+      const correct = Math.max(0, row.total - held);
+      if (correct !== row.remaining) {
+        await sbFetch(`shares?player_id=eq.${encodeURIComponent(row.player_id)}`, {
+          method: 'PATCH',
+          headers: { ...HEADERS, 'Prefer': 'return=minimal' },
+          body: JSON.stringify({ remaining: correct }),
+        });
+        if (cache && cache[row.player_id]) cache[row.player_id].remaining = correct;
+        console.log(`shares reconcile: ${row.player_id} ${row.remaining}→${correct} (${held} held)`);
+      }
+    }
+    cacheLoadedAt = 0; // force refresh after reconcile
+  } catch (e) { console.error('shares reconcile error:', e.message); }
 }
 
 // Attempt to decrement remaining by qty. Returns { ok, remaining } after the operation.
