@@ -689,6 +689,9 @@
             <sc-if value="{{ d.triggerHasBuyAt }}" hint-placeholder-val="{{ false }}">
               <div style="display:flex;justify-content:space-between;font:500 12.5px 'Hanken Grotesk';padding:3px 0"><span style="color:#8a938c">Buy {{ d.triggerBuyQty }}x if &le;</span><span style="font:700 13px 'Space Grotesk';color:#16a85f">{{ d.triggerBuyAt }}</span></div>
             </sc-if>
+            <sc-if value="{{ d.triggerHasHatewatchAt }}" hint-placeholder-val="{{ false }}">
+              <div style="display:flex;justify-content:space-between;font:500 12.5px 'Hanken Grotesk';padding:3px 0"><span style="color:#8a938c">Hatewatch {{ d.triggerHatewatchQty }}x if &ge;</span><span style="font:700 13px 'Space Grotesk';color:#d23b2c">{{ d.triggerHatewatchAt }}</span></div>
+            </sc-if>
             <button onClick="{{ d.onClearTrigger }}" style="width:100%;margin-top:11px;font:600 12px 'Hanken Grotesk';color:#8a938c;background:#f5f6f3;border:none;padding:8px;border-radius:9px;cursor:pointer">Clear all alerts</button>
           </sc-if>
           <sc-if value="{{ d.noTriggers }}" hint-placeholder-val="{{ true }}">
@@ -1434,49 +1437,69 @@
 <!-- ============ TRIGGER MODAL ============ -->
 <sc-if value="{{ triggerOpen }}" hint-placeholder-val="{{ false }}">
 <div style="position:fixed;inset:0;z-index:90;background:rgba(12,20,15,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeTriggerModal }}">
-  <div onClick="{{ stop }}" class="fs-modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:440px;padding:26px;box-shadow:0 30px 80px rgba(10,20,14,.3)">
+  <div onClick="{{ stop }}" class="fs-modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:460px;padding:26px;box-shadow:0 30px 80px rgba(10,20,14,.3);max-height:90vh;overflow-y:auto">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
       <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Price alerts · {{ trig.name }}</span>
       <button onClick="{{ closeTriggerModal }}" style="background:none;border:none;cursor:pointer;font:400 22px 'Hanken Grotesk';color:#aab2ab;line-height:1">×</button>
     </div>
 
     <!-- auto-sell section -->
-    <div style="background:#f5f6f3;border-radius:14px;padding:16px;margin-bottom:12px">
+    <div style="background:#f5f6f3;border-radius:14px;padding:16px;margin-bottom:10px">
       <div style="font:700 13px 'Space Grotesk';letter-spacing:-.005em;margin-bottom:10px">Auto-sell</div>
-      <div style="display:flex;gap:10px;margin-bottom:8px">
-        <div style="flex:1">
-          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px">Top cap — sell if price &ge;</div>
-          <input type="number" value="{{ trig.editTop }}" onInput="{{ trig.onTop }}" placeholder="e.g. 150" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+      <div style="display:grid;grid-template-columns:1fr 1fr 72px;gap:8px;align-items:end;margin-bottom:6px">
+        <div>
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:4px">Sell if price &ge; (top cap)</div>
+          <input id="fs-trig-sell-top" type="number" placeholder="e.g. 150" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
         </div>
-        <div style="flex:1">
-          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px">Bottom cap — sell if price &le;</div>
-          <input type="number" value="{{ trig.editBottom }}" onInput="{{ trig.onBottom }}" placeholder="e.g. 80" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        <div>
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:4px">Sell if price &le; (bottom cap)</div>
+          <input id="fs-trig-sell-bottom" type="number" placeholder="e.g. 80" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        </div>
+        <div>
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:4px">Shares</div>
+          <input id="fs-trig-sell-qty" type="number" placeholder="All" min="1" step="1" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
         </div>
       </div>
-      <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">Sells all your shares when the price hits either cap. Leave blank to skip.</div>
+      <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">Auto-sells when the price hits either cap. Shares blank = sell all. Leave price blank to skip that cap.</div>
     </div>
 
     <!-- auto-buy section -->
-    <div style="background:#f5f6f3;border-radius:14px;padding:16px;margin-bottom:14px">
+    <div style="background:#f5f6f3;border-radius:14px;padding:16px;margin-bottom:10px">
       <div style="font:700 13px 'Space Grotesk';letter-spacing:-.005em;margin-bottom:10px">Auto-buy</div>
-      <div style="display:flex;gap:10px;margin-bottom:8px">
-        <div style="flex:1">
-          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px">Buy if price &le;</div>
-          <input type="number" value="{{ trig.editBuyAt }}" onInput="{{ trig.onBuyAt }}" placeholder="e.g. 90" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+      <div style="display:grid;grid-template-columns:1fr 72px;gap:8px;align-items:end;margin-bottom:6px">
+        <div>
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:4px">Buy if price &le;</div>
+          <input id="fs-trig-buy-at" type="number" placeholder="e.g. 90" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
         </div>
-        <div style="flex:1">
-          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px">Shares to buy</div>
-          <input type="number" value="{{ trig.editBuyQty }}" onInput="{{ trig.onBuyQty }}" placeholder="1" min="1" step="1" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        <div>
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:4px">Shares</div>
+          <input id="fs-trig-buy-qty" type="number" placeholder="1" min="1" step="1" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
         </div>
       </div>
-      <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">Buys automatically when the price drops to your target and adds the player to your watchlist.</div>
+      <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">Buys when price drops to target. Also adds player to watchlist.</div>
+    </div>
+
+    <!-- auto-hatewatch section -->
+    <div style="background:#fff5f5;border:1px solid #fde8e7;border-radius:14px;padding:16px;margin-bottom:14px">
+      <div style="font:700 13px 'Space Grotesk';letter-spacing:-.005em;color:#b91c1c;margin-bottom:10px">Auto-hatewatch</div>
+      <div style="display:grid;grid-template-columns:1fr 72px;gap:8px;align-items:end;margin-bottom:6px">
+        <div>
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:4px">Short if price &ge;</div>
+          <input id="fs-trig-hw-at" type="number" placeholder="e.g. 120" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #fca5a5;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        </div>
+        <div>
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:4px">Shares</div>
+          <input id="fs-trig-hw-qty" type="number" placeholder="1" min="1" step="1" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #fca5a5;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        </div>
+      </div>
+      <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">Opens a hatewatch (short) position when price rises to target. Requires 1× collateral.</div>
     </div>
 
     <div style="font:600 12.5px 'Hanken Grotesk';color:#d23b2c;min-height:16px;margin-bottom:8px">{{ trig.error }}</div>
 
     <div style="display:flex;gap:10px">
       <button onClick="{{ closeTriggerModal }}" style="flex:1;font:700 14px 'Hanken Grotesk';background:#f5f6f3;color:#46504a;border:none;padding:13px;border-radius:11px;cursor:pointer">Cancel</button>
-      <button onClick="{{ trig.save }}" style="flex:1;font:700 14px 'Hanken Grotesk';background: {{ trig.saveBg }};color:#fff;border:none;padding:13px;border-radius:11px;cursor: {{ trig.saveCursor }}">Save alerts</button>
+      <button onClick="{{ trig.save }}" style="flex:1;font:700 14px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:13px;border-radius:11px;cursor:pointer">Save alerts</button>
     </div>
   </div>
 </div>
@@ -3824,14 +3847,16 @@ Yan Diomande|RB Leipzig|CM|21|4
       const price=this.curPrice(p); const held=S.holdings[id];
       // Auto-sell: top cap
       if(t.sellTop!=null && held && held.qty>0 && price>=t.sellTop){
-        newOrders.push({id,side:'sell',qty:held.qty});
+        const qty=t.sellQty!=null?Math.min(t.sellQty,held.qty):held.qty;
+        newOrders.push({id,side:'sell',qty});
         triggersUpdate[id]={...triggersUpdate[id],sellTop:null};
-        notices.push(p.name+' auto-sold (≥'+this.money(t.sellTop)+')');
+        notices.push(p.name+' auto-sold '+qty+'x (≥'+this.money(t.sellTop)+')');
       }
       // Auto-sell: bottom cap — skip if a sell was already queued for this player
       if(t.sellBottom!=null && held && held.qty>0 && price<=t.sellBottom){
         if(!newOrders.find(o=>o.id===id&&o.side==='sell')){
-          newOrders.push({id,side:'sell',qty:held.qty});
+          const qty=t.sellQty!=null?Math.min(t.sellQty,held.qty):held.qty;
+          newOrders.push({id,side:'sell',qty});
         }
         triggersUpdate[id]={...triggersUpdate[id],sellBottom:null};
         notices.push(p.name+' auto-sold (≤'+this.money(t.sellBottom)+')');
@@ -3847,9 +3872,18 @@ Yan Diomande|RB Leipzig|CM|21|4
           if(!watchUpdate.includes(id)) watchUpdate.push(id);
         }
       }
+      // Auto-hatewatch
+      if(t.hatewatchAt!=null && price>=t.hatewatchAt){
+        const qty=t.hatewatchQty||1;
+        newOrders.push({id,side:'hatewatch',qty});
+        triggersUpdate[id]={...triggersUpdate[id],hatewatchAt:null};
+        notices.push(p.name+' auto-hatewatched x'+qty+' (≥'+this.money(t.hatewatchAt)+')');
+        if(!watchUpdate) watchUpdate=S.watch.slice();
+        if(!watchUpdate.includes(id)) watchUpdate.push(id);
+      }
       // Remove fully consumed triggers
       const u=triggersUpdate[id];
-      if(u&&u.sellTop==null&&u.sellBottom==null&&u.buyAt==null) delete triggersUpdate[id];
+      if(u&&u.sellTop==null&&u.sellBottom==null&&u.buyAt==null&&u.hatewatchAt==null) delete triggersUpdate[id];
     }
     if(!newOrders.length) return;
     const upd={pendingOrders:S.pendingOrders.concat(newOrders),triggers:triggersUpdate,triggerNotice:notices.join('\n')};
@@ -3859,29 +3893,43 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
   openTriggerModal(id){
     const t=this.state.triggers[id]||{};
-    this.setState({triggerOpen:true,triggerId:id,
-      triggerEditTop:t.sellTop!=null?String(t.sellTop):'',
-      triggerEditBottom:t.sellBottom!=null?String(t.sellBottom):'',
-      triggerEditBuyAt:t.buyAt!=null?String(t.buyAt):'',
-      triggerEditBuyQty:t.buyQty!=null?String(t.buyQty):'1'});
+    this.setState({triggerOpen:true,triggerId:id,triggerError:''},()=>{
+      // Pre-fill via DOM after render — avoids controlled-input re-renders
+      // that steal focus from the input on every keystroke.
+      requestAnimationFrame(()=>{
+        const set=(eid,val)=>{ const el=document.getElementById(eid); if(el&&val!=null) el.value=val; };
+        set('fs-trig-sell-top', t.sellTop);
+        set('fs-trig-sell-bottom', t.sellBottom);
+        set('fs-trig-sell-qty', t.sellQty);
+        set('fs-trig-buy-at', t.buyAt);
+        set('fs-trig-buy-qty', t.buyQty||'');
+        set('fs-trig-hw-at', t.hatewatchAt);
+        set('fs-trig-hw-qty', t.hatewatchQty||'');
+      });
+    });
   }
-  closeTriggerModal(){ this.setState({triggerOpen:false}); }
+  closeTriggerModal(){ this.setState({triggerOpen:false,triggerError:''}); }
   saveTrigger(){
     const S=this.state; const id=S.triggerId; if(!id) return;
-    const sellTop=S.triggerEditTop!==''?parseFloat(S.triggerEditTop):null;
-    const sellBottom=S.triggerEditBottom!==''?parseFloat(S.triggerEditBottom):null;
-    const buyAt=S.triggerEditBuyAt!==''?parseFloat(S.triggerEditBuyAt):null;
-    const buyQty=Math.max(1,parseInt(S.triggerEditBuyQty)||1);
-    if((sellTop!=null&&isNaN(sellTop))||(sellBottom!=null&&isNaN(sellBottom))||(buyAt!=null&&isNaN(buyAt))) return;
-    if(sellTop!=null&&sellBottom!=null&&sellTop<=sellBottom) return;
+    const getNum=(eid)=>{ const el=document.getElementById(eid); if(!el||el.value.trim()==='') return null; const v=parseFloat(el.value); return isNaN(v)?NaN:v; };
+    const getInt=(eid)=>{ const el=document.getElementById(eid); if(!el||el.value.trim()==='') return null; const v=parseInt(el.value); return (isNaN(v)||v<1)?NaN:v; };
+    const sellTop=getNum('fs-trig-sell-top'), sellBottom=getNum('fs-trig-sell-bottom'), sellQty=getInt('fs-trig-sell-qty');
+    const buyAt=getNum('fs-trig-buy-at'), buyQty=getInt('fs-trig-buy-qty');
+    const hatewatchAt=getNum('fs-trig-hw-at'), hatewatchQty=getInt('fs-trig-hw-qty');
+    if([sellTop,sellBottom,sellQty,buyAt,buyQty,hatewatchAt,hatewatchQty].some(v=>Number.isNaN(v))){
+      this.setState({triggerError:'Please enter valid numbers in all filled fields.'}); return;
+    }
+    if(sellTop!=null&&sellBottom!=null&&sellTop<=sellBottom){
+      this.setState({triggerError:'Top cap must be higher than bottom cap.'}); return;
+    }
     const triggers={...S.triggers}; const watch=S.watch.slice();
-    if(sellTop==null&&sellBottom==null&&buyAt==null){ delete triggers[id]; }
+    if(sellTop==null&&sellBottom==null&&buyAt==null&&hatewatchAt==null){ delete triggers[id]; }
     else {
-      triggers[id]={sellTop,sellBottom,buyAt,buyQty};
+      triggers[id]={sellTop,sellBottom,sellQty,buyAt,buyQty:buyQty||1,hatewatchAt,hatewatchQty:hatewatchQty||1};
       if(buyAt!=null&&!watch.includes(id)) watch.push(id);
     }
     this.saveTriggers(triggers);
-    this.setState({triggers,watch,triggerOpen:false});
+    this.setState({triggers,watch,triggerOpen:false,triggerError:''});
   }
   clearTrigger(id){ const triggers={...this.state.triggers}; delete triggers[id]; this.saveTriggers(triggers); this.setState({triggers}); }
   dismissTriggerNotice(){ this.setState({triggerNotice:null}); }
@@ -5081,15 +5129,17 @@ Yan Diomande|RB Leipzig|CM|21|4
           // price alert triggers
           ...(()=>{
             const t=S.triggers[p.id]||{};
-            const hasTrig=!!(t.sellTop!=null||t.sellBottom!=null||t.buyAt!=null);
+            const hasTrig=!!(t.sellTop!=null||t.sellBottom!=null||t.buyAt!=null||t.hatewatchAt!=null);
             return {
               hasTriggers:hasTrig, noTriggers:!hasTrig,
               triggerBtnLabel:hasTrig?'Edit alerts':'Set alerts',
-              triggerHasSellTop:t.sellTop!=null, triggerHasSellBottom:t.sellBottom!=null, triggerHasBuyAt:t.buyAt!=null,
-              triggerSellTop:t.sellTop!=null?this.money(t.sellTop):'',
-              triggerSellBottom:t.sellBottom!=null?this.money(t.sellBottom):'',
+              triggerHasSellTop:t.sellTop!=null, triggerHasSellBottom:t.sellBottom!=null, triggerHasBuyAt:t.buyAt!=null, triggerHasHatewatchAt:t.hatewatchAt!=null,
+              triggerSellTop:t.sellTop!=null?(this.money(t.sellTop)+(t.sellQty!=null?' · '+t.sellQty+'x':'')):'',
+              triggerSellBottom:t.sellBottom!=null?(this.money(t.sellBottom)+(t.sellQty!=null?' · '+t.sellQty+'x':'')):'',
               triggerBuyAt:t.buyAt!=null?this.money(t.buyAt):'',
               triggerBuyQty:t.buyQty||1,
+              triggerHatewatchAt:t.hatewatchAt!=null?this.money(t.hatewatchAt):'',
+              triggerHatewatchQty:t.hatewatchQty||1,
               onOpenTrigger:()=>this.openTriggerModal(p.id),
               onClearTrigger:()=>this.clearTrigger(p.id),
             };
@@ -5329,30 +5379,12 @@ Yan Diomande|RB Leipzig|CM|21|4
       closeTriggerModal:()=>this.closeTriggerModal(),
       triggerNotice:S.triggerNotice, dismissTriggerNotice:()=>this.dismissTriggerNotice(),
       trig:(()=>{
-        if(!S.triggerOpen||!S.triggerId) return {name:'',editTop:'',editBottom:'',editBuyAt:'',editBuyQty:'1',error:'',saveBg:'#b6c4bb',saveCursor:'not-allowed',onTop:()=>{},onBottom:()=>{},onBuyAt:()=>{},onBuyQty:()=>{},save:()=>{}};
+        if(!S.triggerOpen||!S.triggerId) return {name:'',error:'',save:()=>{}};
         const p=this.byId(S.triggerId);
-        const topV=S.triggerEditTop!==''?parseFloat(S.triggerEditTop):null;
-        const bottomV=S.triggerEditBottom!==''?parseFloat(S.triggerEditBottom):null;
-        const buyAtV=S.triggerEditBuyAt!==''?parseFloat(S.triggerEditBuyAt):null;
-        let error='';
-        if(topV!=null&&isNaN(topV)) error='Invalid top cap value';
-        else if(bottomV!=null&&isNaN(bottomV)) error='Invalid bottom cap value';
-        else if(buyAtV!=null&&isNaN(buyAtV)) error='Invalid buy price';
-        else if(topV!=null&&bottomV!=null&&topV<=bottomV) error='Top cap must be above bottom cap';
-        const hasAny=topV!=null||bottomV!=null||buyAtV!=null;
-        const canSave=!error;
         return {
           name:p?p.name:'',
-          editTop:S.triggerEditTop, editBottom:S.triggerEditBottom,
-          editBuyAt:S.triggerEditBuyAt, editBuyQty:S.triggerEditBuyQty,
-          onTop:(e)=>this.setState({triggerEditTop:e.target.value}),
-          onBottom:(e)=>this.setState({triggerEditBottom:e.target.value}),
-          onBuyAt:(e)=>this.setState({triggerEditBuyAt:e.target.value}),
-          onBuyQty:(e)=>this.setState({triggerEditBuyQty:e.target.value}),
-          save:()=>{ if(!canSave) return; this.saveTrigger(); },
-          error,
-          saveBg:canSave?'#16a85f':'#b6c4bb',
-          saveCursor:canSave?'pointer':'not-allowed',
+          save:()=>this.saveTrigger(),
+          error:S.triggerError||'',
         };
       })(),
       // trade modal
