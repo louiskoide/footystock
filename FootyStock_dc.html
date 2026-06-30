@@ -1300,26 +1300,29 @@
     </div>
     <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px">
 
-      <!-- New account -->
+      <!-- Tab toggle -->
+      <div style="display:flex;background:rgba(0,0,0,.2);border-radius:10px;padding:3px;margin-bottom:22px">
+        <button onClick="{{ loginTabCreate }}" style="flex:1;font:600 13px 'Hanken Grotesk';border:none;border-radius:8px;padding:9px;cursor:pointer;background:{{ loginTabCreateBg }};color:{{ loginTabCreateColor }}">Create account</button>
+        <button onClick="{{ loginTabLogin }}" style="flex:1;font:600 13px 'Hanken Grotesk';border:none;border-radius:8px;padding:9px;cursor:pointer;background:{{ loginTabLoginBg }};color:{{ loginTabLoginColor }}">Log in</button>
+      </div>
+
+      <!-- Create account -->
       <sc-if value="{{ loginStepEmail }}" hint-placeholder-val="{{ true }}">
-        <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Create your account</div>
-        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">Pick a display name to join the leaderboard. No password needed.</div>
-        <input id="fs-login-email" type="email" placeholder="Email address (optional)" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
-        <input id="fs-login-name" placeholder="Display name (e.g. LouisK)" maxlength="32" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
+        <input id="fs-login-name" placeholder="Username (e.g. LouisK)" maxlength="32" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
+        <input id="fs-login-email" type="email" placeholder="Email (optional)" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
+        <input id="fs-login-pw" type="password" placeholder="Password" maxlength="128" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
+        <input id="fs-login-pw2" type="password" placeholder="Confirm password" maxlength="128" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
         <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
         <button onClick="{{ doLogin }}" style="width:100%;font:700 16px 'Hanken Grotesk';background:{{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginBtnLabel }}</button>
         <div style="font:500 12px 'Hanken Grotesk';color:#7fb89a;text-align:center;margin-top:14px;line-height:1.5">For entertainment only — no real money.</div>
-        <button onClick="{{ loginRecover }}" style="width:100%;font:600 13px 'Hanken Grotesk';background:none;color:#4a8a6a;border:none;padding:8px;cursor:pointer;margin-top:4px">Already have an account? Enter code →</button>
       </sc-if>
 
-      <!-- Recover with account code -->
+      <!-- Log in -->
       <sc-if value="{{ loginStepOtp }}" hint-placeholder-val="{{ false }}">
-        <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Enter your account code</div>
-        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">Paste the code from your original device to restore your portfolio.</div>
-        <input id="fs-login-otp" type="text" placeholder="Paste account code" maxlength="64" style="width:100%;box-sizing:border-box;font:500 14px 'Space Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
+        <input id="fs-login-name2" placeholder="Username or email" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
+        <input id="fs-login-pw3" type="password" placeholder="Password" maxlength="128" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
         <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
         <button onClick="{{ doVerifyOtp }}" style="width:100%;font:700 16px 'Hanken Grotesk';background:{{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginBtnLabel }}</button>
-        <button onClick="{{ loginBack }}" style="width:100%;font:600 14px 'Hanken Grotesk';background:none;color:#7fb89a;border:none;padding:12px;cursor:pointer;margin-top:6px">← Back</button>
       </sc-if>
 
     </div>
@@ -1626,11 +1629,11 @@ class Component extends DCLogic {
     setTimeout(()=>this.submitScore(), 3000);
     // clear legacy localStorage keys from pre-email-auth era
     try{ localStorage.removeItem('footystock_v3'); localStorage.removeItem('footystock_uid'); localStorage.removeItem('fs_username'); localStorage.removeItem('fs_email'); }catch(e){}
-    // delete leaderboard rows with no display name (nameless accounts)
-    if(this._sbUrl && !localStorage.getItem('fs_nameless_deleted_v3')){
+    // wipe all pre-existing accounts (leaderboard + portfolios) for fresh password-based start
+    if(this._sbUrl && !localStorage.getItem('fs_wiped_v1')){
       const sbBase=this._sbUrl; const sbHdr=this._sbHdr;
-      fetch(sbBase+'?name=is.null',{method:'DELETE',headers:sbHdr}).catch(()=>{});
-      fetch(sbBase+'?name=eq.',{method:'DELETE',headers:sbHdr}).then(()=>{ try{ localStorage.setItem('fs_nameless_deleted_v3','1'); }catch(e){} }).catch(()=>{});
+      fetch(sbBase+'?token=not.is.null',{method:'DELETE',headers:sbHdr}).catch(()=>{});
+      fetch(sbBase.replace('/leaderboard','/portfolios')+'?token=not.is.null',{method:'DELETE',headers:sbHdr}).then(()=>{ try{ localStorage.setItem('fs_wiped_v1','1'); }catch(e){} }).catch(()=>{});
     }
     // sync portfolio from cloud (handles cross-device and cross-domain merge)
     setTimeout(()=>this.syncFromCloud(), 1000);
@@ -3633,51 +3636,72 @@ Yan Diomande|RB Leipzig|CM|21|4
   loadUsername(){ return (this.state&&this.state.username)||''; }
   saveUsername(n){ const name=n.trim().slice(0,32); this.setState({username:name}); }
 
-  // Generate a stable UUID token for a new user
-  _genToken(){ try{ return crypto.randomUUID(); }catch(e){ return ([1e7]+-1e3+-4e3+-8e3+-1e11).replace(/[018]/g,c=>(c^crypto.getRandomValues(new Uint8Array(1))[0]&15>>c/4).toString(16)); } }
+  _fakeEmail(name){ return name.toLowerCase().replace(/[^a-z0-9]/g,'')+'@footystock.app'; }
 
   async doLogin(){
-    const name=(document.getElementById('fs-login-name')||{}).value||'';
-    const email=((document.getElementById('fs-login-email')||{}).value||'').trim();
-    if(!name.trim()){ this.setState({loginError:'Enter a display name.'}); return; }
-    if(name.trim().length<2){ this.setState({loginError:'Display name must be at least 2 characters.'}); return; }
+    const name=((document.getElementById('fs-login-name')||{}).value||'').trim();
+    const emailInput=((document.getElementById('fs-login-email')||{}).value||'').trim();
+    const pw=(document.getElementById('fs-login-pw')||{}).value||'';
+    const pw2=(document.getElementById('fs-login-pw2')||{}).value||'';
+    if(!name){ this.setState({loginError:'Enter a username.'}); return; }
+    if(name.length<2){ this.setState({loginError:'Username must be at least 2 characters.'}); return; }
+    if(!pw){ this.setState({loginError:'Enter a password.'}); return; }
+    if(pw.length<6){ this.setState({loginError:'Password must be at least 6 characters.'}); return; }
+    if(pw!==pw2){ this.setState({loginError:'Passwords do not match.'}); return; }
     this.setState({loginError:'',loginSending:true});
-    // Check uniqueness against non-empty names
     try{
-      const existing=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name.trim())+'&select=token,name');
-      const myToken=this.loadToken();
-      const conflict=existing&&existing.find(r=>r.name&&r.token!==myToken);
-      if(conflict){ this.setState({loginError:'That name is taken. Try another.',loginSending:false}); return; }
+      const existing=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name)+'&select=token');
+      if(existing&&existing.length){ this.setState({loginError:'Username taken. Try another.',loginSending:false}); return; }
     }catch(e){}
-    // Generate or reuse token
-    let token=this.loadToken();
-    if(!token||token==='anon'){ token=this._genToken(); try{ localStorage.setItem('fs_token',token); }catch(e){} }
-    if(email) this.saveEmail(email);
-    this.saveUsername(name.trim());
-    try{ localStorage.setItem('fs_loggedin','1'); }catch(e){}
-    this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
-    setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); this.syncFromCloud(); },300);
+    // Use real email if provided, otherwise derive a fake one from username
+    const authEmail=emailInput&&emailInput.includes('@')?emailInput:this._fakeEmail(name);
+    try{
+      const res=await fetch(this._sbAuth()+'/signup',{method:'POST',headers:this._sbAuthHdr(),body:JSON.stringify({email:authEmail,password:pw})});
+      const data=await res.json();
+      if(!res.ok){ this.setState({loginError:data.msg||data.error_description||'Signup failed.',loginSending:false}); return; }
+      const userId=data.user?.id;
+      if(!userId){ this.setState({loginError:'Signup failed. Try again.',loginSending:false}); return; }
+      try{ localStorage.setItem('fs_token',userId); localStorage.setItem('fs_loggedin','1'); }catch(e){}
+      if(emailInput) this.saveEmail(emailInput);
+      this.saveUsername(name);
+      this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
+      setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); this.syncFromCloud(); },300);
+    }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
   }
 
   async doVerifyOtp(){
-    // Recover account by pasting account code (token)
-    const code=((document.getElementById('fs-login-otp')||{}).value||'').trim();
-    if(!code){ this.setState({loginError:'Paste your account code.'}); return; }
+    const input=((document.getElementById('fs-login-name2')||{}).value||'').trim();
+    const pw=(document.getElementById('fs-login-pw3')||{}).value||'';
+    if(!input){ this.setState({loginError:'Enter your username or email.'}); return; }
+    if(!pw){ this.setState({loginError:'Enter your password.'}); return; }
     this.setState({loginError:'',loginSending:true});
-    // Validate code exists in portfolios table
+    // Resolve username → email if not an email address
+    let authEmail=input;
+    let displayName=input;
+    if(!input.includes('@')){
+      // look up their real auth email from leaderboard
+      try{
+        const rows=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(input)+'&select=email');
+        if(rows&&rows.length&&rows[0].email) authEmail=rows[0].email;
+        else authEmail=this._fakeEmail(input);
+      }catch(e){ authEmail=this._fakeEmail(input); }
+    } else {
+      // email login — look up username
+      try{
+        const rows=await Supa.get('leaderboard','email=eq.'+encodeURIComponent(input)+'&select=name');
+        if(rows&&rows.length&&rows[0].name) displayName=rows[0].name;
+      }catch(e){}
+    }
     try{
-      const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(code)+'&select=token');
-      if(!rows||!rows.length){ this.setState({loginError:'Account code not found. Check and try again.',loginSending:false}); return; }
-    }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); return; }
-    try{ localStorage.setItem('fs_token',code); }catch(e){}
-    // Restore username from leaderboard
-    try{
-      const lb=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(code)+'&select=name');
-      if(lb&&lb.length&&lb[0].name) this.saveUsername(lb[0].name);
-    }catch(e){}
-    try{ localStorage.setItem('fs_loggedin','1'); }catch(e){}
-    this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
-    setTimeout(()=>{ this.submitScore(); this.syncFromCloud(); },300);
+      const res=await fetch(this._sbAuth()+'/token?grant_type=password',{method:'POST',headers:this._sbAuthHdr(),body:JSON.stringify({email:authEmail,password:pw})});
+      const data=await res.json();
+      if(!res.ok){ this.setState({loginError:data.error_description||data.msg||'Incorrect username or password.',loginSending:false}); return; }
+      const userId=data.user?.id;
+      if(!userId){ this.setState({loginError:'Login failed. Try again.',loginSending:false}); return; }
+      try{ localStorage.setItem('fs_token',userId); localStorage.setItem('fs_loggedin','1'); }catch(e){}
+      this.saveUsername(displayName);
+      this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
+      setTimeout(()=>{ this.submitScore(); this.syncFromCloud(); },300);
   }
 
   // ---------- leaderboard ----------
@@ -3688,7 +3712,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       .sort((a,b)=>(b[1].qty||0)-(a[1].qty||0)).slice(0,10)
       .map(([id,h])=>({id,qty:h.qty||0}));
     fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
-      body:JSON.stringify({token:this.loadToken(),name,net_worth:pnl,top_holdings:topH,updated_at:new Date().toISOString()})}).catch(()=>{});
+      body:JSON.stringify({token:this.loadToken(),name,email:this.loadEmail()||null,net_worth:pnl,top_holdings:topH,updated_at:new Date().toISOString()})}).catch(()=>{});
   }
   leaderboardData(){
     const myName=this.loadUsername()||'You';
@@ -4595,11 +4619,17 @@ Yan Diomande|RB Leipzig|CM|21|4
       loginStepEmail:S.loginStep==='email', loginStepOtp:S.loginStep==='otp',
       loginEmail:S.loginEmail, loginError:S.loginError,
       loginBtnBg:S.loginSending?'#4a7a5f':'#16a85f',
-      loginBtnLabel:S.loginSending?(S.loginStep==='otp'?'Restoring…':'Joining…'):(S.loginStep==='otp'?'Restore account':'Join FootyStock →'),
+      loginBtnLabel:S.loginSending?(S.loginStep==='otp'?'Logging in…':'Creating…'):(S.loginStep==='otp'?'Log in':'Create account →'),
       doLogin:()=>this.doLogin(),
       doVerifyOtp:()=>this.doVerifyOtp(),
       loginBack:()=>this.setState({loginStep:'email',loginError:''}),
       loginRecover:()=>this.setState({loginStep:'otp',loginError:''}),
+      loginTabCreate:()=>this.setState({loginStep:'email',loginError:''}),
+      loginTabLogin:()=>this.setState({loginStep:'otp',loginError:''}),
+      loginTabCreateBg:S.loginStep==='email'?'#fff':'transparent',
+      loginTabCreateColor:S.loginStep==='email'?'#16201a':'#7fb89a',
+      loginTabLoginBg:S.loginStep==='otp'?'#fff':'transparent',
+      loginTabLoginColor:S.loginStep==='otp'?'#16201a':'#7fb89a',
       openFeedback:()=>this.openFeedback(),
       feedbackOpen:S.feedbackOpen,
       closeFeedback:()=>this.closeFeedback(),
