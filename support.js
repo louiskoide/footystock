@@ -30,9 +30,33 @@
   }
 
   function resolve(scopeStack, path) {
-    const parts = path.trim().split('.');
+    const trimmed = path.trim();
+    // Negation: !expr
+    if (trimmed.startsWith('!')) return !resolve(scopeStack, trimmed.slice(1));
+    // Equality/inequality: a === b, a !== b, a == b, a != b
+    const eqMatch = trimmed.match(/^(.+?)\s*(===|!==|==|!=)\s*(.+)$/);
+    if (eqMatch) {
+      const l = resolve(scopeStack, eqMatch[1]), r = resolve(scopeStack, eqMatch[3].trim());
+      if (eqMatch[2] === '===' || eqMatch[2] === '==') return l === r;
+      return l !== r;
+    }
+    // Numeric comparisons: a > b, a >= b, a < b, a <= b
+    const cmpMatch = trimmed.match(/^(.+?)\s*(>=|<=|>|<)\s*(.+)$/);
+    if (cmpMatch) {
+      const l = resolve(scopeStack, cmpMatch[1]), r = resolve(scopeStack, cmpMatch[3].trim());
+      if (cmpMatch[2] === '>') return l > r;
+      if (cmpMatch[2] === '>=') return l >= r;
+      if (cmpMatch[2] === '<') return l < r;
+      return l <= r;
+    }
+    const parts = trimmed.split('.');
     if (parts[0] === 'true') return true;
     if (parts[0] === 'false') return false;
+    // Numeric literal
+    if (!isNaN(parts[0]) && parts.length === 1) return Number(parts[0]);
+    // String literal
+    if ((parts[0].startsWith("'") && trimmed.endsWith("'")) ||
+        (parts[0].startsWith('"') && trimmed.endsWith('"'))) return trimmed.slice(1, -1);
     let val;
     let found = false;
     for (let i = scopeStack.length - 1; i >= 0; i--) {
@@ -209,10 +233,17 @@
     rootEl.querySelectorAll('textarea[id]').forEach(ta => {
       if (ta.value) textareaSnapshots[ta.id] = ta.value;
     });
+    // Build set of input ids that have a state-bound value="{{ }}" in the pristine template.
+    const controlledInputIds = new Set();
+    const tmpCheck = document.createElement('div');
+    tmpCheck.innerHTML = pristineTemplateHTML;
+    tmpCheck.querySelectorAll('input[id]').forEach(inp => {
+      if ((inp.getAttribute('value') || '').includes('{{')) controlledInputIds.add(inp.id);
+    });
     const inputSnapshots = {};
     rootEl.querySelectorAll('input[id]').forEach(inp => {
-      // Skip controlled inputs (bound via value="{{ ... }}") — their value comes from state.
-      if (inp.value && !(inp.getAttribute('value') || '').includes('{{')) inputSnapshots[inp.id] = inp.value;
+      // Skip controlled inputs — their value comes from state, not user typing.
+      if (inp.value && !controlledInputIds.has(inp.id)) inputSnapshots[inp.id] = inp.value;
     });
 
     const vals = componentInstance.renderVals();
