@@ -954,6 +954,19 @@
         </sc-if>
       </div>
 
+      <!-- competition entry button -->
+      <div onClick="{{ goCompetition }}" style="background:linear-gradient(135deg,#1a0d3f,#2d1760);border-radius:18px;padding:18px 22px;cursor:pointer;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
+        <div>
+          <div style="font:600 11px 'Hanken Grotesk';letter-spacing:.06em;text-transform:uppercase;color:rgba(180,160,255,.7);margin-bottom:6px">Weekly Competition</div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font:700 14px 'Space Grotesk';background:{{ clubDivInfo.chipBg }};color:{{ clubDivInfo.color }};padding:3px 12px;border-radius:999px">{{ clubDivInfo.emoji }} {{ clubDivInfo.name }}</span>
+            <span style="font:500 13px 'Hanken Grotesk';color:#c4b5fd">{{ myClubCups }} cups</span>
+            <sc-if value="{{ hasPendingPacks }}"><span style="font:700 11px 'Hanken Grotesk';background:#16a85f;color:#fff;padding:2px 8px;border-radius:999px">Pack!</span></sc-if>
+          </div>
+        </div>
+        <span style="color:#c4b5fd;font-size:18px;font-weight:700">→</span>
+      </div>
+
       <!-- members -->
       <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Members</div>
       <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:28px">
@@ -1086,6 +1099,239 @@
         <sc-if value="{{ clubError }}"><div style="color:#e03e3e;font:500 13px 'Hanken Grotesk';margin-bottom:12px">{{ clubError }}</div></sc-if>
         <sc-if value="{{ clubSuccess }}"><div style="color:#16a85f;font:500 13px 'Hanken Grotesk';margin-bottom:12px">{{ clubSuccess }}</div></sc-if>
         <button onClick="{{ submitEditClub }}" style="width:100%;padding:13px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 15px 'Hanken Grotesk';cursor:pointer">Save changes</button>
+      </div>
+    </sc-if>
+
+    <!-- ============ COMPETITION SCREEN ============ -->
+    <sc-if value="{{ isClubCompetition }}">
+      <div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
+          <button onClick="{{ goClubHome }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back</button>
+          <span style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Competition</span>
+        </div>
+
+        <!-- division + cups card -->
+        <div style="background:linear-gradient(135deg,{{ compDivInfo.bgDark }},{{ compDivInfo.bgDark2 }});border-radius:20px;padding:24px 26px;margin-bottom:20px;color:#fff">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
+            <div>
+              <div style="font:600 11px 'Hanken Grotesk';letter-spacing:.06em;text-transform:uppercase;color:{{ compDivInfo.labelColor }};margin-bottom:8px">{{ compDivInfo.emoji }} {{ compDivInfo.name }} Division</div>
+              <div style="font:700 48px 'Space Grotesk';line-height:1;margin-bottom:4px">{{ myClubCups }}</div>
+              <div style="font:500 12px 'Hanken Grotesk';color:rgba(255,255,255,.55)">total cups</div>
+            </div>
+            <sc-if value="{{ !compDivInfo.isMax }}">
+              <div style="text-align:right;min-width:130px">
+                <div style="font:500 11px 'Hanken Grotesk';color:rgba(255,255,255,.55);margin-bottom:6px">Next: {{ compDivInfo.nextName }}</div>
+                <div style="background:rgba(255,255,255,.15);border-radius:999px;height:7px;overflow:hidden">
+                  <div style="background:{{ compDivInfo.color }};height:100%;width:{{ compDivInfo.progressPct }}%;border-radius:999px;transition:width .4s"></div>
+                </div>
+                <div style="font:500 11px 'Hanken Grotesk';color:rgba(255,255,255,.45);margin-top:5px">{{ myClubCups }} / {{ compDivInfo.nextThreshold }} cups</div>
+              </div>
+            </sc-if>
+            <sc-if value="{{ compDivInfo.isMax }}">
+              <div style="text-align:right">
+                <div style="font:600 12px 'Hanken Grotesk';color:{{ compDivInfo.color }}">Max Division</div>
+                <div style="font:500 11px 'Hanken Grotesk';color:rgba(255,255,255,.45);margin-top:4px">{{ myClubCups }} cups</div>
+              </div>
+            </sc-if>
+          </div>
+        </div>
+
+        <!-- too few members warning -->
+        <sc-if value="{{ clubTooSmall }}">
+          <div style="background:#fef9ec;border:1px solid #f5d87a;border-radius:14px;padding:18px 20px;margin-bottom:20px">
+            <div style="font:700 14px 'Space Grotesk';color:#92610a;margin-bottom:4px">Need More Members</div>
+            <div style="font:500 13px 'Hanken Grotesk';color:#6b4d0e;line-height:1.5">Your club needs at least 5 members to enter competitions. Invite more friends using your invite code!</div>
+          </div>
+        </sc-if>
+
+        <!-- loading -->
+        <sc-if value="{{ compGroupLoading }}">
+          <div style="text-align:center;padding:50px 0;font:500 13px 'Hanken Grotesk';color:#8a938c">Loading competition…</div>
+        </sc-if>
+
+        <!-- active competition -->
+        <sc-if value="{{ hasActiveComp }}">
+          <!-- league table -->
+          <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">This Week's Table</div>
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:8px">
+            <div style="display:grid;grid-template-columns:30px 1fr 72px 56px;padding:9px 16px;background:#f8faf6;border-bottom:1px solid #eeecea">
+              <span style="font:700 10px 'Hanken Grotesk';color:#8a938c;text-transform:uppercase">#</span>
+              <span style="font:700 10px 'Hanken Grotesk';color:#8a938c;text-transform:uppercase">Club</span>
+              <span style="font:700 10px 'Hanken Grotesk';color:#8a938c;text-transform:uppercase;text-align:right">Score</span>
+              <span style="font:700 10px 'Hanken Grotesk';color:#8a938c;text-transform:uppercase;text-align:right">Cups</span>
+            </div>
+            <sc-for list="{{ compTableRows }}" as="row" hint-placeholder-count="6">
+              <div style="display:grid;grid-template-columns:30px 1fr 72px 56px;padding:12px 16px;border-bottom:1px solid #f3f4f0;background:{{ row.isMe ? '#f0fdf4' : '#fff' }}">
+                <span style="font:700 14px 'Space Grotesk';color:{{ row.rankColor }}">{{ row.rank }}</span>
+                <div>
+                  <div style="font:600 13px 'Hanken Grotesk';color:#16201a">{{ row.clubName }}</div>
+                  <div style="font:500 10px 'Hanken Grotesk';color:#8a938c">{{ row.divLabel }}</div>
+                </div>
+                <div style="text-align:right;font:600 13px 'Hanken Grotesk';color:{{ row.scoreColor }}">{{ row.scoreStr }}</div>
+                <div style="text-align:right;font:500 12px 'Hanken Grotesk';color:#8a938c">{{ row.cupsChange }}</div>
+              </div>
+            </sc-for>
+          </div>
+          <div style="text-align:center;font:500 11px 'Hanken Grotesk';color:#b0b8b4;margin-bottom:24px">Ends {{ compEndsStr }} · Score = average % gain across all members</div>
+
+          <!-- my comp portfolio -->
+          <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">My Comp Portfolio</div>
+          <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:20px;margin-bottom:6px">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+              <div>
+                <div style="font:700 28px 'Space Grotesk';color:#16201a">{{ compNWStr }}</div>
+                <div style="font:500 13px 'Hanken Grotesk';color:{{ compGainColor }}">{{ compGainStr }}</div>
+              </div>
+              <button onClick="{{ openCompTrade }}" style="background:#0c1f15;border:none;color:#3ddc8a;font:700 13px 'Hanken Grotesk';padding:10px 18px;border-radius:12px;cursor:pointer">Trade</button>
+            </div>
+            <sc-if value="{{ compHasHoldings }}">
+              <sc-for list="{{ compHoldingRows }}" as="h" hint-placeholder-count="3">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid #f3f4f0">
+                  <div>
+                    <div style="font:600 13px 'Hanken Grotesk'">{{ h.name }}</div>
+                    <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ h.qty }}× @ ${{ h.avg }}</div>
+                  </div>
+                  <div style="text-align:right">
+                    <div style="font:600 13px 'Hanken Grotesk'">{{ h.valueStr }}</div>
+                    <div style="font:500 11px 'Hanken Grotesk';color:{{ h.plColor }}">{{ h.plStr }}</div>
+                  </div>
+                </div>
+              </sc-for>
+            </sc-if>
+            <sc-if value="{{ !compHasHoldings }}">
+              <div style="text-align:center;padding:16px 0;font:500 13px 'Hanken Grotesk';color:#b0b8b4">No holdings yet. Hit Trade to start competing!</div>
+            </sc-if>
+            <div style="border-top:1px solid #eeefec;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';color:#8a938c">
+              <span>Cash remaining</span><span style="font-weight:600;color:#16201a">{{ compCashStr }}</span>
+            </div>
+          </div>
+          <div style="font:500 11px 'Hanken Grotesk';color:#b0b8b4;text-align:center;margin-bottom:24px">Comp portfolio resets to $10,000 each week</div>
+        </sc-if>
+
+        <!-- no active comp -->
+        <sc-if value="{{ noActiveComp }}">
+          <div style="background:#fff;border:1px dashed #d6dccf;border-radius:16px;padding:40px 24px;text-align:center;margin-bottom:24px">
+            <div style="font:700 17px 'Space Grotesk';margin-bottom:8px">No competition this week yet</div>
+            <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;line-height:1.5">Clubs are auto-matched every Wednesday at midnight UTC. Check back then!</div>
+          </div>
+        </sc-if>
+
+        <!-- pending pack notification -->
+        <sc-if value="{{ hasPendingPacks }}">
+          <div onClick="{{ openPackReveal }}" style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:16px;padding:20px 22px;cursor:pointer;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font:600 11px 'Hanken Grotesk';letter-spacing:.06em;text-transform:uppercase;color:#3ddc8a;margin-bottom:4px">Reward Ready!</div>
+              <div style="font:700 16px 'Space Grotesk';color:#eaf3ed">{{ pendingPacksLabel }}</div>
+            </div>
+            <span style="font-size:28px">🎁</span>
+          </div>
+        </sc-if>
+
+        <!-- rewards this division -->
+        <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Rewards — {{ compDivInfo.name }} Division</div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:20px;margin-bottom:12px">
+          <div style="display:flex;gap:10px;margin-bottom:14px">
+            <div style="flex:1;background:#fffbeb;border-radius:12px;padding:14px 12px;text-align:center">
+              <div style="font:700 11px 'Hanken Grotesk';color:#d4a017;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">🥇 1st Place</div>
+              <div style="font:600 13px 'Hanken Grotesk';color:#16201a;line-height:1.5">{{ compReward1 }}</div>
+            </div>
+            <div style="flex:1;background:#f7f7f7;border-radius:12px;padding:14px 12px;text-align:center">
+              <div style="font:700 11px 'Hanken Grotesk';color:#8a9ba8;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">🥈 2nd Place</div>
+              <div style="font:600 13px 'Hanken Grotesk';color:#16201a;line-height:1.5">{{ compReward2 }}</div>
+            </div>
+          </div>
+          <div style="font:500 11px 'Hanken Grotesk';color:#8a938c;text-align:center">Stock packs are added directly to your main portfolio</div>
+        </div>
+
+        <!-- cup table reference -->
+        <div style="font:700 17px 'Space Grotesk';margin:20px 2px 14px">Cup Rewards — {{ compDivInfo.name }}</div>
+        <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:30px">
+          <sc-for list="{{ compCupRows }}" as="cr" hint-placeholder-count="6">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid #f3f4f0">
+              <span style="font:600 13px 'Hanken Grotesk';color:#16201a">{{ cr.label }}</span>
+              <span style="font:700 13px 'Space Grotesk';color:{{ cr.color }}">{{ cr.cups }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- PROMOTION OVERLAY -->
+    <sc-if value="{{ showPromotion }}">
+      <div style="position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.8);display:flex;align-items:center;justify-content:center;padding:24px">
+        <div style="background:linear-gradient(135deg,#0c1f15,#1a3a28);border-radius:24px;padding:40px 32px;max-width:340px;width:100%;text-align:center;color:#eaf3ed">
+          <div style="font-size:60px;margin-bottom:14px">{{ promotionToShow.emoji }}</div>
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.1em;text-transform:uppercase;color:#3ddc8a;margin-bottom:6px">{{ promotionToShow.direction }}</div>
+          <div style="font:700 30px 'Space Grotesk';margin-bottom:10px">{{ promotionToShow.divName }} Division</div>
+          <div style="font:500 14px 'Hanken Grotesk';color:#7fb89a;line-height:1.6;margin-bottom:28px">{{ promotionToShow.message }}</div>
+          <button onClick="{{ dismissPromotion }}" style="width:100%;padding:14px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 15px 'Hanken Grotesk';cursor:pointer">Let's Go!</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- PACK REVEAL OVERLAY -->
+    <sc-if value="{{ showPackReveal }}">
+      <div style="position:fixed;inset:0;z-index:9100;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+        <div style="background:#0c1f15;border-radius:24px;padding:32px 24px;max-width:400px;width:100%;text-align:center">
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.08em;text-transform:uppercase;color:#3ddc8a;margin-bottom:6px">Pack Reward</div>
+          <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:24px">{{ packRevealTitle }}</div>
+          <div style="display:flex;flex-wrap:wrap;gap:10px;justify-content:center;margin-bottom:24px">
+            <sc-for list="{{ packRevealCards }}" as="card" hint-placeholder-count="3">
+              <div onClick="{{ card.flip }}" style="width:88px;height:118px;border-radius:14px;cursor:{{ card.flipped ? 'default' : 'pointer' }};display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px;transition:all .2s;background:{{ card.flipped ? '#fff' : '#1a3a28' }};border:2px solid {{ card.flipped ? '#16a85f' : 'rgba(61,220,138,.25)' }}">
+                <sc-if value="{{ card.flipped }}">
+                  <div style="font:700 10px 'Hanken Grotesk';color:#16a85f;letter-spacing:.04em;text-transform:uppercase;margin-bottom:3px">{{ card.pos }}</div>
+                  <div style="font:700 12px 'Space Grotesk';color:#16201a;line-height:1.25;margin-bottom:6px;word-break:break-word">{{ card.name }}</div>
+                  <div style="font:700 15px 'Space Grotesk';color:#16201a">${{ card.price }}</div>
+                </sc-if>
+                <sc-if value="{{ !card.flipped }}">
+                  <div style="font-size:30px;margin-bottom:6px">🎴</div>
+                  <div style="font:500 10px 'Hanken Grotesk';color:rgba(61,220,138,.7)">Tap to reveal</div>
+                </sc-if>
+              </div>
+            </sc-for>
+          </div>
+          <sc-if value="{{ packAllFlipped }}">
+            <button onClick="{{ claimPack }}" style="width:100%;padding:14px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 15px 'Hanken Grotesk';cursor:pointer">Add to My Portfolio</button>
+          </sc-if>
+          <sc-if value="{{ !packAllFlipped }}">
+            <div style="font:500 12px 'Hanken Grotesk';color:#7fb89a">Tap each card to reveal your players</div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- COMP TRADE MODAL -->
+    <sc-if value="{{ compTradeOpen }}">
+      <div onClick="{{ closeCompTrade }}" style="position:fixed;inset:0;z-index:8500;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center">
+        <div onClick="{{ stopCompTrade }}" style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:78vh;overflow-y:auto">
+          <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
+            <span style="font:700 18px 'Space Grotesk'">Trade — Comp</span>
+            <button onClick="{{ closeCompTrade }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c">Close</button>
+          </div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:16px">Cash: {{ compCashStr }} · Portfolio resets weekly</div>
+          <sc-if value="{{ compError }}"><div style="color:#d23b2c;font:500 12px 'Hanken Grotesk';margin-bottom:10px">{{ compError }}</div></sc-if>
+          <input id="comp-search-input" value="{{ compSearch }}" onInput="{{ onCompSearch }}" placeholder="Search players…" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:10px 14px;font:500 13px 'Hanken Grotesk';outline:none;margin-bottom:14px;box-sizing:border-box" />
+          <sc-if value="{{ compSearchResults.length === 0 && compSearch.length > 0 }}">
+            <div style="text-align:center;padding:20px;font:500 13px 'Hanken Grotesk';color:#8a938c">No players found</div>
+          </sc-if>
+          <sc-if value="{{ compSearch.length === 0 }}">
+            <div style="text-align:center;padding:20px;font:500 13px 'Hanken Grotesk';color:#b0b8b4">Type a player or team name to search</div>
+          </sc-if>
+          <sc-for list="{{ compSearchResults }}" as="p" hint-placeholder-count="4">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #f3f4f0">
+              <div>
+                <div style="font:600 13px 'Hanken Grotesk';color:#16201a">{{ p.name }}</div>
+                <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ p.team }} · ${{ p.priceStr }}</div>
+              </div>
+              <div style="display:flex;gap:6px">
+                <button onClick="{{ p.onBuy }}" style="background:#16a85f;color:#fff;border:none;border-radius:8px;padding:7px 14px;font:700 12px 'Hanken Grotesk';cursor:pointer;opacity:{{ p.cantAfford ? 0.4 : 1 }}">Buy</button>
+                <sc-if value="{{ p.hasHolding }}">
+                  <button onClick="{{ p.onSell }}" style="background:#fbe9e7;color:#d23b2c;border:none;border-radius:8px;padding:7px 12px;font:700 12px 'Hanken Grotesk';cursor:pointer">Sell</button>
+                </sc-if>
+              </div>
+            </div>
+          </sc-for>
+        </div>
       </div>
     </sc-if>
 
@@ -1750,6 +1996,50 @@ alter table competitions disable row level security;
 alter table comp_portfolios disable row level security;
 alter table club_messages disable row level security;
 
+-- Competition groups: weekly 6-team brackets
+create table if not exists comp_groups (
+  id uuid default gen_random_uuid() primary key,
+  division text not null,
+  week_start timestamptz not null,
+  week_end timestamptz not null,
+  status text default 'active',
+  created_at timestamptz default now()
+);
+alter table comp_groups disable row level security;
+
+-- Each club's entry in a comp_group
+create table if not exists comp_group_clubs (
+  id uuid default gen_random_uuid() primary key,
+  group_id uuid references comp_groups(id) on delete cascade not null,
+  club_id uuid not null,
+  club_name text not null,
+  home_division text not null,
+  member_count integer default 0,
+  final_score numeric,
+  rank integer,
+  cups_delta integer,
+  play_up_divisions integer default 0,
+  unique(group_id, club_id)
+);
+alter table comp_group_clubs disable row level security;
+
+-- Per-user comp portfolios for each comp week
+create table if not exists comp_member_portfolios (
+  id uuid default gen_random_uuid() primary key,
+  group_id uuid references comp_groups(id) on delete cascade not null,
+  club_id uuid not null,
+  user_id text not null,
+  display_name text not null,
+  cash numeric default 10000,
+  holdings jsonb default '{}',
+  updated_at timestamptz default now(),
+  unique(group_id, user_id)
+);
+alter table comp_member_portfolios disable row level security;
+
+-- Add cups column to clubs
+alter table clubs add column if not exists cups integer default 0;
+
 -- Shares supply table (run this once):
 create table if not exists shares (
   player_id text primary key,
@@ -1801,6 +2091,11 @@ class Component extends DCLogic {
       clubJoinCode: '', clubJoinSearch: '',
       clubError: '', clubSuccess: '',
       clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null, clubSearchQuery: '',
+      compGroupLoading: false, activeCompGroup: null, compGroupEntry: null, compGroupClubs: [],
+      compPortfolio: {cash:10000, holdings:{}}, compPortfolioLoading: false,
+      pendingPacks: [], showPackReveal: false, packRevealFlipped: [],
+      promotionToShow: null, showPromotion: false,
+      compTradeOpen: false, compSearch: '', compError: '',
       shareOpen: false, shareCopied: false, mysteryOpen: false, mysteryPacks: [], recoverOpen: false,
       phoneVal: '', phoneSaving: false, phoneSaved: false,
       loggedIn: false, loginStep: 'email', loginEmail: '', loginError: '', loginSending: false, copyTokenLabel: 'Copy code',
@@ -1948,6 +2243,8 @@ class Component extends DCLogic {
     // load referral count and phone
     this.getReferralCount();
     this.loadMyPhone();
+    // load pending competition packs
+    this.setState({pendingPacks: this.loadPendingPacks()});
   }
   componentWillUnmount(){ clearInterval(this.timer); clearInterval(this.liveTimer); clearInterval(this.leaderboardTimer); clearInterval(this.clubTimer); }
 
@@ -3798,7 +4095,7 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
 
   // ---------- actions ----------
-  nav(v){ this.setState({view:v,selectedArticleId:null}); if(v==='clubs'){ this.loadMyClub(); this.loadClubMessages(); } }
+  nav(v){ this.setState({view:v,selectedArticleId:null}); if(v==='clubs'){ this.loadMyClub().then(()=>{ if(this.state.myClub&&this.state.clubView==='competition') this.loadCompetition(); }); this.loadClubMessages(); } }
   goHome(){ this.setState({view:'market'}); }
   openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90,comments:[],commentsLoading:true,commentsPlayerId:id,commentInput:'',commentReplyTo:null,commentReplyInput:''}); window.scrollTo(0,0); this.fetchComments(id); }
   goBack(){ this.setState({view:'market'}); }
@@ -4637,6 +4934,325 @@ Yan Diomande|RB Leipzig|CM|21|4
       await Supa.patch('clubs','id=eq.'+myClub.id,{leader_id:toUserId,leader_name:toName});
       await this.loadMyClub();
     }catch(e){this.setState({clubLoading:false,clubError:e.message});}
+  }
+
+  // ============ COMPETITIONS ============
+  compWeekStart(){
+    const now=new Date();
+    const day=now.getUTCDay();
+    const daysBack=(day+4)%7;
+    const wed=new Date(now);
+    wed.setUTCDate(now.getUTCDate()-daysBack);
+    wed.setUTCHours(0,0,0,0);
+    return wed;
+  }
+  compWeekEnd(){ return new Date(this.compWeekStart().getTime()+7*24*3600*1000); }
+  compWeekKey(){ return this.compWeekStart().toISOString().slice(0,10); }
+
+  compDivision(cups){
+    const c=cups||0;
+    if(c>=100) return 'Elite';
+    if(c>=50) return 'Platinum';
+    if(c>=25) return 'Gold';
+    if(c>=10) return 'Silver';
+    return 'Bronze';
+  }
+  compDivMeta(divName){
+    const map={
+      Bronze: {name:'Bronze',emoji:'🥉',color:'#c97c3a',chipBg:'rgba(201,124,58,.15)',labelColor:'rgba(255,190,130,.8)',bgDark:'#281508',bgDark2:'#3d2010',nextName:'Silver',nextThreshold:10,minCups:0,isMax:false},
+      Silver: {name:'Silver',emoji:'🥈',color:'#a0b0be',chipBg:'rgba(160,176,190,.15)',labelColor:'rgba(190,210,230,.8)',bgDark:'#141a22',bgDark2:'#1e2a36',nextName:'Gold',nextThreshold:25,minCups:10,isMax:false},
+      Gold:   {name:'Gold',emoji:'🥇',color:'#d4a017',chipBg:'rgba(212,160,23,.15)',labelColor:'rgba(255,210,80,.8)',bgDark:'#221900',bgDark2:'#342800',nextName:'Platinum',nextThreshold:50,minCups:25,isMax:false},
+      Platinum:{name:'Platinum',emoji:'💎',color:'#5b8dd9',chipBg:'rgba(91,141,217,.15)',labelColor:'rgba(140,180,255,.8)',bgDark:'#0d1a30',bgDark2:'#142040',nextName:'Elite',nextThreshold:100,minCups:50,isMax:false},
+      Elite:  {name:'Elite',emoji:'👑',color:'#a78bfa',chipBg:'rgba(167,139,250,.15)',labelColor:'rgba(200,180,255,.8)',bgDark:'#14073a',bgDark2:'#20094e',nextName:'Elite',nextThreshold:100,minCups:100,isMax:true},
+    };
+    return map[divName]||map.Bronze;
+  }
+
+  compCupDelta(division, rank){
+    const deltas={
+      Bronze:   [0,null,4,2,1,0,0],
+      Silver:   [0,6,4,2,0,-1,-2],
+      Gold:     [0,7,5,2,-1,-2,-3],
+      Platinum: [0,8,5,2,-2,-3,-5],
+      Elite:    [0,10,6,2,-3,-5,-8],
+    };
+    return (deltas[division]||deltas.Bronze)[rank]??0;
+  }
+
+  compPackConfig(division, rank){
+    const packs={
+      Bronze:   {1:[{minVal:75,count:3}],       2:[{minVal:40,count:2}]},
+      Silver:   {1:[{minVal:100,count:3}],      2:[{minVal:60,count:2}]},
+      Gold:     {1:[{minVal:150,count:4}],      2:[{minVal:80,count:3}]},
+      Platinum: {1:[{minVal:200,count:5}],      2:[{minVal:100,count:3}]},
+      Elite:    {1:[{minVal:300,count:5},{minVal:300,count:5}], 2:[{minVal:200,count:4}]},
+    };
+    return (packs[division]||packs.Bronze)[rank]||[];
+  }
+
+  generatePack(minVal, count){
+    const DB=this.getDB();
+    const eligible=DB.filter(p=>this.curPrice(p)>=minVal);
+    const shuffled=[...eligible].sort(()=>Math.random()-.5);
+    return shuffled.slice(0,count).map(p=>({id:p.id,name:p.name,pos:p.pos||'',team:p.team,price:parseFloat(this.curPrice(p).toFixed(2))}));
+  }
+
+  loadPendingPacks(){
+    try{ const raw=localStorage.getItem('footystock_packs_'+this.getUserId()); return raw?JSON.parse(raw):[]; }
+    catch(e){ return []; }
+  }
+  savePendingPacks(packs){
+    try{ localStorage.setItem('footystock_packs_'+this.getUserId(),JSON.stringify(packs)); }catch(e){}
+  }
+
+  checkPromotion(oldCups, newCups, clubId){
+    const oldDiv=this.compDivision(oldCups);
+    const newDiv=this.compDivision(newCups);
+    if(oldDiv===newDiv) return;
+    const seenKey='footystock_promo_'+clubId+'_'+oldDiv+'_'+newDiv;
+    if(localStorage.getItem(seenKey)) return;
+    localStorage.setItem(seenKey,'1');
+    const divOrder=['Bronze','Silver','Gold','Platinum','Elite'];
+    const promoted=divOrder.indexOf(newDiv)>divOrder.indexOf(oldDiv);
+    const meta=this.compDivMeta(newDiv);
+    const direction=promoted?'PROMOTED TO':'RELEGATED TO';
+    const message=promoted
+      ?`You've climbed to ${newDiv}! Tougher competition awaits — but so do better rewards.`
+      :`You've dropped to ${newDiv}. Fight back to reclaim your place!`;
+    this.setState({showPromotion:true,promotionToShow:{direction,divName:newDiv,emoji:meta.emoji,message}});
+  }
+  dismissPromotion(){ this.setState({showPromotion:false,promotionToShow:null}); }
+
+  async loadCompetition(){
+    const{myClub,clubMembers}=this.state;
+    if(!myClub) return;
+    if((clubMembers||[]).length<5) return;
+    this.setState({compGroupLoading:true});
+    try{
+      const weekStart=this.compWeekStart().toISOString();
+      const allThisWeek=await Supa.get('comp_groups','week_start=eq.'+weekStart+'&select=*');
+      if(!allThisWeek.length){
+        this.setState({activeCompGroup:null,compGroupEntry:null,compGroupClubs:[],compGroupLoading:false});
+        await this.runMatchmaking();
+        return;
+      }
+      const groupIds=allThisWeek.map(g=>g.id);
+      const myEntries=await Supa.get('comp_group_clubs',
+        'club_id=eq.'+myClub.id+'&group_id=in.('+groupIds.join(',')+')'
+      );
+      if(!myEntries.length){
+        this.setState({activeCompGroup:null,compGroupEntry:null,compGroupClubs:[],compGroupLoading:false});
+        await this.runMatchmaking();
+        return;
+      }
+      const myEntry=myEntries[0];
+      const myGroup=allThisWeek.find(g=>g.id===myEntry.group_id)||allThisWeek[0];
+      const allEntries=await Supa.get('comp_group_clubs','group_id=eq.'+myEntry.group_id+'&order=rank.asc.nullslast,final_score.desc.nullslast');
+      // Finalize if ended
+      if(myGroup.status==='active'&&new Date()>new Date(myGroup.week_end)){
+        await this.finalizeCompetition(myGroup.id,myGroup.division,allEntries);
+        await this.loadCompetition();
+        return;
+      }
+      const uid=this.getUserId();
+      await this.ensureCompPortfolio(myGroup.id,myClub.id,uid);
+      this.setState({activeCompGroup:myGroup,compGroupEntry:myEntry,compGroupClubs:allEntries,compGroupLoading:false});
+    }catch(e){
+      console.warn('loadCompetition:',e.message);
+      this.setState({compGroupLoading:false});
+    }
+  }
+
+  async ensureCompPortfolio(groupId, clubId, userId){
+    const dname=this.loadUsername()||'Anonymous';
+    try{
+      const existing=await Supa.get('comp_member_portfolios','group_id=eq.'+groupId+'&user_id=eq.'+userId+'&select=cash,holdings');
+      if(existing.length){
+        const p=existing[0];
+        this.setState({compPortfolio:{cash:parseFloat(p.cash)||10000,holdings:p.holdings||{}}});
+        return;
+      }
+      await Supa.post('comp_member_portfolios',{group_id:groupId,club_id:clubId,user_id:userId,display_name:dname,cash:10000,holdings:{}});
+      this.setState({compPortfolio:{cash:10000,holdings:{}}});
+    }catch(e){
+      console.warn('ensureCompPortfolio:',e.message);
+      this.setState({compPortfolio:{cash:10000,holdings:{}}});
+    }
+  }
+
+  async runMatchmaking(){
+    const{myClub}=this.state; if(!myClub) return;
+    const weekStart=this.compWeekStart().toISOString();
+    const weekEnd=this.compWeekEnd().toISOString();
+    try{
+      const allClubs=await Supa.get('clubs','select=id,name,cups&order=cups.desc');
+      const divOrder=['Bronze','Silver','Gold','Platinum','Elite'];
+      const byDiv={Bronze:[],Silver:[],Gold:[],Platinum:[],Elite:[]};
+      allClubs.forEach(c=>byDiv[this.compDivision(c.cups||0)].push({...c,cups:c.cups||0}));
+      const myDiv=this.compDivision(myClub.cups||0);
+      const myDivIdx=divOrder.indexOf(myDiv);
+      const prioritized=[];
+      divOrder.forEach((div,i)=>{
+        byDiv[div].forEach(c=>prioritized.push({...c,div,distance:Math.abs(i-myDivIdx)}));
+      });
+      prioritized.sort((a,b)=>a.distance-b.distance||(b.cups-a.cups));
+      const taken=new Set();
+      const groups=[];
+      for(let i=0;i<prioritized.length;i++){
+        if(taken.has(prioritized[i].id)) continue;
+        const group=[prioritized[i]];
+        taken.add(prioritized[i].id);
+        for(let j=i+1;j<prioritized.length&&group.length<6;j++){
+          if(!taken.has(prioritized[j].id)){group.push(prioritized[j]);taken.add(prioritized[j].id);}
+        }
+        groups.push({group,division:group[0].div});
+      }
+      const myGroupData=groups.find(g=>g.group.some(c=>c.id===myClub.id));
+      if(!myGroupData) return;
+      // Create all groups; race condition: if another client beat us, upsert on conflict
+      for(const g of groups){
+        try{
+          const gr=await Supa.post('comp_groups',{division:g.division,week_start:weekStart,week_end:weekEnd,status:'active'});
+          const grRow=Array.isArray(gr)?gr[0]:gr;
+          for(const c of g.group){
+            const homeDivIdx=divOrder.indexOf(c.div);
+            const groupDivIdx=divOrder.indexOf(g.division);
+            await Supa.upsert('comp_group_clubs',{
+              group_id:grRow.id,club_id:c.id,club_name:c.name,home_division:c.div,
+              member_count:0,play_up_divisions:Math.max(0,groupDivIdx-homeDivIdx),
+            },'group_id,club_id');
+          }
+        }catch(e){ /* race condition or dup — harmless */ }
+      }
+      await this.loadCompetition();
+    }catch(e){ console.warn('runMatchmaking:',e.message); this.setState({compGroupLoading:false}); }
+  }
+
+  async finalizeCompetition(groupId, division, allEntries){
+    try{
+      const updated=await Supa.patch('comp_groups','id=eq.'+groupId+'&status=eq.active',{status:'completed'});
+      if(!updated||!updated.length) return;
+      const portfolios=await Supa.get('comp_member_portfolios','group_id=eq.'+groupId);
+      const DB=this.getDB();
+      const clubScores={};
+      portfolios.forEach(port=>{
+        const cid=port.club_id;
+        let val=parseFloat(port.cash)||0;
+        Object.entries(port.holdings||{}).forEach(([pid,h])=>{
+          const p=DB.find(x=>x.id===pid);
+          if(p) val+=this.curPrice(p)*(h.qty||0);
+        });
+        const pct=(val/10000-1)*100;
+        if(!clubScores[cid]) clubScores[cid]=[];
+        clubScores[cid].push(pct);
+      });
+      const clubAvg={};
+      Object.entries(clubScores).forEach(([cid,arr])=>{ clubAvg[cid]=arr.reduce((s,r)=>s+r,0)/arr.length; });
+      const ranked=[...allEntries].sort((a,b)=>(clubAvg[b.club_id]||0)-(clubAvg[a.club_id]||0));
+      const myClubId=this.state.myClub?.id;
+      const divOrder=['Bronze','Silver','Gold','Platinum','Elite'];
+      for(let i=0;i<ranked.length;i++){
+        const entry=ranked[i]; const rank=i+1;
+        const score=clubAvg[entry.club_id]||0;
+        try{
+          const clubRows=await Supa.get('clubs','id=eq.'+entry.club_id+'&select=cups');
+          const cupsNow=(clubRows[0]?.cups)||0;
+          let newCups;
+          if(division==='Bronze'&&rank===1){ newCups=10; }
+          else{ const delta=this.compCupDelta(division,rank); newCups=Math.max(0,cupsNow+delta); }
+          if(rank<=3&&(entry.play_up_divisions||0)>0) newCups+=entry.play_up_divisions*2;
+          const cupsGained=newCups-cupsNow;
+          await Supa.patch('clubs','id=eq.'+entry.club_id,{cups:newCups});
+          await Supa.patch('comp_group_clubs','group_id=eq.'+groupId+'&club_id=eq.'+entry.club_id,{final_score:parseFloat(score.toFixed(4)),rank,cups_delta:cupsGained});
+          if(entry.club_id===myClubId&&(rank===1||rank===2)){
+            const cfgs=this.compPackConfig(division,rank);
+            const newPacks=cfgs.map(cfg=>({stocks:this.generatePack(cfg.minVal,cfg.count),division,rank,week:this.compWeekKey()}));
+            const pending=[...this.loadPendingPacks(),...newPacks];
+            this.savePendingPacks(pending);
+            this.setState({pendingPacks:pending});
+            this.checkPromotion(cupsNow,newCups,myClubId);
+          }
+        }catch(e){ console.warn('finalizeCompetition entry:',e.message); }
+      }
+      await this.loadMyClub();
+    }catch(e){ console.warn('finalizeCompetition:',e.message); }
+  }
+
+  compNetWorth(){
+    const{compPortfolio}=this.state;
+    if(!compPortfolio) return 10000;
+    const DB=this.getDB();
+    let val=parseFloat(compPortfolio.cash)||0;
+    Object.entries(compPortfolio.holdings||{}).forEach(([id,h])=>{
+      const p=DB.find(x=>x.id===id);
+      if(p) val+=this.curPrice(p)*(h.qty||0);
+    });
+    return val;
+  }
+
+  async _saveCompPortfolio(portfolio){
+    const{activeCompGroup,myClub}=this.state; if(!activeCompGroup||!myClub) return;
+    const uid=this.getUserId();
+    try{
+      await Supa.patch('comp_member_portfolios','group_id=eq.'+activeCompGroup.id+'&user_id=eq.'+uid,
+        {cash:portfolio.cash,holdings:portfolio.holdings,updated_at:new Date().toISOString()});
+    }catch(e){ console.warn('saveCompPortfolio:',e.message); }
+  }
+
+  async buyComp(playerId){
+    const{compPortfolio,activeCompGroup}=this.state;
+    if(!activeCompGroup){this.setState({compError:'No active competition.'});return;}
+    const DB=this.getDB();
+    const p=DB.find(x=>x.id===playerId); if(!p) return;
+    const price=parseFloat(this.curPrice(p).toFixed(2));
+    if((compPortfolio.cash||0)<price){this.setState({compError:'Not enough comp cash.'});return;}
+    const holdings={...compPortfolio.holdings};
+    const ex=holdings[playerId];
+    if(ex){ const nq=ex.qty+1; holdings[playerId]={qty:nq,avg:parseFloat(((ex.avg*ex.qty+price)/nq).toFixed(2))}; }
+    else{ holdings[playerId]={qty:1,avg:price}; }
+    const newPort={cash:parseFloat((compPortfolio.cash-price).toFixed(2)),holdings};
+    this.setState({compPortfolio:newPort,compError:''});
+    await this._saveCompPortfolio(newPort);
+  }
+
+  async sellComp(playerId){
+    const{compPortfolio}=this.state;
+    const DB=this.getDB();
+    const p=DB.find(x=>x.id===playerId); if(!p) return;
+    const h=compPortfolio.holdings[playerId]; if(!h||h.qty<1) return;
+    const price=parseFloat(this.curPrice(p).toFixed(2));
+    const holdings={...compPortfolio.holdings};
+    if(h.qty===1){ delete holdings[playerId]; }else{ holdings[playerId]={...h,qty:h.qty-1}; }
+    const newPort={cash:parseFloat((compPortfolio.cash+price).toFixed(2)),holdings};
+    this.setState({compPortfolio:newPort,compError:''});
+    await this._saveCompPortfolio(newPort);
+  }
+
+  openCompTrade(){ this.setState({compTradeOpen:true,compSearch:'',compError:''}); }
+  closeCompTrade(){ this.setState({compTradeOpen:false}); }
+
+  openPackReveal(){
+    const packs=this.state.pendingPacks||[];
+    if(!packs.length) return;
+    this.setState({showPackReveal:true,packRevealFlipped:new Array(packs[0].stocks.length).fill(false)});
+  }
+  flipPackCard(idx){
+    const f=[...this.state.packRevealFlipped]; f[idx]=true; this.setState({packRevealFlipped:f});
+  }
+  claimPack(){
+    const packs=this.state.pendingPacks||[]; if(!packs.length) return;
+    const pack=packs[0];
+    const holdings={...this.state.holdings};
+    pack.stocks.forEach(s=>{
+      const ex=holdings[s.id];
+      if(ex){ const nq=ex.qty+1; holdings[s.id]={qty:nq,avg:parseFloat(((ex.avg*ex.qty+s.price)/nq).toFixed(2))}; }
+      else{ holdings[s.id]={qty:1,avg:s.price}; }
+    });
+    const remaining=packs.slice(1);
+    this.savePendingPacks(remaining);
+    this.setState({holdings,pendingPacks:remaining,showPackReveal:false,packRevealFlipped:[]});
+    this.save();
+    if(remaining.length>0) setTimeout(()=>this.openPackReveal(),300);
   }
 
   // ============ RENDER ============
@@ -5532,6 +6148,149 @@ Yan Diomande|RB Leipzig|CM|21|4
       submitClubChat:()=>this.sendChatMessage(),
       sharePortfolio:()=>this.sharePortfolio(),
       clubChatSending:S.clubChatSending,
+      // competition
+      myClubCups:S.myClub?.cups||0,
+      clubDivInfo:(()=>{
+        const cups=S.myClub?.cups||0;
+        const divName=this.compDivision(cups);
+        const meta=this.compDivMeta(divName);
+        return {...meta};
+      })(),
+      clubTooSmall:(S.myClub&&(S.clubMembers||[]).length<5),
+      isClubCompetition:S.myClub&&S.clubView==='competition',
+      goCompetition:()=>{ this.setState({clubView:'competition',clubError:'',clubSuccess:''}); this.loadCompetition(); },
+      compGroupLoading:S.compGroupLoading,
+      compDivInfo:(()=>{
+        const cups=S.myClub?.cups||0;
+        const divName=this.compDivision(cups);
+        const meta=this.compDivMeta(divName);
+        const progressInDiv=cups-meta.minCups;
+        const divRange=(meta.nextThreshold||10)-meta.minCups;
+        const progressPct=meta.isMax?100:Math.min(100,Math.round(progressInDiv/Math.max(1,divRange)*100));
+        return {...meta,progressPct};
+      })(),
+      hasActiveComp:!!(S.activeCompGroup&&S.activeCompGroup.status==='active'),
+      noActiveComp:!(S.activeCompGroup)&&!S.compGroupLoading,
+      compEndsStr:S.activeCompGroup?new Date(S.activeCompGroup.week_end).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}):'',
+      compTableRows:(()=>{
+        if(!S.activeCompGroup) return [];
+        const entries=[...(S.compGroupClubs||[])];
+        const myClubId=S.myClub?.id;
+        const rankColors={1:'#f5c518',2:'#8a9ba8',3:'#c97c3a'};
+        return entries.map((entry,idx)=>{
+          const isMe=entry.club_id===myClubId;
+          const hasScore=entry.final_score!==null&&entry.final_score!==undefined;
+          let displayScore=hasScore?entry.final_score:null;
+          if(isMe&&!hasScore){
+            const nw=this.compNetWorth();
+            displayScore=(nw/10000-1)*100;
+          }
+          const rank=entry.rank||(idx+1);
+          const cupsChange=entry.cups_delta!=null?(entry.cups_delta>0?'+'+entry.cups_delta:String(entry.cups_delta)):'—';
+          const divLabel=entry.home_division+(entry.play_up_divisions>0?' ↑'+entry.play_up_divisions:'');
+          return {
+            rank:entry.rank||'—',
+            rankColor:rankColors[entry.rank]||'#8a938c',
+            clubName:entry.club_name+(isMe?' ★':''),
+            isMe,divLabel,
+            scoreStr:displayScore!=null?((displayScore>=0?'+':'')+displayScore.toFixed(1)+'%'):'—',
+            scoreColor:displayScore!=null?(displayScore>=0?'#16a85f':'#d23b2c'):'#8a938c',
+            cupsChange,
+          };
+        });
+      })(),
+      compNWStr:(()=>{ const v=this.compNetWorth(); return '$'+v.toFixed(0); })(),
+      compGainStr:(()=>{
+        const v=this.compNetWorth(); const g=v-10000;
+        const pct=(v/10000-1)*100;
+        return (g>=0?'+$':'-$')+Math.abs(g).toFixed(0)+' ('+(pct>=0?'+':'')+pct.toFixed(1)+'%)';
+      })(),
+      compGainColor:(()=>{ return this.compNetWorth()>=10000?'#16a85f':'#d23b2c'; })(),
+      compCashStr:'$'+((S.compPortfolio?.cash)||10000).toFixed(0),
+      compHasHoldings:Object.keys(S.compPortfolio?.holdings||{}).length>0,
+      compHoldingRows:(()=>{
+        const DB=S.ready?this.getDB():[];
+        return Object.entries(S.compPortfolio?.holdings||{}).map(([id,h])=>{
+          const p=DB.find(x=>x.id===id); if(!p) return null;
+          const price=parseFloat(this.curPrice(p).toFixed(2));
+          const val=price*h.qty; const pl=(price-h.avg)*h.qty;
+          return {id,name:p.name,qty:h.qty,avg:h.avg.toFixed(2),valueStr:'$'+val.toFixed(0),
+            plStr:(pl>=0?'+$':'-$')+Math.abs(pl).toFixed(0),plColor:pl>=0?'#16a85f':'#d23b2c'};
+        }).filter(Boolean);
+      })(),
+      compReward1:(()=>{
+        const div=this.compDivision(S.myClub?.cups||0);
+        const cfgs=this.compPackConfig(div,1);
+        if(!cfgs.length) return '';
+        return cfgs.map(c=>`$${c.minVal}+ Pack · ${c.count} stocks`).join(' + ');
+      })(),
+      compReward2:(()=>{
+        const div=this.compDivision(S.myClub?.cups||0);
+        const cfgs=this.compPackConfig(div,2);
+        if(!cfgs.length) return '';
+        return `$${cfgs[0].minVal}+ Pack · ${cfgs[0].count} stocks`;
+      })(),
+      compCupRows:(()=>{
+        const div=this.compDivision(S.myClub?.cups||0);
+        const labels=['1st','2nd','3rd','4th','5th','6th'];
+        const colors={1:'#f5c518',2:'#8a9ba8',3:'#c97c3a'};
+        return labels.map((label,i)=>{
+          const rank=i+1;
+          let cups;
+          if(div==='Bronze'&&rank===1){ cups='→ Silver (auto-promote)'; }
+          else{ const d=this.compCupDelta(div,rank); cups=(d>0?'+':'')+d+(d===0?'':' cups'); }
+          return {label,cups,color:colors[rank]||'#8a938c'};
+        });
+      })(),
+      hasPendingPacks:(S.pendingPacks||[]).length>0,
+      pendingPacksLabel:(()=>{
+        const n=(S.pendingPacks||[]).length;
+        return n===1?'1 reward pack waiting':''+n+' reward packs waiting';
+      })(),
+      openPackReveal:()=>this.openPackReveal(),
+      showPackReveal:S.showPackReveal,
+      packRevealTitle:(()=>{
+        const pack=(S.pendingPacks||[])[0];
+        if(!pack) return '';
+        return `${pack.division} Division · ${pack.rank===1?'1st Place':'2nd Place'}`;
+      })(),
+      packRevealCards:(()=>{
+        const pack=(S.pendingPacks||[])[0]; if(!pack) return [];
+        return pack.stocks.map((s,i)=>({
+          ...s, flipped:(S.packRevealFlipped||[])[i]||false,
+          flip:()=>this.flipPackCard(i),
+          price:s.price.toFixed(0),
+        }));
+      })(),
+      packAllFlipped:(()=>{
+        const pack=(S.pendingPacks||[])[0]; if(!pack) return false;
+        const flipped=S.packRevealFlipped||[];
+        return pack.stocks.every((_,i)=>flipped[i]);
+      })(),
+      claimPack:()=>this.claimPack(),
+      showPromotion:S.showPromotion,
+      promotionToShow:S.promotionToShow||{},
+      dismissPromotion:()=>this.dismissPromotion(),
+      compTradeOpen:S.compTradeOpen,
+      openCompTrade:()=>this.openCompTrade(),
+      closeCompTrade:()=>this.closeCompTrade(),
+      stopCompTrade:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
+      compSearch:S.compSearch||'',
+      onCompSearch:(e)=>this.setState({compSearch:e.target.value,compError:''}),
+      compError:S.compError||'',
+      compSearchResults:(()=>{
+        const DB=S.ready?this.getDB():[];
+        const q=(S.compSearch||'').toLowerCase().trim();
+        if(!q) return [];
+        const port=S.compPortfolio||{cash:10000,holdings:{}};
+        return DB.filter(p=>p.name.toLowerCase().includes(q)||p.team.toLowerCase().includes(q)).slice(0,8).map(p=>{
+          const price=parseFloat(this.curPrice(p).toFixed(2));
+          const h=port.holdings[p.id];
+          return {id:p.id,name:p.name,team:p.team,priceStr:price.toFixed(0),
+            cantAfford:(port.cash||0)<price,hasHolding:!!h,
+            onBuy:()=>this.buyComp(p.id), onSell:()=>this.sellComp(p.id)};
+        });
+      })(),
       clubMessages:(()=>{
         const uid=this.getUserId();
         return (S.clubMessages||[]).map(m=>{
