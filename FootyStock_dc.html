@@ -1703,6 +1703,7 @@ class Component extends DCLogic {
       }).catch(()=>settleFirstLoad());
     };
     pollLive();
+    this.loadSbHist(); // load shared price history from Supabase (same for all users)
     // If we already have a cached live snapshot we can paint immediately from
     // it (the fetch refreshes it in the background) — no race, no flash. Only a
     // brand-new visitor with no cache waits for the worker, and only falls back
@@ -3358,7 +3359,6 @@ Yan Diomande|RB Leipzig|CM|21|4
     // assign ranks by price desc
     db.sort((a,b)=>b.price-a.price);
     db.forEach((p,i)=>p.rank=i+1);
-    this.saveHist(); // flush any newly seeded / updated history in one write
     this.postPriceCloses(db, dayKey);
     return db;
   }
@@ -3450,39 +3450,70 @@ Yan Diomande|RB Leipzig|CM|21|4
     out[M-1]=anchor; // node M-1 is "today" (exact) — drop it, keep days before
     return out.slice(0,count);
   }
+  // Load all shared price history from Supabase into this._sbHist keyed by player_id.
+  // Called once on startup; result is a map: {player_id -> [{day_key, price}, ...] sorted asc}.
+  async loadSbHist(){
+    if(this._sbHistLoaded) return;
+    this._sbHistLoaded=true;
+    try{
+      const r=await fetch(`${SUPABASE_URL}/rest/v1/price_history?select=player_id,day_key,price&order=player_id.asc,day_key.asc&limit=100000`,{headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY}});
+      if(!r.ok) return;
+      const rows=await r.json();
+      const map={};
+      for(const row of rows){
+        if(!map[row.player_id]) map[row.player_id]=[];
+        map[row.player_id].push({d:row.day_key,p:parseFloat(row.price)});
+      }
+      this._sbHist=map;
+      this._db=null; // invalidate cached db so next render uses fresh history
+      this.setState(s=>({tick:s.tick+1}));
+    }catch(e){}
+  }
   priceHistory(id, todayClose, dayKey, synthHist){
     const close=Math.round(todayClose*100)/100;
-    // Prefer shared worker history (same for all users) over per-browser localStorage.
+    // Prefer Supabase history — shared, durable, identical for all users.
+    const sbRec=this._sbHist?.[id];
+    if(sbRec && sbRec.length){
+      const real=sbRec.map(e=>e.p);
+      if(real.length>=90) return real.slice(-90);
+      return this.histBackfill(id, real[0], 90-real.length).concat(real);
+    }
+    // Fallback: worker in-memory history (available within 60s of a restart).
     const workerRec = this._wcLive?.priceHist?.[id];
     if(workerRec && workerRec.length){
       const real=workerRec.map(e=>e.p);
       if(real.length>=90) return real.slice(-90);
       return this.histBackfill(id, real[0], 90-real.length).concat(real);
     }
-    // Fallback: local history (used until worker has accumulated closes).
-    const store=this._histStore||(this._histStore=this.loadHist());
-    let rec=store[id];
-    if(!rec || !Array.isArray(rec.r) || !rec.r.length){
-      const seed=synthHist?synthHist.map(v=>Math.round(v*100)/100):[close];
-      rec={d:dayKey,r:seed}; store[id]=rec; this._histDirty=true;
-    } else if(rec.d!==dayKey){
-      rec.r.push(close); while(rec.r.length>90) rec.r.shift(); rec.d=dayKey; this._histDirty=true;
-    } else if(rec.r[rec.r.length-1]!==close){
-      rec.r[rec.r.length-1]=close; this._histDirty=true;
-    }
-    const real=rec.r;
-    if(real.length>=90) return real.slice(-90);
-    return this.histBackfill(id, real[0], 90-real.length).concat(real);
+    // Last resort: local synthetic seed only (no real history yet).
+    const seed=synthHist?synthHist.map(v=>Math.round(v*100)/100):[close];
+    return this.histBackfill(id, seed[0], 90-seed.length).concat(seed);
   }
   postPriceCloses(db, dayKey){
-    if(!this._liveWorkerBase) return;
     const now=Date.now();
-    // POST every 60s so history rebuilds quickly after a worker restart.
+    // Upsert today's closes to Supabase every 60s so all users stay in sync.
     if(this._lastClosePost && now-this._lastClosePost < 60000) return;
     this._lastClosePost=now;
-    const closes={};
-    for(const p of db) closes[p.id]=p.price;
-    fetch(this._liveWorkerBase+'/price-closes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dayKey,closes})}).catch(()=>{});
+    const rows=db.map(p=>({player_id:p.id,day_key:dayKey,price:Math.round(p.price*100)/100}));
+    fetch(`${SUPABASE_URL}/rest/v1/price_history`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':'Bearer '+SUPABASE_KEY,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(rows)}).then(r=>{
+      if(r.ok){
+        // Update local cache so next priceHistory() call reflects the upsert.
+        if(!this._sbHist) this._sbHist={};
+        for(const p of db){
+          let arr=this._sbHist[p.id]||[];
+          const last=arr[arr.length-1];
+          const price=Math.round(p.price*100)/100;
+          if(last && last.d===dayKey){ last.p=price; }
+          else{ arr=[...arr,{d:dayKey,p:price}]; if(arr.length>90) arr=arr.slice(-90); this._sbHist[p.id]=arr; }
+        }
+      }
+    }).catch(()=>{});
+    // Also push to worker in-memory cache as a fast secondary path.
+    if(this._liveWorkerBase){
+      const closes={};
+      for(const p of db) closes[p.id]=p.price;
+      fetch(this._liveWorkerBase+'/price-closes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dayKey,closes})}).catch(()=>{});
+    }
   }
   byId(id){ return this.getDB().find(p=>p.id===id); }
 
