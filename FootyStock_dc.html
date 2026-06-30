@@ -73,9 +73,8 @@
     .fs-row-leader{min-width:0!important;padding:10px 12px!important;gap:8px!important;grid-template-columns:32px minmax(0,1fr) 78px!important}
     /* Avatar badge: switch to system font to avoid Space Grotesk glyph artifacts */
     .fs-avatar-badge{font-family:-apple-system,BlinkMacSystemFont,system-ui,sans-serif!important}
-    /* Events table: hide mins col(3), keep rating+delta — date | fixture | rating | delta */
-    .fs-row-events{min-width:0!important;grid-template-columns:55px minmax(0,1fr) 50px 58px!important;gap:6px!important}
-    .fs-row-events>*:nth-child(3){display:none!important}
+    /* Events table: compact all 5 cols to fit mobile — date | fixture | mins | rating | delta */
+    .fs-row-events{min-width:0!important;grid-template-columns:48px minmax(0,1fr) 30px 40px 50px!important;gap:4px!important;font-size:11px!important}
     .fs-row-txn{padding:10px 12px!important}
 
     .fs-detail-grid{grid-template-columns:minmax(0,1fr)!important}
@@ -4768,10 +4767,12 @@ Yan Diomande|RB Leipzig|CM|21|4
           const k=idxFromClientX(t.clientX,this._chartTouchRect);
           this.setState({chartDragStart:k,chartHoverIdx:k}); };
         const onChartTouchMove=(e)=>{ e.preventDefault(); if(!this._chartTouchRect) return;
-          const t=e.touches[0]; const k=idxFromClientX(t.clientX,this._chartTouchRect);
+          this._chartLatestTouchX=e.touches[0].clientX;
           if(this._chartMoveScheduled) return;
           this._chartMoveScheduled=true;
-          requestAnimationFrame(()=>{ this._chartMoveScheduled=false; if(this.state.chartHoverIdx!==k) this.setState({chartHoverIdx:k}); }); };
+          requestAnimationFrame(()=>{ this._chartMoveScheduled=false;
+            const k=idxFromClientX(this._chartLatestTouchX,this._chartTouchRect);
+            if(this.state.chartHoverIdx!==k) this.setState({chartHoverIdx:k}); }); };
         const onChartTouchEnd=()=>{ this._chartTouchRect=null; this._chartMoveScheduled=false;
           const ds=this.state.chartDragStart, hi=this.state.chartHoverIdx;
           if(ds!=null && hi!=null && ds===hi) this.setState({chartDragStart:null,chartHoverIdx:null});

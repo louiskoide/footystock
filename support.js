@@ -234,7 +234,7 @@
         ? rootEl.querySelector('textarea#' + activeTextareaId)
         : rootEl.querySelector('textarea');
       if (newTa) {
-        newTa.focus();
+        newTa.focus({ preventScroll: true });
         try { newTa.setSelectionRange(selStart, selEnd); } catch (e) {}
       }
     } else if (wasInput) {
@@ -242,7 +242,7 @@
         ? rootEl.querySelector('input#' + activeInputId)
         : rootEl.querySelector('input');
       if (newInput) {
-        newInput.focus();
+        newInput.focus({ preventScroll: true });
         try { newInput.setSelectionRange(selStart, selEnd); } catch (e) {}
       }
     }
