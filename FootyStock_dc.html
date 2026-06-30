@@ -1302,8 +1302,9 @@
 
       <!-- New account -->
       <sc-if value="{{ loginStepEmail }}" hint-placeholder-val="{{ true }}">
-        <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Pick a display name</div>
-        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">Choose a unique name to join the leaderboard. Save your account code to log in on other devices.</div>
+        <div style="font:700 18px 'Space Grotesk';color:#eaf3ed;margin-bottom:4px">Create your account</div>
+        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:22px">Pick a display name to join the leaderboard. No password needed.</div>
+        <input id="fs-login-email" type="email" placeholder="Email address (optional)" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
         <input id="fs-login-name" placeholder="Display name (e.g. LouisK)" maxlength="32" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
         <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
         <button onClick="{{ doLogin }}" style="width:100%;font:700 16px 'Hanken Grotesk';background:{{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginBtnLabel }}</button>
@@ -3635,6 +3636,7 @@ Yan Diomande|RB Leipzig|CM|21|4
 
   async doLogin(){
     const name=(document.getElementById('fs-login-name')||{}).value||'';
+    const email=((document.getElementById('fs-login-email')||{}).value||'').trim();
     if(!name.trim()){ this.setState({loginError:'Enter a display name.'}); return; }
     if(name.trim().length<2){ this.setState({loginError:'Display name must be at least 2 characters.'}); return; }
     this.setState({loginError:'',loginSending:true});
@@ -3648,6 +3650,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     // Generate or reuse token
     let token=this.loadToken();
     if(!token||token==='anon'){ token=this._genToken(); try{ localStorage.setItem('fs_token',token); }catch(e){} }
+    if(email) this.saveEmail(email);
     this.saveUsername(name.trim());
     try{ localStorage.setItem('fs_loggedin','1'); }catch(e){}
     this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
