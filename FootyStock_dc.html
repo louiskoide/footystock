@@ -226,13 +226,15 @@
           </sc-for>
         </div>
       </div>
-      <!-- most bought / most sold tabs -->
+      <!-- most held / most bought / most sold tabs -->
       <div style="padding-top:14px;border-top:1px solid #f3f4f0">
         <div style="display:flex;gap:6px;margin-bottom:12px">
-          <button onClick="{{ recapTabBought }}" style="{{ recapTabBoughtStyle }}">Most Held</button>
+          <button onClick="{{ recapTabHeld }}" style="{{ recapTabHeldStyle }}">Most Held</button>
+          <button onClick="{{ recapTabBought }}" style="{{ recapTabBoughtStyle }}">Most Bought</button>
+          <button onClick="{{ recapTabSold }}" style="{{ recapTabSoldStyle }}">Most Sold</button>
         </div>
-        <sc-if value="{{ recapShowBought }}">
-          <sc-for list="{{ recap.mostBought }}" as="b" hint-placeholder-count="3">
+        <sc-if value="{{ recapShowHeld }}">
+          <sc-for list="{{ recap.mostHeld }}" as="b" hint-placeholder-count="3">
             <div onClick="{{ b.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
               <div style="display:flex;flex-direction:column;min-width:0">
                 <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</span>
@@ -241,8 +243,22 @@
               <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ b.price }}</span>
             </div>
           </sc-for>
-          <sc-if value="{{ recapNoBought }}">
+          <sc-if value="{{ recapNoHeld }}">
             <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;padding:8px 0">No global holders data yet.</div>
+          </sc-if>
+        </sc-if>
+        <sc-if value="{{ recapShowBought }}">
+          <sc-for list="{{ recap.mostBought }}" as="b" hint-placeholder-count="3">
+            <div onClick="{{ b.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
+              <div style="display:flex;flex-direction:column;min-width:0">
+                <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ b.name }}</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ b.qty }} buys</span>
+              </div>
+              <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ b.price }}</span>
+            </div>
+          </sc-for>
+          <sc-if value="{{ recapNoBought }}">
+            <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;padding:8px 0">No buy activity yet — trades will appear here once the market opens.</div>
           </sc-if>
         </sc-if>
         <sc-if value="{{ recapShowSold }}">
@@ -250,13 +266,13 @@
             <div onClick="{{ s.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f3f4f0;cursor:pointer" style-hover="opacity:.75">
               <div style="display:flex;flex-direction:column;min-width:0">
                 <span style="font:600 13.5px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ s.name }}</span>
-                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ s.qty }} shares sold</span>
+                <span style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">{{ s.qty }} sells</span>
               </div>
               <span style="font:700 14px 'Space Grotesk';flex-shrink:0;margin-left:12px">{{ s.price }}</span>
             </div>
           </sc-for>
           <sc-if value="{{ recapNoSold }}">
-            <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;padding:8px 0">No sell transactions yet.</div>
+            <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;padding:8px 0">No sell activity yet — trades will appear here once the market opens.</div>
           </sc-if>
         </sc-if>
       </div>
@@ -1628,7 +1644,7 @@ class Component extends DCLogic {
       joinDate: today, allTimeHigh: 10000,
       portfolioLoading: true, username: '',
       clubLoading: false, myClub: null, clubMembers: [], clubPublicList: [],
-      clubView: 'home', clubMenuOpenId: null, recapTab: 'bought',
+      clubView: 'home', clubMenuOpenId: null, recapTab: 'held',
       clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
       clubJoinCode: '', clubJoinSearch: '',
       clubError: '', clubSuccess: '',
@@ -4334,7 +4350,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     const isSearching=S.search.trim().length>0;
     const showRecap=DB.length>0&&!S.recapDismissed&&!isSearching;
     const recap=(()=>{
-      if(!DB.length) return {date:'',sentiment:'',gainers:[],losers:[],mostBought:[],mostSold:[],noBought:true,noSold:true,headline:''};
+      if(!DB.length) return {date:'',sentiment:'',gainers:[],losers:[],mostHeld:[],mostBought:[],mostSold:[],noHeld:true,noBought:true,noSold:true,headline:''};
       const byChg=[...decoratedDB].sort((a,b)=>b.wkChgNum-a.wkChgNum);
       const recapGainers=byChg.slice(0,3).map(d=>({ name:d.name,team:d.team,price:d.price,chg:d.wkAbs,onClick:d.onClick }));
       const recapLosers=byChg.slice(-3).reverse().map(d=>({ name:d.name,team:d.team,price:d.price,chg:d.wkAbs,onClick:d.onClick }));
@@ -4358,13 +4374,17 @@ Yan Diomande|RB Leipzig|CM|21|4
         }
       }
       const mkGlobal=(obj)=>{ const d=decoratedDB.find(x=>x.id===obj.id); return {name:d?d.name:obj.id,qty:obj.holders,price:d?d.price:'—',onClick:d?d.onClick:()=>{}}; };
-      const mostBought=Object.values(globalTally).sort((a,b)=>b.holders-a.holders).slice(0,3).map(mkGlobal);
-      const mostSold=[];
+      const mostHeld=Object.values(globalTally).sort((a,b)=>b.holders-a.holders).slice(0,3).map(mkGlobal);
+      // Global most-bought / most-sold from the live worker's accumulated trade counters
+      const tradeTotals=(this._wcLive&&this._wcLive.tradeTotals)||{buy:{},sell:{}};
+      const mkTradeRow=(id,count)=>{ const d=decoratedDB.find(x=>x.id===id); return {name:d?d.name:id,qty:count,price:d?d.price:'—',onClick:d?d.onClick:()=>{}}; };
+      const mostBought=Object.entries(tradeTotals.buy||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,n])=>mkTradeRow(id,n));
+      const mostSold=Object.entries(tradeTotals.sell||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,n])=>mkTradeRow(id,n));
       return {
         date:recapDate,
         sentiment:`${upCount} rising · ${downCount} falling`,
-        gainers:recapGainers, losers:recapLosers, mostBought, mostSold,
-        noBought:mostBought.length===0, noSold:mostSold.length===0,
+        gainers:recapGainers, losers:recapLosers, mostHeld, mostBought, mostSold,
+        noHeld:mostHeld.length===0, noBought:mostBought.length===0, noSold:mostSold.length===0,
         headline:`${topGainer?.name??'—'} leads the risers (+${topGainer?.wkChgNum?.toFixed(1)??0}%), while ${topLoser?.name??'—'} is the biggest faller (${topLoser?.wkChgNum?.toFixed(1)??0}%). The market is ${bullish?'broadly bullish':'under selling pressure'} — ${upCount} of ${DB.length} stocks are up.`,
       };
     })();
@@ -4841,10 +4861,12 @@ Yan Diomande|RB Leipzig|CM|21|4
       nwSpark:nwHistPts, movers, showMovers:!isSearching, marketList, universeNote:DB.length+' players priced — movers ranked by real World Cup form &amp; transfer activity. Players not at the World Cup sit flat until the market moves.',
       pricesStale:!this.pricesAreFresh(),
       showRecap, recap, dismissRecap,
-      recapNoBought:recap.noBought, recapNoSold:recap.noSold,
-      recapShowBought:S.recapTab==='bought', recapShowSold:S.recapTab==='sold',
+      recapNoHeld:recap.noHeld, recapNoBought:recap.noBought, recapNoSold:recap.noSold,
+      recapShowHeld:S.recapTab==='held', recapShowBought:S.recapTab==='bought', recapShowSold:S.recapTab==='sold',
+      recapTabHeld:()=>this.setState({recapTab:'held'}),
       recapTabBought:()=>this.setState({recapTab:'bought'}),
       recapTabSold:()=>this.setState({recapTab:'sold'}),
+      recapTabHeldStyle:S.recapTab==='held'?'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:none;cursor:pointer;background:#16201a;color:#fff':'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:1px solid #e1e4dd;cursor:pointer;background:#fff;color:#46504a',
       recapTabBoughtStyle:S.recapTab==='bought'?'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:none;cursor:pointer;background:#16201a;color:#fff':'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:1px solid #e1e4dd;cursor:pointer;background:#fff;color:#46504a',
       recapTabSoldStyle:S.recapTab==='sold'?'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:none;cursor:pointer;background:#16201a;color:#fff':'font:700 12px Hanken Grotesk;padding:6px 14px;border-radius:999px;border:1px solid #e1e4dd;cursor:pointer;background:#fff;color:#46504a',
       // detail
