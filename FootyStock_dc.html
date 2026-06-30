@@ -1372,6 +1372,12 @@
     <div style="font:500 12px 'Hanken Grotesk';color:#e07a1a;margin-top:6px;padding:8px 12px;background:#fff8f0;border-radius:8px;border:1px solid #fcdcb0">{{ tr.marginWarning }}</div>
     </sc-if>
 
+    <sc-if value="{{ tr.showShares }}" hint-placeholder-val="{{ false }}">
+    <div style="margin-top:12px">
+      <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px"><span>Supply</span><span style="font-family:'Space Grotesk';font-weight:600;color:#16201a">{{ tr.sharesLabel }}</span></div>
+      <div style="height:5px;background:#eef1ec;border-radius:99px;overflow:hidden"><div style="height:100%;background:#16a85f;border-radius:99px;width:{{ tr.sharesBarPct }}%"></div></div>
+    </div>
+    </sc-if>
     <div style="font:600 12.5px 'Hanken Grotesk';color:#d23b2c;margin-top:10px;min-height:16px">{{ tr.error }}</div>
 
     <button onClick="{{ tr.confirm }}" style="width:100%;margin-top:8px;font:700 15px 'Hanken Grotesk';background: {{ tr.confirmBg }};color:#fff;border:none;padding:15px;border-radius:13px;cursor: {{ tr.confirmCursor }};opacity: {{ tr.confirmOpacity }}">{{ tr.confirmLabel }}</button>
@@ -1654,6 +1660,15 @@ alter table club_members disable row level security;
 alter table competitions disable row level security;
 alter table comp_portfolios disable row level security;
 alter table club_messages disable row level security;
+
+-- Shares supply table (run this once):
+create table if not exists shares (
+  player_id text primary key,
+  remaining integer not null,
+  total integer not null,
+  updated_at timestamptz default now()
+);
+alter table shares disable row level security;
 */
 
 const SUPABASE_URL='https://pwlszzrvwhflijbjwnnf.supabase.co';
@@ -3315,7 +3330,11 @@ Yan Diomande|RB Leipzig|CM|21|4
       const formScore = applyFormMult(rawForm);
       // hype basket = mood + transfer/news signal, capped so buzz alone can
       // never dwarf fundamentals. Unknowns also get a touch more hype uplift.
-      const hypeScore = clamp(((moodSig-46)+(transferSig-46))/2/30, -1, 1) * (1.3 - 0.4*notoriety);
+      // hateCount: each open hatewatch position globally drags the hype multiplier
+      // down slightly — 10 hatewatchers ≈ -15% hype drag, 50 ≈ -50% cap.
+      const hateCount = (live && live.hateCount) ? (live.hateCount[id] || 0) : 0;
+      const hateDrag = clamp(hateCount * 0.015, 0, 0.5);
+      const hypeScore = clamp(((moodSig-46)+(transferSig-46))/2/30, -1, 1) * (1.3 - 0.4*notoriety) * (1 - hateDrag);
       const fairValueBase = anchor * Math.exp(wPerf*perfScore + wForm*formScore);
       const fairValue = fairValueBase * Math.exp(wHype*hypeScore);
       // Demand pressure from virtual agents + real user trades (server-side
@@ -3779,7 +3798,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // Tell the worker about this trade so real user demand moves the shared
       // market price (same signal as virtual agents). Fire-and-forget: if the
       // worker is down, the trade still executes locally.
-      if(this._liveWorkerBase){ fetch(this._liveWorkerBase+'/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:order.id,side:order.side,qty:order.qty})}).catch(()=>{}); }
+      if(this._liveWorkerBase){ fetch(this._liveWorkerBase+'/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:order.id,side:order.side,qty:order.qty,price:parseFloat(price.toFixed(2))})}).catch(()=>{}); }
       // Share to club chat (fire-and-forget).
       const p2=this.byId(order.id);
       if(p2 && this.state.myClub){ this.shareTradeInChat(order.side,p2.name,order.id,order.qty,parseFloat(this.curPrice(p2).toFixed(2))); }
@@ -4835,7 +4854,11 @@ Yan Diomande|RB Leipzig|CM|21|4
           heldQty:hasPos?held.qty:0,hasPosition:hasPos,avgCost:hasPos?this.money(held.avg):'—',
           posValue:this.money(posValue),posPl:(posUp?'+':'−')+this.money(Math.abs(posPl)).slice(1),posPlColor:posUp?GREEN:RED,
           watchLabel:watched?'★ Watching':'☆ Watch',watchColor:watched?'#e2a32b':'#8a938c',
-          onToggleWatch:()=>this.toggleWatch(p.id),onBuy:()=>this.openTrade(p.id,'buy'),onSell:()=>this.openTrade(p.id,'sell'),
+          onToggleWatch:()=>this.toggleWatch(p.id),
+          sharesLeft:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; return liveShares&&liveShares[p.id]!=null?liveShares[p.id]:null; })(),
+          sharesTotal:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; const s=liveShares&&liveShares[p.id]; return s!=null?Math.round(120000/Math.max(1,this.curPrice(p))):null; })(),
+          soldOut:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; return liveShares&&liveShares[p.id]!=null&&liveShares[p.id]<=0; })(),
+          onBuy:()=>this.openTrade(p.id,'buy'),onSell:()=>this.openTrade(p.id,'sell'),
           sellBg:hasPos?'#fff':'#f5f6f3',sellColor:hasPos?'#16201a':'#bfc6be',sellBorder:hasPos?'#e1e4dd':'#eef1ec',sellCursor:hasPos?'pointer':'not-allowed',
           onHatewatch:()=>this.openTrade(p.id,'hatewatch'),onCover:()=>this.openTrade(p.id,'cover'),
           shortPos:S.shorts[p.id]||null,
@@ -4925,22 +4948,30 @@ Yan Diomande|RB Leipzig|CM|21|4
       const bp=this.buyingPower(); const marginUsed=this.marginUsed(); const marginLimit=this.marginLimit();
       const cashAfter=(buy||isCover)?this.state.cash-total:this.state.cash+total;
       const onMargin=buy&&cashAfter<0;
+      const liveShares=this._wcLive&&this._wcLive.shares;
+      const sharesLeft=liveShares&&liveShares[p.id]!=null?liveShares[p.id]:null;
+      const sharesTotal=sharesLeft!=null?Math.round(120000/Math.max(1,price)):null;
       let error='';
       if(buy&&total>bp) error='Not enough buying power (cash + 50% of holdings).';
+      if(buy&&sharesLeft!=null&&qty>sharesLeft) error=sharesLeft===0?'No shares available — all '+sharesTotal+' shares are held by other players.':'Only '+sharesLeft+' share'+(sharesLeft===1?'':'s')+' remaining.';
       if(S.tradeSide==='sell'&&qty>heldQty) error='You only hold '+heldQty+' shares.';
       if(isHW&&total>bp) error='Need collateral equal to position size.';
       if(isCover&&qty>shortedQty) error='You only have '+shortedQty+' shares hatewatched.';
       const ok=!error;
       const HW_RED='#b91c1c';
-      const maxBuy=Math.floor(bp/price);
+      const maxBuyBp=Math.floor(bp/price);
+      const maxBuy=sharesLeft!=null?Math.min(maxBuyBp,sharesLeft):maxBuyBp;
       const quickQtys=(buy||isHW?[1,5,10,'Max']:isCover?[1,5,'Half','All']:[1,5,'Half','All']).map(label=>{ let q; if(label==='Max')q=Math.max(1,maxBuy); else if(label==='All')q=isCover?shortedQty:heldQty; else if(label==='Half')q=Math.max(1,Math.floor((isCover?shortedQty:heldQty)/2)); else q=label; return {label:String(label),onClick:()=>this.setTradeQty(q)}; });
       const sideLabel=buy?'Buy order':isHW?'Hatewatch':isCover?'Cover hatewatch':'Sell order';
       const sideColor=isHW||isCover?HW_RED:buy?GREEN:RED;
       const confirmLabel=isHW?('Hatewatch '+qty+' · '+this.money(total)):isCover?('Cover '+qty+' · '+this.money(total)):buy?('Buy '+qty+' · '+this.money(total)):('Sell '+qty+' · '+this.money(total));
+      const sharesLabel=sharesLeft!=null?(sharesLeft+' / '+(sharesTotal||'?')+' shares left'):null;
+      const sharesBarPct=sharesTotal&&sharesTotal>0?Math.round(100*sharesLeft/sharesTotal):null;
       tr={ name:p.name,team:p.team,pos:p.pos,price:this.money(price),qty,
         sideLabel,sideColor,
         total:this.money(total),balanceLabel:onMargin?'On margin':'Cash after',balanceAfter:this.money(cashAfter),balanceColor:cashAfter<0?'#e07a1a':'#16201a',
         buyingPower:this.money(bp),showMargin:marginUsed>0||onMargin,marginUsed:this.money(marginUsed),marginLimit:this.money(marginLimit),marginWarning:onMargin?'⚠ Using margin — 0.5%/day interest on borrowed amount.':'',
+        sharesLabel,sharesBarPct,showShares:buy&&sharesLabel!=null,
         inc:()=>this.setTradeQty(qty+1),dec:()=>this.setTradeQty(qty-1),quickQtys,error,
         confirm:()=>this.confirmTrade(),confirmLabel,
         confirmBg:ok?(isHW||isCover?HW_RED:buy?GREEN:RED):'#c4ccc3',confirmCursor:ok?'pointer':'not-allowed',confirmOpacity:ok?'1':'0.7' }; }

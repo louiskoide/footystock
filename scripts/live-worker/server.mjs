@@ -10,8 +10,9 @@ import { loadCrosswalk } from '../lib/crosswalk.mjs';
 import { makeClient } from './api-football.mjs';
 import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses } from './poll.mjs';
 import { refreshHype } from './hype.mjs';
-import { tickDemand, recordTrade } from './demand.mjs';
+import { tickDemand, recordTrade, recordHatewatch } from './demand.mjs';
 import { submitScore, getLeaderboard } from './leaderboard.mjs';
+import { loadShares, decrementShares, incrementShares } from './shares.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -107,19 +108,48 @@ const server = createServer((req, res) => {
   if (url.pathname === '/trade' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
-        const { id, side, qty } = JSON.parse(body);
-        if (typeof id !== 'string' || !['buy', 'sell'].includes(side)) {
+        const { id, side, qty, price } = JSON.parse(body);
+        const q = typeof qty === 'number' && qty > 0 ? qty : 1;
+        if (typeof id !== 'string' || !['buy', 'sell', 'hatewatch', 'cover'].includes(side)) {
           res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request'); return;
         }
-        recordTrade(state, id, side, typeof qty === 'number' && qty > 0 ? qty : 1);
+        if (side === 'buy') {
+          const result = await decrementShares(id, q, price || 100);
+          if (!result.ok) {
+            res.writeHead(409, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ ok: false, reason: 'no_shares', remaining: result.remaining }));
+            return;
+          }
+          state.shares = state.shares || {};
+          state.shares[id] = result.remaining;
+          recordTrade(state, id, 'buy', q);
+        } else if (side === 'sell') {
+          await incrementShares(id, q, price || 100);
+          state.shares = state.shares || {};
+          const sh = await loadShares();
+          state.shares[id] = sh[id]?.remaining ?? state.shares[id];
+          recordTrade(state, id, 'sell', q);
+        } else if (side === 'hatewatch') {
+          recordHatewatch(state, id, q);
+        } else if (side === 'cover') {
+          recordHatewatch(state, id, -q);
+        }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (e) {
         res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request');
       }
     });
+    return;
+  }
+
+  if (url.pathname === '/shares.json') {
+    loadShares().then(shares => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(shares));
+    }).catch(() => { res.writeHead(500); res.end('error'); });
     return;
   }
 

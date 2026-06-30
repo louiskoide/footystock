@@ -77,3 +77,18 @@ export function recordTrade(state, id, side, qty = 1) {
     state.tradeTotals.sell[id] = (state.tradeTotals.sell[id] || 0) + qty;
   }
 }
+
+// Hatewatch: counts open short positions globally per player.
+// Each open hatewatch position drags the hype multiplier down by a small
+// amount — if enough users are hatewatching, it meaningfully suppresses
+// hype-driven price inflation, creating organic downward pressure without
+// requiring real short-selling mechanics.
+export function recordHatewatch(state, id, delta) {
+  if (!state.hateCount) state.hateCount = {};
+  state.hateCount[id] = Math.max(0, (state.hateCount[id] || 0) + delta);
+  // Also push demand slightly negative — same as a sell impulse.
+  if (!state.demand) state.demand = {};
+  if (delta > 0) {
+    state.demand[id] = Math.max(-1, (state.demand[id] || 0) - 0.08);
+  }
+}
