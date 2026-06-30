@@ -304,8 +304,11 @@
     }
     // rebuilding the DOM via innerHTML drops all scroll positions (window and
     // any internal overflow:auto containers) — restore them so the periodic
-    // live-price re-render doesn't jolt the page back to the top
-    restoreScroll(scrollEntries);
+    // live-price re-render doesn't jolt the page back to the top.
+    // Skip window scroll restore when an input/textarea is focused — the
+    // browser handles scroll-into-view for the focused element, and restoring
+    // window.scrollY here causes the search-bar jump while typing.
+    restoreScroll(scrollEntries.filter(e => e.path !== null || (!wasInput && !wasTextarea)));
   }
 
   window.addEventListener('DOMContentLoaded', () => {
