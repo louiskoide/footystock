@@ -4643,13 +4643,17 @@ Yan Diomande|RB Leipzig|CM|21|4
           // Each point is the daily close for that day multiplied by intradayMult at that
           // exact timestamp — same deterministic function used by the 24h chart, so the
           // intraday wobble is consistent across views and identical for all users.
-          const STEP_H=6, SPD=4, TOTAL=7*SPD; // 28 steps
+          const STEP_H=6, TOTAL=28; // 28 steps × 6h = 7 days
           const nowSec=Math.floor(Date.now()/1000);
+          const todayMidnight=(()=>{ const d=new Date(); d.setHours(0,0,0,0); return d.getTime(); })();
           const s=[];
           for(let i=0;i<=TOTAL;i++){
             const fromEnd=TOTAL-i;
             const tSec=nowSec-fromEnd*STEP_H*3600;
-            const daysAgo=Math.min(6,Math.floor(fromEnd/SPD));
+            // Align to calendar days so the price bump appears after midnight
+            // of the match day, not offset by time-of-day.
+            const ptMidnight=(()=>{ const d=new Date(tSec*1000); d.setHours(0,0,0,0); return d.getTime(); })();
+            const daysAgo=Math.min(6,Math.round((todayMidnight-ptMidnight)/86400000));
             const base=p.hist[N-1-daysAgo]??p.hist[0];
             s.push(base*this.intradayMult(p,tSec));
           }
