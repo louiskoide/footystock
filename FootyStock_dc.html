@@ -1184,6 +1184,48 @@
         <div style="font:500 12px 'Space Grotesk';color:#16201a;background:#f5f6f3;border-radius:9px;padding:10px 14px;word-break:break-all;letter-spacing:.03em">{{ myToken }}</div>
         <button onClick="{{ copyToken }}" style="margin-top:10px;font:600 13px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;border-radius:9px;padding:8px 18px;cursor:pointer">{{ copyTokenLabel }}</button>
       </div>
+
+      <!-- change password -->
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:20px 22px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="font:700 13px 'Hanken Grotesk'">Change password</div>
+          <button onClick="{{ toggleResetPw }}" style="font:600 12px 'Hanken Grotesk';background:none;border:1px solid #d4d8d1;border-radius:8px;padding:5px 12px;cursor:pointer;color:#16201a">{{ resetPwToggleLabel }}</button>
+        </div>
+        <sc-if value="{{ profileResetPwOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
+            <input id="fs-profile-cur-pw" type="password" placeholder="Current password" maxlength="128" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #d4d8d1;border-radius:10px;padding:11px 13px;outline:none;color:#16201a;background:#fafaf8" />
+            <input id="fs-profile-new-pw" type="password" placeholder="New password" maxlength="128" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #d4d8d1;border-radius:10px;padding:11px 13px;outline:none;color:#16201a;background:#fafaf8" />
+            <input id="fs-profile-new-pw2" type="password" placeholder="Confirm new password" maxlength="128" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #d4d8d1;border-radius:10px;padding:11px 13px;outline:none;color:#16201a;background:#fafaf8" />
+            <div style="font:600 12px 'Hanken Grotesk';color:#e03e3e;min-height:16px">{{ profileResetPwError }}</div>
+            <div style="font:600 12px 'Hanken Grotesk';color:#16a85f;min-height:16px;margin-top:-8px">{{ profileResetPwOk }}</div>
+            <button onClick="{{ doResetPw }}" style="font:700 14px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;border-radius:10px;padding:12px;cursor:pointer">Update password</button>
+          </div>
+        </sc-if>
+      </div>
+
+      <!-- link / show email -->
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:20px 22px;margin-bottom:28px">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div>
+            <div style="font:700 13px 'Hanken Grotesk'">Recovery email</div>
+            <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:3px">Used to reset your password if you forget it.</div>
+          </div>
+          <sc-if value="{{ profileNoEmail }}" hint-placeholder-val="{{ false }}">
+            <button onClick="{{ toggleLinkEmail }}" style="font:600 12px 'Hanken Grotesk';background:none;border:1px solid #d4d8d1;border-radius:8px;padding:5px 12px;cursor:pointer;color:#16201a">{{ linkEmailToggleLabel }}</button>
+          </sc-if>
+        </div>
+        <sc-if value="{{ profileHasEmail }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:10px;font:500 13px 'Hanken Grotesk';color:#16201a;background:#f5f6f3;border-radius:9px;padding:9px 13px">{{ profileEmailDisplay }}</div>
+        </sc-if>
+        <sc-if value="{{ profileLinkEmailOpen }}" hint-placeholder-val="{{ false }}">
+          <div style="margin-top:14px;display:flex;flex-direction:column;gap:10px">
+            <input id="fs-link-email" type="email" placeholder="your@email.com" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';border:1px solid #d4d8d1;border-radius:10px;padding:11px 13px;outline:none;color:#16201a;background:#fafaf8" />
+            <div style="font:600 12px 'Hanken Grotesk';color:#e03e3e;min-height:16px">{{ profileLinkEmailError }}</div>
+            <div style="font:600 12px 'Hanken Grotesk';color:#16a85f;min-height:16px;margin-top:-8px">{{ profileLinkEmailOk }}</div>
+            <button onClick="{{ doLinkEmail }}" style="font:700 14px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;border-radius:10px;padding:12px;cursor:pointer">Save email</button>
+          </div>
+        </sc-if>
+      </div>
     </sc-if>
 
     <!-- other user's profile: limited public view -->
@@ -1300,16 +1342,23 @@
     </div>
     <div style="background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:28px">
 
-      <!-- Tab toggle -->
-      <div style="display:flex;background:rgba(0,0,0,.2);border-radius:10px;padding:3px;margin-bottom:22px">
-        <button onClick="{{ loginTabCreate }}" style="flex:1;font:600 13px 'Hanken Grotesk';border:none;border-radius:8px;padding:9px;cursor:pointer;background:{{ loginTabCreateBg }};color:{{ loginTabCreateColor }}">Create account</button>
-        <button onClick="{{ loginTabLogin }}" style="flex:1;font:600 13px 'Hanken Grotesk';border:none;border-radius:8px;padding:9px;cursor:pointer;background:{{ loginTabLoginBg }};color:{{ loginTabLoginColor }}">Log in</button>
-      </div>
+      <!-- Tab toggle (hidden during forgot/reset flow) -->
+      <sc-if value="{{ loginShowTabs }}" hint-placeholder-val="{{ true }}">
+        <div style="display:flex;background:rgba(0,0,0,.2);border-radius:10px;padding:3px;margin-bottom:22px">
+          <button onClick="{{ loginTabCreate }}" style="flex:1;font:600 13px 'Hanken Grotesk';border:none;border-radius:8px;padding:9px;cursor:pointer;background:{{ loginTabCreateBg }};color:{{ loginTabCreateColor }}">Create account</button>
+          <button onClick="{{ loginTabLogin }}" style="flex:1;font:600 13px 'Hanken Grotesk';border:none;border-radius:8px;padding:9px;cursor:pointer;background:{{ loginTabLoginBg }};color:{{ loginTabLoginColor }}">Log in</button>
+        </div>
+      </sc-if>
+
+      <!-- Back link during forgot/reset -->
+      <sc-if value="{{ loginShowBack }}" hint-placeholder-val="{{ false }}">
+        <button onClick="{{ loginTabLogin }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#7fb89a;padding:0;margin-bottom:18px">← Back to log in</button>
+      </sc-if>
 
       <!-- Create account -->
       <sc-if value="{{ loginStepEmail }}" hint-placeholder-val="{{ true }}">
         <input id="fs-login-name" placeholder="Username (e.g. LouisK)" maxlength="32" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
-        <input id="fs-login-email" type="email" placeholder="Email (optional)" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
+        <input id="fs-login-email" type="email" placeholder="Email (optional — needed for password reset)" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
         <input id="fs-login-pw" type="password" placeholder="Password" maxlength="128" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
         <input id="fs-login-pw2" type="password" placeholder="Confirm password" maxlength="128" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
         <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
@@ -1319,10 +1368,33 @@
 
       <!-- Log in -->
       <sc-if value="{{ loginStepOtp }}" hint-placeholder-val="{{ false }}">
-        <input id="fs-login-name2" placeholder="Username or email" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
+        <input id="fs-login-name2" placeholder="Username" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
         <input id="fs-login-pw3" type="password" placeholder="Password" maxlength="128" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
         <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
         <button onClick="{{ doVerifyOtp }}" style="width:100%;font:700 16px 'Hanken Grotesk';background:{{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginBtnLabel }}</button>
+        <div style="text-align:center;margin-top:14px">
+          <button onClick="{{ loginForgot }}" style="background:none;border:none;cursor:pointer;font:500 13px 'Hanken Grotesk';color:#7fb89a;text-decoration:underline;padding:0">Forgot password?</button>
+        </div>
+      </sc-if>
+
+      <!-- Forgot password: enter username + email -->
+      <sc-if value="{{ loginStepForgot }}" hint-placeholder-val="{{ false }}">
+        <div style="font:700 16px 'Space Grotesk';color:#eaf3ed;margin-bottom:6px">Reset password</div>
+        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:18px">Enter your username and the email linked to your account.</div>
+        <input id="fs-login-forgot-name" placeholder="Username" maxlength="32" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
+        <input id="fs-login-forgot-email" type="email" placeholder="Email linked to your account" maxlength="120" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
+        <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
+        <button onClick="{{ doForgotLookup }}" style="width:100%;font:700 16px 'Hanken Grotesk';background:{{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginForgotBtnLabel }}</button>
+      </sc-if>
+
+      <!-- Forgot password: set new password -->
+      <sc-if value="{{ loginStepReset }}" hint-placeholder-val="{{ false }}">
+        <div style="font:700 16px 'Space Grotesk';color:#eaf3ed;margin-bottom:6px">Set new password</div>
+        <div style="font:500 13px 'Hanken Grotesk';color:#7fb89a;margin-bottom:18px">Identity verified. Choose a new password.</div>
+        <input id="fs-login-reset-new" type="password" placeholder="New password" maxlength="128" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:12px;caret-color:#3ddc8a" />
+        <input id="fs-login-reset-new2" type="password" placeholder="Confirm new password" maxlength="128" style="width:100%;box-sizing:border-box;font:500 14px 'Hanken Grotesk';background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);border-radius:11px;padding:13px 15px;outline:none;color:#eaf3ed;margin-bottom:16px;caret-color:#3ddc8a" />
+        <div style="font:600 12px 'Hanken Grotesk';color:#f87171;min-height:18px;margin-bottom:10px">{{ loginError }}</div>
+        <button onClick="{{ doForgotReset }}" style="width:100%;font:700 16px 'Hanken Grotesk';background:{{ loginBtnBg }};color:#fff;border:none;border-radius:12px;padding:15px;cursor:pointer">{{ loginResetBtnLabel }}</button>
       </sc-if>
 
     </div>
@@ -1532,6 +1604,9 @@ class Component extends DCLogic {
       shareOpen: false, shareCopied: false, mysteryOpen: false, mysteryPacks: [], recoverOpen: false,
       phoneVal: '', phoneSaving: false, phoneSaved: false,
       loggedIn: false, loginStep: 'email', loginEmail: '', loginError: '', loginSending: false, copyTokenLabel: 'Copy code',
+      profileResetPwOpen: false, profileResetPwError: '', profileResetPwOk: '',
+      profileLinkEmailOpen: false, profileLinkEmailError: '', profileLinkEmailOk: '',
+      profileEmail: '',
     };
   }
   componentDidMount(){
@@ -1664,14 +1739,14 @@ class Component extends DCLogic {
     const token=this.loadToken(); if(!token||token==='anon'){ this.setState({portfolioLoading:false}); return; }
     try{
       // Check leaderboard first — determines if this token belongs to a real account
-      const lbRows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(token)+'&select=token,name');
+      const lbRows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(token)+'&select=token,name,email');
       if(!lbRows||!lbRows.length){
         // No account for this token — user must log in
         this.setState({portfolioLoading:false,loggedIn:false});
         return;
       }
       const lbRow=lbRows[0];
-      this.setState({loggedIn:true,username:lbRow.name||''});
+      this.setState({loggedIn:true,username:lbRow.name||'',profileEmail:lbRow.email||''});
       // Now load portfolio
       const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(token));
       if(!rows||!rows.length){
@@ -3660,8 +3735,9 @@ Yan Diomande|RB Leipzig|CM|21|4
     try{
       const hash=await this._hashPw(pw, name.toLowerCase());
       const token=(()=>{ try{ return crypto.randomUUID(); }catch(e){ return Math.random().toString(36).slice(2)+Date.now().toString(36); } })();
-      if(emailInput&&emailInput.includes('@')) this.saveEmail(emailInput);
-      const payload={token,name,password_hash:hash,net_worth:0,updated_at:new Date().toISOString()};
+      const emailVal=(emailInput&&emailInput.includes('@'))?emailInput:null;
+      if(emailVal) this.saveEmail(emailVal);
+      const payload={token,name,password_hash:hash,email:emailVal,net_worth:0,updated_at:new Date().toISOString()};
       const res=await fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload)});
       if(!res.ok){ const e=await res.json().catch(()=>{}); console.error('signup fail',e); this.setState({loginError:(e&&(e.message||e.hint||e.msg||e.error))||'Signup failed ('+res.status+')',loginSending:false}); return; }
       try{ localStorage.setItem('fs_token',token); }catch(e){}
@@ -3689,6 +3765,75 @@ Yan Diomande|RB Leipzig|CM|21|4
       this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
       setTimeout(()=>{ this.submitScore(); this.syncFromCloud(); },300);
     }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
+  }
+
+  async doForgotLookup(){
+    const name=((document.getElementById('fs-login-forgot-name')||{}).value||'').trim();
+    const email=((document.getElementById('fs-login-forgot-email')||{}).value||'').trim().toLowerCase();
+    if(!name){ this.setState({loginError:'Enter your username.'}); return; }
+    if(!email||!email.includes('@')){ this.setState({loginError:'Enter the email linked to your account.'}); return; }
+    this.setState({loginError:'',loginSending:true});
+    try{
+      const rows=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name)+'&select=token,name,email,password_hash');
+      if(!rows||!rows.length){ this.setState({loginError:'Account not found.',loginSending:false}); return; }
+      const row=rows[0];
+      if(!row.email||row.email.toLowerCase()!==email){ this.setState({loginError:'Email does not match our records.',loginSending:false}); return; }
+      this._resetToken=row.token; this._resetName=row.name;
+      this.setState({loginStep:'reset',loginError:'',loginSending:false});
+    }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
+  }
+
+  async doForgotReset(){
+    const pw=(document.getElementById('fs-login-reset-new')||{}).value||'';
+    const pw2=(document.getElementById('fs-login-reset-new2')||{}).value||'';
+    if(!pw||pw.length<6){ this.setState({loginError:'Password must be at least 6 characters.'}); return; }
+    if(pw!==pw2){ this.setState({loginError:'Passwords do not match.'}); return; }
+    if(!this._resetToken||!this._resetName){ this.setState({loginError:'Session expired. Start over.'}); return; }
+    this.setState({loginError:'',loginSending:true});
+    try{
+      const hash=await this._hashPw(pw,this._resetName.toLowerCase());
+      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(this._resetToken),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({password_hash:hash})});
+      if(!res.ok){ this.setState({loginError:'Update failed. Try again.',loginSending:false}); return; }
+      try{ localStorage.setItem('fs_token',this._resetToken); }catch(e){}
+      this._resetToken=null; this._resetName=null;
+      this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
+      setTimeout(()=>this.syncFromCloud(),300);
+    }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
+  }
+
+  async doResetPw(){
+    const cur=(document.getElementById('fs-profile-cur-pw')||{}).value||'';
+    const nw=(document.getElementById('fs-profile-new-pw')||{}).value||'';
+    const nw2=(document.getElementById('fs-profile-new-pw2')||{}).value||'';
+    if(!cur){ this.setState({profileResetPwError:'Enter your current password.',profileResetPwOk:''}); return; }
+    if(!nw||nw.length<6){ this.setState({profileResetPwError:'New password must be at least 6 characters.',profileResetPwOk:''}); return; }
+    if(nw!==nw2){ this.setState({profileResetPwError:'Passwords do not match.',profileResetPwOk:''}); return; }
+    const token=this.loadToken(); const name=this.state.username;
+    if(!token||!name){ this.setState({profileResetPwError:'Not logged in.',profileResetPwOk:''}); return; }
+    this.setState({profileResetPwError:'',profileResetPwOk:''});
+    try{
+      const rows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(token)+'&select=password_hash');
+      if(!rows||!rows.length){ this.setState({profileResetPwError:'Account not found.',profileResetPwOk:''}); return; }
+      const curHash=await this._hashPw(cur,name.toLowerCase());
+      if(curHash!==rows[0].password_hash){ this.setState({profileResetPwError:'Current password is incorrect.',profileResetPwOk:''}); return; }
+      const newHash=await this._hashPw(nw,name.toLowerCase());
+      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({password_hash:newHash})});
+      if(!res.ok){ this.setState({profileResetPwError:'Update failed. Try again.',profileResetPwOk:''}); return; }
+      this.setState({profileResetPwError:'',profileResetPwOk:'Password updated!',profileResetPwOpen:false});
+    }catch(e){ this.setState({profileResetPwError:'Network error. Try again.',profileResetPwOk:''}); }
+  }
+
+  async doLinkEmail(){
+    const email=((document.getElementById('fs-link-email')||{}).value||'').trim().toLowerCase();
+    if(!email||!email.includes('@')){ this.setState({profileLinkEmailError:'Enter a valid email address.',profileLinkEmailOk:''}); return; }
+    const token=this.loadToken(); if(!token){ this.setState({profileLinkEmailError:'Not logged in.',profileLinkEmailOk:''}); return; }
+    this.setState({profileLinkEmailError:'',profileLinkEmailOk:''});
+    try{
+      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({email})});
+      if(!res.ok){ this.setState({profileLinkEmailError:'Failed to save. Try again.',profileLinkEmailOk:''}); return; }
+      this.saveEmail(email);
+      this.setState({profileEmail:email,profileLinkEmailError:'',profileLinkEmailOk:'Email saved!',profileLinkEmailOpen:false});
+    }catch(e){ this.setState({profileLinkEmailError:'Network error. Try again.',profileLinkEmailOk:''}); }
   }
 
   // ---------- leaderboard ----------
@@ -4604,11 +4749,19 @@ Yan Diomande|RB Leipzig|CM|21|4
       // feedback
       showLoginGate:!S.loggedIn, portfolioLoading:S.portfolioLoading,
       loginStepEmail:S.loginStep==='email', loginStepOtp:S.loginStep==='otp',
+      loginStepForgot:S.loginStep==='forgot', loginStepReset:S.loginStep==='reset',
+      loginShowTabs:S.loginStep==='email'||S.loginStep==='otp',
+      loginShowBack:S.loginStep==='forgot'||S.loginStep==='reset',
       loginEmail:S.loginEmail, loginError:S.loginError,
       loginBtnBg:S.loginSending?'#4a7a5f':'#16a85f',
       loginBtnLabel:S.loginSending?(S.loginStep==='otp'?'Logging in…':'Creating…'):(S.loginStep==='otp'?'Log in':'Create account →'),
+      loginForgotBtnLabel:S.loginSending?'Checking…':'Continue →',
+      loginResetBtnLabel:S.loginSending?'Saving…':'Set password →',
       doLogin:()=>this.doLogin(),
       doVerifyOtp:()=>this.doVerifyOtp(),
+      doForgotLookup:()=>this.doForgotLookup(),
+      doForgotReset:()=>this.doForgotReset(),
+      loginForgot:()=>this.setState({loginStep:'forgot',loginError:''}),
       loginBack:()=>this.setState({loginStep:'email',loginError:''}),
       loginRecover:()=>this.setState({loginStep:'otp',loginError:''}),
       loginTabCreate:()=>this.setState({loginStep:'email',loginError:''}),
@@ -4720,6 +4873,21 @@ Yan Diomande|RB Leipzig|CM|21|4
       mysteryPacks: S.mysteryPacks||[],
       isFounder: this.isFounder(),
       myEmail: this.loadEmail()||'—',
+      profileResetPwOpen: S.profileResetPwOpen,
+      profileResetPwError: S.profileResetPwError||'',
+      profileResetPwOk: S.profileResetPwOk||'',
+      resetPwToggleLabel: S.profileResetPwOpen?'Cancel':'Change',
+      toggleResetPw:()=>this.setState({profileResetPwOpen:!S.profileResetPwOpen,profileResetPwError:'',profileResetPwOk:''}),
+      doResetPw:()=>this.doResetPw(),
+      profileLinkEmailOpen: S.profileLinkEmailOpen,
+      profileLinkEmailError: S.profileLinkEmailError||'',
+      profileLinkEmailOk: S.profileLinkEmailOk||'',
+      linkEmailToggleLabel: S.profileLinkEmailOpen?'Cancel':'Add email',
+      toggleLinkEmail:()=>this.setState({profileLinkEmailOpen:!S.profileLinkEmailOpen,profileLinkEmailError:'',profileLinkEmailOk:''}),
+      doLinkEmail:()=>this.doLinkEmail(),
+      profileHasEmail: !!(S.profileEmail),
+      profileNoEmail: !(S.profileEmail),
+      profileEmailDisplay: S.profileEmail||'',
       myToken: this.loadToken()||'—',
       copyToken: ()=>{ navigator.clipboard&&navigator.clipboard.writeText(this.loadToken()||'').then(()=>{ this.setState({copyTokenLabel:'Copied!'}); setTimeout(()=>this.setState({copyTokenLabel:'Copy code'}),2000); }).catch(()=>{}); },
       copyTokenLabel: S.copyTokenLabel||'Copy code',
