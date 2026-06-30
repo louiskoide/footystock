@@ -1226,6 +1226,11 @@
           </div>
         </sc-if>
       </div>
+
+      <!-- log out -->
+      <div style="text-align:center;margin-bottom:28px">
+        <button onClick="{{ doLogout }}" style="font:600 13px 'Hanken Grotesk';background:none;border:1px solid #e8eae4;border-radius:10px;padding:10px 24px;cursor:pointer;color:#8a938c">Log out</button>
+      </div>
     </sc-if>
 
     <!-- other user's profile: limited public view -->
@@ -3823,6 +3828,11 @@ Yan Diomande|RB Leipzig|CM|21|4
     }catch(e){ this.setState({profileResetPwError:'Network error. Try again.',profileResetPwOk:''}); }
   }
 
+  doLogout(){
+    try{ localStorage.removeItem('fs_token'); }catch(e){}
+    this.setState({ loggedIn:false, loginStep:'otp', username:'', profileEmail:'', cash:10000, holdings:{}, txns:[], shorts:{}, streak:0, lastClaim:null, joinDate:new Date().toISOString().slice(0,10), allTimeHigh:10000, portfolioLoading:false });
+  }
+
   async doLinkEmail(){
     const email=((document.getElementById('fs-link-email')||{}).value||'').trim().toLowerCase();
     if(!email||!email.includes('@')){ this.setState({profileLinkEmailError:'Enter a valid email address.',profileLinkEmailOk:''}); return; }
@@ -4885,6 +4895,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       linkEmailToggleLabel: S.profileLinkEmailOpen?'Cancel':'Add email',
       toggleLinkEmail:()=>this.setState({profileLinkEmailOpen:!S.profileLinkEmailOpen,profileLinkEmailError:'',profileLinkEmailOk:''}),
       doLinkEmail:()=>this.doLinkEmail(),
+      doLogout:()=>this.doLogout(),
       profileHasEmail: !!(S.profileEmail),
       profileNoEmail: !(S.profileEmail),
       profileEmailDisplay: S.profileEmail||'',
