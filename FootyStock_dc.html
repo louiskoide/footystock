@@ -108,7 +108,7 @@
 
       <div class="fs-search-wrap" style="flex:1;max-width:380px;position:relative">
         <span style="position:absolute;left:14px;top:50%;transform:translateY(-50%);color:#9aa39b;font-size:14px">⌕</span>
-        <input class="fs-search-input" value="{{ search }}" onInput="{{ onSearch }}" placeholder="Search players, clubs…" style="width:100%;border:1px solid #e1e4dd;background:#fff;border-radius:999px;padding:10px 16px 10px 36px;font:500 14px 'Hanken Grotesk';color:#16201a;outline:none" />
+        <input class="fs-search-input" onInput="{{ onSearch }}" placeholder="Search players, clubs…" style="width:100%;border:1px solid #e1e4dd;background:#fff;border-radius:999px;padding:10px 16px 10px 36px;font:500 14px 'Hanken Grotesk';color:#16201a;outline:none" />
       </div>
 
       <div class="fs-header-actions" style="display:flex;align-items:center;gap:10px;flex-shrink:0">
@@ -3715,7 +3715,12 @@ Yan Diomande|RB Leipzig|CM|21|4
     this.setState({sortKey:key,sortDir:descDefault.has(key)?'desc':'asc'});
   }
   setRange(r){ this.setState({range:r}); }
-  onSearch(e){ if(e.target.classList.contains('fs-search-input')) this.setState({search:e.target.value}); }
+  onSearch(e){
+    if(!e.target.classList.contains('fs-search-input')) return;
+    const val=e.target.value;
+    clearTimeout(this._searchTimer);
+    this._searchTimer=setTimeout(()=>this.setState({search:val}),120);
+  }
   toggleWatch(id){ const w=this.state.watch.slice(); const i=w.indexOf(id); if(i>=0)w.splice(i,1); else w.push(id); this.setState({watch:w},()=>this.persist()); }
 
   openTrade(id,side){ const p=this.byId(id); const held=this.state.holdings[id]; const shorted=this.state.shorts[id]; if(side==='sell'&&(!held||held.qty<1))return; if(side==='cover'&&(!shorted||shorted.qty<1))return; this.setState({tradeOpen:true,tradeId:id,tradeSide:side,tradeQty:1}); }
