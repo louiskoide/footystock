@@ -4859,12 +4859,12 @@ Yan Diomande|RB Leipzig|CM|21|4
           posValue:this.money(posValue),posPl:(posUp?'+':'−')+this.money(Math.abs(posPl)).slice(1),posPlColor:posUp?GREEN:RED,
           watchLabel:watched?'★ Watching':'☆ Watch',watchColor:watched?'#e2a32b':'#8a938c',
           onToggleWatch:()=>this.toggleWatch(p.id),
-          sharesLabel:(()=>{ const tot=Math.round(120000/Math.max(1,this.curPrice(p))); const liveShares=this._wcLive&&this._wcLive.shares; const rem=liveShares&&liveShares[p.id]!=null?liveShares[p.id]:tot; return rem+' / '+tot+' shares'; })(),
-          sharesBarPct:(()=>{ const tot=Math.round(120000/Math.max(1,this.curPrice(p))); const liveShares=this._wcLive&&this._wcLive.shares; const rem=liveShares&&liveShares[p.id]!=null?liveShares[p.id]:tot; return tot>0?Math.round(100*rem/tot):100; })(),
-          soldOut:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; return !!(liveShares&&liveShares[p.id]!=null&&liveShares[p.id]<=0); })(),
-          buyBg:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; const out=liveShares&&liveShares[p.id]!=null&&liveShares[p.id]<=0; return out?'#c4ccc3':'#16a85f'; })(),
-          buyLabel:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; const out=liveShares&&liveShares[p.id]!=null&&liveShares[p.id]<=0; return out?'Sold Out':'Buy'; })(),
-          buyCursor:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; const out=liveShares&&liveShares[p.id]!=null&&liveShares[p.id]<=0; return out?'not-allowed':'pointer'; })(),
+          sharesLabel:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; const tot=ls?ls.total:Math.round(120000/Math.max(1,this.curPrice(p))); const rem=ls?ls.remaining:tot; return rem+' / '+tot+' shares'; })(),
+          sharesBarPct:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; const tot=ls?ls.total:Math.round(120000/Math.max(1,this.curPrice(p))); const rem=ls?ls.remaining:tot; return tot>0?Math.round(100*rem/tot):100; })(),
+          soldOut:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; return !!(ls&&ls.remaining<=0); })(),
+          buyBg:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; return (ls&&ls.remaining<=0)?'#c4ccc3':'#16a85f'; })(),
+          buyLabel:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; return (ls&&ls.remaining<=0)?'Sold Out':'Buy'; })(),
+          buyCursor:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; return (ls&&ls.remaining<=0)?'not-allowed':'pointer'; })(),
           onBuy:()=>this.openTrade(p.id,'buy'),onSell:()=>this.openTrade(p.id,'sell'),
           sellBg:hasPos?'#fff':'#f5f6f3',sellColor:hasPos?'#16201a':'#bfc6be',sellBorder:hasPos?'#e1e4dd':'#eef1ec',sellCursor:hasPos?'pointer':'not-allowed',
           onHatewatch:()=>this.openTrade(p.id,'hatewatch'),onCover:()=>this.openTrade(p.id,'cover'),
@@ -4955,9 +4955,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       const bp=this.buyingPower(); const marginUsed=this.marginUsed(); const marginLimit=this.marginLimit();
       const cashAfter=(buy||isCover)?this.state.cash-total:this.state.cash+total;
       const onMargin=buy&&cashAfter<0;
-      const liveShares=this._wcLive&&this._wcLive.shares;
-      const sharesLeft=liveShares&&liveShares[p.id]!=null?liveShares[p.id]:null;
-      const sharesTotal=sharesLeft!=null?Math.round(120000/Math.max(1,price)):null;
+      const liveSharesEntry=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id];
+      const sharesLeft=liveSharesEntry?liveSharesEntry.remaining:null;
+      const sharesTotal=liveSharesEntry?liveSharesEntry.total:null;
       let error='';
       if(buy&&total>bp) error='Not enough buying power (cash + 50% of holdings).';
       if(buy&&sharesLeft!=null&&qty>sharesLeft) error=sharesLeft===0?'No shares available — all '+sharesTotal+' shares are held by other players.':'Only '+sharesLeft+' share'+(sharesLeft===1?'':'s')+' remaining.';

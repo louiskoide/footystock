@@ -63,19 +63,19 @@ async function ensureRow(id, price) {
 export async function decrementShares(id, qty, price) {
   await ensureRow(id, price);
   const shares = (await loadShares())[id];
-  if (!shares) return { ok: false, remaining: 0 };
+  if (!shares) return { ok: false, remaining: 0, total: 0 };
   const newRemaining = shares.remaining - qty;
-  if (newRemaining < 0) return { ok: false, remaining: shares.remaining };
+  if (newRemaining < 0) return { ok: false, remaining: shares.remaining, total: shares.total };
   try {
     const r = await sbFetch(`shares?player_id=eq.${encodeURIComponent(id)}`, {
       method: 'PATCH',
       headers: { ...HEADERS, 'Prefer': 'return=representation' },
       body: JSON.stringify({ remaining: newRemaining }),
     });
-    if (!r.ok) { console.error('shares decrement error:', await r.text()); return { ok: false, remaining: shares.remaining }; }
+    if (!r.ok) { console.error('shares decrement error:', await r.text()); return { ok: false, remaining: shares.remaining, total: shares.total }; }
     if (cache && cache[id]) cache[id].remaining = newRemaining;
-    return { ok: true, remaining: newRemaining };
-  } catch (e) { console.error('shares decrement error:', e.message); return { ok: false, remaining: shares.remaining }; }
+    return { ok: true, remaining: newRemaining, total: shares.total };
+  } catch (e) { console.error('shares decrement error:', e.message); return { ok: false, remaining: shares.remaining, total: shares.total }; }
 }
 
 // Increment remaining (sell/cover) — capped at total.

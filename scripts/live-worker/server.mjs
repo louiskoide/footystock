@@ -36,6 +36,12 @@ console.log(`Loaded crosswalk: ${crosswalk.length} players across ${new Set(cros
 
 const state = makeInitialState(SEASON);
 
+// Pre-load share supply into state so publicSnapshot has it from first request.
+loadShares().then(rows => {
+  state.shares = state.shares || {};
+  for (const [id, s] of Object.entries(rows)) state.shares[id] = { remaining: s.remaining, total: s.total };
+}).catch(e => console.error('shares pre-load failed:', e.message));
+
 let nextDelay = IDLE_POLL_MS;
 let lastTickAt = Date.now();
 async function tick() {
@@ -123,13 +129,13 @@ const server = createServer((req, res) => {
             return;
           }
           state.shares = state.shares || {};
-          state.shares[id] = result.remaining;
+          state.shares[id] = { remaining: result.remaining, total: result.total };
           recordTrade(state, id, 'buy', q);
         } else if (side === 'sell') {
           await incrementShares(id, q, price || 100);
           state.shares = state.shares || {};
           const sh = await loadShares();
-          state.shares[id] = sh[id]?.remaining ?? state.shares[id];
+          if (sh[id]) state.shares[id] = { remaining: sh[id].remaining, total: sh[id].total };
           recordTrade(state, id, 'sell', q);
         } else if (side === 'hatewatch') {
           recordHatewatch(state, id, q);
