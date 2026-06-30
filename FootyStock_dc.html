@@ -1634,7 +1634,7 @@ class Component extends DCLogic {
       clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null,
       shareOpen: false, shareCopied: false, mysteryOpen: false, mysteryPacks: [], recoverOpen: false,
       phoneVal: '', phoneSaving: false, phoneSaved: false,
-      loggedIn: false, loginStep: 'email', loginEmail: '', loginError: '', loginSending: false, copyTokenLabel: 'Copy code',
+      loggedIn: !!(()=>{ try{ const t=localStorage.getItem('fs_token'); return t&&t!=='anon'?t:null; }catch(e){return null;} })(), loginStep: 'email', loginEmail: '', loginError: '', loginSending: false, copyTokenLabel: 'Copy code',
       profileResetPwOpen: false, profileResetPwError: '', profileResetPwOk: '',
       profileLinkEmailOpen: false, profileLinkEmailError: '', profileLinkEmailOk: '',
       profileEmail: '', profileRefClaimed: false, profileRefError: '', profileRefOk: '',
