@@ -3476,9 +3476,10 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
   postPriceCloses(db, dayKey){
     if(!this._liveWorkerBase) return;
-    const key='_priceClosesSent_'+dayKey;
-    if(this[key]) return; // only POST once per calendar day per session
-    this[key]=true;
+    const now=Date.now();
+    // POST every 60s so history rebuilds quickly after a worker restart.
+    if(this._lastClosePost && now-this._lastClosePost < 60000) return;
+    this._lastClosePost=now;
     const closes={};
     for(const p of db) closes[p.id]=p.price;
     fetch(this._liveWorkerBase+'/price-closes',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({dayKey,closes})}).catch(()=>{});
