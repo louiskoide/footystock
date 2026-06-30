@@ -1627,8 +1627,10 @@ class Component extends DCLogic {
     // clear legacy localStorage keys from pre-email-auth era
     try{ localStorage.removeItem('footystock_v3'); localStorage.removeItem('footystock_uid'); localStorage.removeItem('fs_username'); localStorage.removeItem('fs_email'); }catch(e){}
     // delete leaderboard rows with no display name (nameless accounts)
-    if(this._sbUrl && !localStorage.getItem('fs_nameless_deleted_v1')){
-      fetch(this._sbUrl+'?or=(name.is.null,name.eq.)',{method:'DELETE',headers:{...this._sbHdr}}).then(()=>{ try{ localStorage.setItem('fs_nameless_deleted_v1','1'); }catch(e){} }).catch(()=>{});
+    if(this._sbUrl && !localStorage.getItem('fs_nameless_deleted_v3')){
+      const sbBase=this._sbUrl; const sbHdr=this._sbHdr;
+      fetch(sbBase+'?name=is.null',{method:'DELETE',headers:sbHdr}).catch(()=>{});
+      fetch(sbBase+'?name=eq.',{method:'DELETE',headers:sbHdr}).then(()=>{ try{ localStorage.setItem('fs_nameless_deleted_v3','1'); }catch(e){} }).catch(()=>{});
     }
     // sync portfolio from cloud (handles cross-device and cross-domain merge)
     setTimeout(()=>this.syncFromCloud(), 1000);
