@@ -1781,8 +1781,10 @@ class Component extends DCLogic {
       const r=rows[0];
       const today=new Date().toISOString().slice(0,10);
       this.setState({ cash:r.cash??10000, holdings:r.holdings||{}, txns:r.txns||[], shorts:r.shorts||{}, streak:r.streak||0, lastClaim:r.last_claim||null, joinDate:r.join_date||today, allTimeHigh:r.all_time_high||10000, portfolioLoading:false });
-      // After portfolio is loaded, check referral and award referrer stocks
+      // After portfolio is loaded, check referral (for referred user) and referrer reward queue
       await this.checkPendingRef();
+      const pendingRewards=r.pending_ref_rewards||0;
+      if(pendingRewards>0) await this._claimPendingReferrerRewards(pendingRewards);
       this.getReferralCount();
     }catch(e){ this.setState({portfolioLoading:false}); }
   }
@@ -3860,9 +3862,12 @@ Yan Diomande|RB Leipzig|CM|21|4
     try{
       const existing=await Supa.get('referrals','referred_token=eq.'+encodeURIComponent(token)+'&select=id');
       if(existing&&existing.length){ this.setState({profileRefError:'You have already claimed a referral bonus.',profileRefOk:'',profileRefClaimed:true}); return; }
-      await Supa.post('referrals',{ref_code:code,referred_token:token});
+      await Supa.post('referrals',{ref_code:code,referred_token:token,referrer_token:code});
       this.setState({profileRefClaimed:true,profileRefError:'',profileRefOk:"Referral claimed! Awarding your free stocks…"});
+      // Award referred user immediately
       await this.awardMysteryStocks('ref_'+code);
+      // Credit referrer so they get stocks on their next load
+      await this._creditReferrer(code);
       this.setState({profileRefOk:'Done! Check your portfolio.'});
     }catch(e){ this.setState({profileRefError:'Invalid code or already claimed.',profileRefOk:''}); }
   }
@@ -3909,23 +3914,35 @@ Yan Diomande|RB Leipzig|CM|21|4
 
   // ============ REFERRAL / SHARE ============
   getRefCode(){
-    const token=this.loadToken();
-    const b64=btoa(token).replace(/[^A-Z0-9]/gi,"").toUpperCase();
-    return b64.slice(0,8);
+    // Full token as ref code so we can directly credit the referrer
+    return this.loadToken();
+  }
+  async _creditReferrer(referrerToken){
+    // Increment pending_ref_rewards on the referrer's portfolio so they get stocks on next load
+    if(!referrerToken||!this._sbUrl) return;
+    const portfolioUrl=this._sbUrl.replace('/leaderboard','/portfolios');
+    try{
+      const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(referrerToken)+'&select=token,pending_ref_rewards');
+      if(!rows||!rows.length) return;
+      const cur=rows[0].pending_ref_rewards||0;
+      fetch(portfolioUrl+'?token=eq.'+encodeURIComponent(referrerToken),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({pending_ref_rewards:cur+1})}).catch(()=>{});
+    }catch(e){}
   }
   async checkPendingRef(){
     const pending=localStorage.getItem("fs_pending_ref");
     if(!pending) return;
-    if(pending===this.getRefCode()){ localStorage.removeItem("fs_pending_ref"); return; }
-    const token=this.loadToken();
+    const myToken=this.loadToken();
+    if(pending===myToken){ localStorage.removeItem("fs_pending_ref"); return; }
     try{
-      // Check Supabase — not localStorage — to prevent double-claiming
-      const existing=await Supa.get("referrals","referred_token=eq."+encodeURIComponent(token)+"&select=id");
+      const existing=await Supa.get("referrals","referred_token=eq."+encodeURIComponent(myToken)+"&select=id");
       if(existing&&existing.length){ localStorage.removeItem("fs_pending_ref"); return; }
-      await Supa.post("referrals",{ref_code:pending,referred_token:token});
+      await Supa.post("referrals",{ref_code:pending,referred_token:myToken,referrer_token:pending});
       localStorage.removeItem("fs_pending_ref");
+      // Award referred user immediately
       await this.awardMysteryStocks("ref_"+pending);
-    }catch(e){ /* referrals table may not exist yet or already claimed */ }
+      // Credit referrer's portfolio for them to collect on next load
+      await this._creditReferrer(pending);
+    }catch(e){}
   }
   async awardMysteryStocks(seed){
     const DB=this.getDB(); if(!DB||!DB.length) return;
@@ -3954,20 +3971,21 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
   async getReferralCount(){
     try{
-      const code=this.getRefCode();
-      const rows=await Supa.get("referrals","ref_code=eq."+code+"&select=id,rewarded");
-      this._referralCount=rows.length;
-      // Award mystery stocks for each new referral the referrer hasn't been rewarded for yet
-      const unawarded=(rows||[]).filter(r=>!r.rewarded);
-      if(unawarded.length>0){
-        for(const r of unawarded){
-          await this.awardMysteryStocks("referrer_"+r.id);
-          // Mark rewarded so we don't double-award
-          fetch(this._sbUrl.replace('/leaderboard','/referrals')+'?id=eq.'+encodeURIComponent(r.id),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({rewarded:true})}).catch(()=>{});
-        }
-      }
+      const token=this.loadToken();
+      const rows=await Supa.get("referrals","referrer_token=eq."+encodeURIComponent(token)+"&select=id");
+      this._referralCount=rows?rows.length:0;
       this.setState(s=>({tick:s.tick+1}));
     }catch(e){ this._referralCount=0; }
+  }
+  async _claimPendingReferrerRewards(pendingCount){
+    // Called on load when portfolio has pending_ref_rewards > 0
+    const portfolioUrl=this._sbUrl.replace('/leaderboard','/portfolios');
+    const token=this.loadToken();
+    // Reset counter first to prevent double-award if session dies mid-process
+    fetch(portfolioUrl+'?token=eq.'+encodeURIComponent(token),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({pending_ref_rewards:0})}).catch(()=>{});
+    for(let i=0;i<pendingCount;i++){
+      await this.awardMysteryStocks("referrer_reward_"+token+"_"+i+"_"+Date.now());
+    }
   }
   // ============ FOUNDER ============
   isFounder(){ return (this.state.joinDate||"9999") < "2026-07-10"; }
