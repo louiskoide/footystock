@@ -1092,8 +1092,8 @@
       <sc-for list="{{ leaderboard }}" as="l" hint-placeholder-count="12">
         <div onClick="{{ l.onClick }}" class="fs-row-leader" style="display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:13px 16px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }};cursor:pointer" style-hover="display:grid;grid-template-columns:44px 1fr auto;gap:10px;align-items:center;padding:13px 16px;border-bottom:1px solid #f3f4f0;background:#fafbf8;cursor:pointer">
           <span style="font:700 15px 'Space Grotesk';color: {{ l.rankColor }}">{{ l.medal }}</span>
-          <span style="display:flex;align-items:center;gap:10px"><span class="fs-avatar-badge" style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk'">{{ l.name }}</b><sc-if value="{{ l.showFounder }}"><span style="font-size:14px;line-height:1" title="Founder">🏅</span></sc-if></span>
-          <span style="text-align:right;font:700 14px 'Space Grotesk';color: {{ l.profitColor }}">{{ l.profitArrow }}{{ l.profit }}</span>
+          <span style="display:flex;align-items:center;gap:10px;min-width:0"><span class="fs-avatar-badge" style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk';overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ l.name }}</b><sc-if value="{{ l.showFounder }}"><span style="font-size:14px;line-height:1;flex-shrink:0" title="Founder">🏅</span></sc-if></span>
+          <span style="text-align:right;font:700 13px 'Space Grotesk';color: {{ l.profitColor }};white-space:nowrap">{{ l.profitArrow }}{{ l.profit }}</span>
         </div>
       </sc-for>
     </div>
