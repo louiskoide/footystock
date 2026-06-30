@@ -223,6 +223,9 @@
     const all = rootEl.querySelectorAll('*');
     for (const el of all) {
       if ((el.scrollTop || el.scrollLeft) && el.scrollHeight > el.clientHeight) {
+        // Prefer id-based lookup — index-based childPath breaks when sibling
+        // content (e.g. an sc-for message list) changes length between renders.
+        if (el.id) { entries.push({ id: el.id, top: el.scrollTop, left: el.scrollLeft }); continue; }
         const path = childPath(el, rootEl);
         if (path) entries.push({ path, top: el.scrollTop, left: el.scrollLeft });
       }
@@ -233,7 +236,7 @@
   function restoreScroll(entries) {
     for (const e of entries) {
       if (e.path === null) { window.scrollTo(e.left, e.top); continue; }
-      const el = nodeAtPath(rootEl, e.path);
+      const el = e.id ? rootEl.querySelector('#' + e.id) : nodeAtPath(rootEl, e.path);
       if (el) { el.scrollTop = e.top; el.scrollLeft = e.left; }
     }
   }
