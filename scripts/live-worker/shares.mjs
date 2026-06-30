@@ -74,10 +74,10 @@ async function ensureRow(id, price) {
   } catch (e) { console.error('shares seed error:', e.message); }
 }
 
-// Reconcile all existing share rows against current portfolio holdings.
-// Call once on worker startup to fix any rows that were seeded before
-// existing holdings were accounted for.
-export async function reconcileShares() {
+// Reconcile all existing share rows against current portfolio holdings,
+// and seed rows for any player that has holdings but no row yet.
+// priceOf(id) is optional — called to compute total when seeding a new row.
+export async function reconcileShares(priceOf) {
   try {
     const [sharesResp, portfoliosResp] = await Promise.all([
       sbFetch('shares?select=player_id,remaining,total'),
@@ -96,6 +96,8 @@ export async function reconcileShares() {
       }
     }
 
+    const existingIds = new Set(shareRows.map(r => r.player_id));
+
     // Fix any row where remaining + held != total
     for (const row of shareRows) {
       const held = heldMap[row.player_id] || 0;
@@ -110,6 +112,23 @@ export async function reconcileShares() {
         console.log(`shares reconcile: ${row.player_id} ${row.remaining}→${correct} (${held} held)`);
       }
     }
+
+    // Seed rows for players that have holdings but no row yet
+    for (const [pid, held] of Object.entries(heldMap)) {
+      if (existingIds.has(pid) || held <= 0) continue;
+      const price = priceOf ? priceOf(pid) : 100;
+      const total = sharesForPrice(price);
+      const remaining = Math.max(0, total - held);
+      await sbFetch('shares', {
+        method: 'POST',
+        headers: { ...HEADERS, 'Prefer': 'resolution=ignore-duplicates' },
+        body: JSON.stringify({ player_id: pid, remaining, total }),
+      });
+      if (!cache) cache = {};
+      cache[pid] = { remaining, total };
+      console.log(`shares seed (reconcile): ${pid} total=${total} held=${held} remaining=${remaining}`);
+    }
+
     cacheLoadedAt = 0; // force refresh after reconcile
   } catch (e) { console.error('shares reconcile error:', e.message); }
 }

@@ -68,6 +68,7 @@ console.log(`Loaded crosswalk: ${crosswalk.length} players across ${new Set(cros
 const state = loadState(SEASON) || makeInitialState(SEASON);
 
 // Reconcile share rows against existing portfolio holdings, then pre-load into state.
+// Pass a price lookup so the reconciler can seed rows for players with holdings but no row.
 reconcileShares()
   .then(() => loadShares())
   .then(rows => {

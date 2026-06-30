@@ -3976,11 +3976,15 @@ Yan Diomande|RB Leipzig|CM|21|4
         holdings[order.id]={qty:newQty,avg:newAvg};
         txns.unshift({side:'BUY',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
         cash-=total;
+        // Optimistically reduce supply so display updates immediately
+        if(this._wcLive){ this._wcLive.shares=this._wcLive.shares||{}; const ls=this._wcLive.shares[order.id]; const tot=ls?ls.total:Math.round(120000/Math.max(1,price)); const rem=ls?ls.remaining:tot; this._wcLive.shares[order.id]={remaining:Math.max(0,rem-qty),total:tot}; }
       } else if(order.side==='sell'){
         const cur=holdings[order.id]; if(!cur||cur.qty<qty) continue;
         const newQty=cur.qty-qty; if(newQty<=0) delete holdings[order.id]; else holdings[order.id]={qty:newQty,avg:cur.avg};
         txns.unshift({side:'SELL',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
         cash+=total;
+        // Optimistically restore supply on sell
+        if(this._wcLive&&this._wcLive.shares&&this._wcLive.shares[order.id]){ const ls=this._wcLive.shares[order.id]; this._wcLive.shares[order.id]={remaining:Math.min(ls.total,ls.remaining+qty),total:ls.total}; }
       } else if(order.side==='hatewatch'){
         // Short: receive cash now, owe shares at current price later
         if(total>cash+1e-9) continue; // require cash collateral to cap downside
@@ -5209,7 +5213,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       const sharesLeft=liveSharesEntry?liveSharesEntry.remaining:null;
       const sharesTotal=liveSharesEntry?liveSharesEntry.total:null;
       let error='';
-      if(buy&&total>bp) error='Not enough buying power (cash + 50% of holdings).';
+      if(buy&&total>bp) error='Not enough buying power.';
       if(buy&&sharesLeft!=null&&qty>sharesLeft) error=sharesLeft===0?'No shares available — all '+sharesTotal+' shares are held by other players.':'Only '+sharesLeft+' share'+(sharesLeft===1?'':'s')+' remaining.';
       if(S.tradeSide==='sell'&&qty>heldQty) error='You only hold '+heldQty+' shares.';
       if(isHW&&total>bp) error='Need collateral equal to position size.';
