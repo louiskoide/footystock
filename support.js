@@ -211,7 +211,8 @@
     });
     const inputSnapshots = {};
     rootEl.querySelectorAll('input[id]').forEach(inp => {
-      if (inp.value) inputSnapshots[inp.id] = inp.value;
+      // Skip controlled inputs (bound via value="{{ ... }}") — their value comes from state.
+      if (inp.value && !(inp.getAttribute('value') || '').includes('{{')) inputSnapshots[inp.id] = inp.value;
     });
 
     const vals = componentInstance.renderVals();
