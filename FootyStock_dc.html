@@ -805,22 +805,28 @@
       </div>
 
       <!-- public clubs list -->
-      <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Public clubs</div>
-      <sc-if value="{{ clubPublicList.length > 0 }}">
+      <div style="font:700 17px 'Space Grotesk';margin:0 2px 10px">Public clubs</div>
+      <input id="club-search-home" placeholder="Search clubs…" onInput="{{ onClubSearch }}" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:10px 14px;font:500 13px 'Hanken Grotesk';outline:none;margin-bottom:12px;box-sizing:border-box" />
+      <sc-if value="{{ hasPublicClubs }}">
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
         <sc-for list="{{ clubPublicList }}" as="c" hint-placeholder-count="3">
           <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
             <div style="min-width:0">
               <div style="font:700 15px 'Space Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</div>
-              <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">by {{ c.leader_name }}</div>
+              <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ c.description || '' }}{{ c.description ? ' · ' : '' }}by {{ c.leader_name }}</div>
             </div>
             <button onClick="{{ c.onJoin }}" style="flex-shrink:0;font:700 13px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:8px 16px;border-radius:999px;cursor:pointer">Join</button>
           </div>
         </sc-for>
       </div>
       </sc-if>
-      <sc-if value="{{ clubPublicList.length === 0 }}">
-        <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No public clubs yet. Be the first to create one.</div>
+      <sc-if value="{{ noPublicClubs }}">
+        <sc-if value="{{ noPublicClubsAtAll }}">
+          <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No public clubs yet. Be the first to create one.</div>
+        </sc-if>
+        <sc-if value="{{ clubSearchQuery }}">
+          <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No clubs match "{{ clubSearchQuery }}".</div>
+        </sc-if>
       </sc-if>
     </sc-if>
 
@@ -868,14 +874,15 @@
         </div>
       </div>
       <!-- public clubs list in join view -->
-      <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Public clubs</div>
-      <sc-if value="{{ clubPublicList.length > 0 }}">
+      <div style="font:700 17px 'Space Grotesk';margin:0 2px 10px">Public clubs</div>
+      <input id="club-search-join" placeholder="Search clubs…" onInput="{{ onClubSearch }}" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:10px 14px;font:500 13px 'Hanken Grotesk';outline:none;margin-bottom:12px;box-sizing:border-box" />
+      <sc-if value="{{ hasPublicClubs }}">
       <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:30px">
         <sc-for list="{{ clubPublicList }}" as="c" hint-placeholder-count="3">
           <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px">
             <div style="min-width:0">
               <div style="font:700 15px 'Space Grotesk'">{{ c.name }}</div>
-              <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ c.description }}</div>
+              <sc-if value="{{ c.description }}"><div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ c.description }}</div></sc-if>
               <div style="font:600 11px 'Hanken Grotesk';color:#46504a;margin-top:6px">Led by {{ c.leader_name }}</div>
             </div>
             <button onClick="{{ c.onJoin }}" style="flex-shrink:0;padding:9px 18px;background:#16a85f;color:#fff;border:none;border-radius:10px;font:700 13px 'Hanken Grotesk';cursor:pointer">Join</button>
@@ -883,8 +890,13 @@
         </sc-for>
       </div>
       </sc-if>
-      <sc-if value="{{ clubPublicList.length === 0 }}">
-        <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No public clubs yet. Be the first to create one.</div>
+      <sc-if value="{{ noPublicClubs }}">
+        <sc-if value="{{ noPublicClubsAtAll }}">
+          <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No public clubs yet. Be the first to create one.</div>
+        </sc-if>
+        <sc-if value="{{ clubSearchQuery }}">
+          <div style="background:#fff;border:1px dashed #d6dccf;border-radius:14px;padding:30px;text-align:center;font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:30px">No clubs match "{{ clubSearchQuery }}".</div>
+        </sc-if>
       </sc-if>
     </sc-if>
 
@@ -1680,7 +1692,7 @@ class Component extends DCLogic {
       clubCreateName: '', clubCreateDesc: '', clubCreatePublic: true, clubCreateMinNW: '',
       clubJoinCode: '', clubJoinSearch: '',
       clubError: '', clubSuccess: '',
-      clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null,
+      clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null, clubSearchQuery: '',
       shareOpen: false, shareCopied: false, mysteryOpen: false, mysteryPacks: [], recoverOpen: false,
       phoneVal: '', phoneSaving: false, phoneSaved: false,
       loggedIn: false, loginStep: 'email', loginEmail: '', loginError: '', loginSending: false, copyTokenLabel: 'Copy code',
@@ -5094,7 +5106,17 @@ Yan Diomande|RB Leipzig|CM|21|4
           };
         });
       })(),
-      clubPublicList:S.clubPublicList.map(c=>({...c,onJoin:()=>this.joinClubById(c.id)})),
+      clubSearchQuery:S.clubSearchQuery||'',
+      onClubSearch:(e)=>this.setState({clubSearchQuery:e.target.value}),
+      clubPublicList:(()=>{
+        const q=(S.clubSearchQuery||'').toLowerCase().trim();
+        return S.clubPublicList
+          .filter(c=>!q||c.name.toLowerCase().includes(q)||(c.description||'').toLowerCase().includes(q))
+          .map(c=>({...c,onJoin:()=>this.joinClubById(c.id)}));
+      })(),
+      hasPublicClubs:(()=>{ const q=(S.clubSearchQuery||'').toLowerCase().trim(); return S.clubPublicList.filter(c=>!q||c.name.toLowerCase().includes(q)||(c.description||'').toLowerCase().includes(q)).length>0; })(),
+      noPublicClubs:(()=>{ const q=(S.clubSearchQuery||'').toLowerCase().trim(); return S.clubPublicList.filter(c=>!q||c.name.toLowerCase().includes(q)||(c.description||'').toLowerCase().includes(q)).length===0; })(),
+      noPublicClubsAtAll:S.clubPublicList.length===0,
       isMyClubLeader:S.myClub&&S.myClub.leader_id===this.getUserId(),
       clubInviteCode:S.myClub?S.myClub.invite_code:'',
       clubError:S.clubError, clubSuccess:S.clubSuccess,
