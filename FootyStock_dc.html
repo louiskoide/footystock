@@ -1464,7 +1464,7 @@
     <sc-if value="{{ isFounder }}">
       <div style="display:inline-flex;align-items:center;gap:6px;background:#fff8ec;border:1px solid #f5c842;border-radius:8px;padding:6px 12px;font:600 12px 'Hanken Grotesk';color:#7a5c00;margin-bottom:14px">🏅 Founder — joined early</div>
     </sc-if>
-    <div style="font:500 13px 'Hanken Grotesk';color:#46504a;margin-bottom:16px;line-height:1.5">Invite friends. Each person who joins using your link gets 3 Mystery Stocks. So do you (up to 5 referrals).</div>
+    <div style="font:500 13px 'Hanken Grotesk';color:#46504a;margin-bottom:16px;line-height:1.5">Invite friends. Each person who joins using your link gets 3 shares across 3 players. So do you (up to 5 referrals).</div>
     <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px">
       <div style="background:#f5f6f3;border-radius:12px;padding:12px 14px">
         <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase;margin-bottom:6px">Referral code</div>
@@ -1494,8 +1494,8 @@
 <div style="position:fixed;inset:0;z-index:100;background:rgba(12,20,15,.5);backdrop-filter:blur(4px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeMystery }}">
   <div onClick="{{ stopMystery }}" class="fs-modal-card" style="background:#fff;border-radius:24px;width:100%;max-width:440px;padding:30px;text-align:center;box-shadow:0 30px 80px rgba(10,20,14,.32)">
     <div style="font:600 12px 'Hanken Grotesk';letter-spacing:.14em;text-transform:uppercase;color:#16a85f">Mystery reward</div>
-    <div style="font:700 26px 'Space Grotesk';letter-spacing:-.02em;margin-top:8px">🎁 3 Mystery Stocks!</div>
-    <div style="font:500 13.5px 'Hanken Grotesk';color:#8a938c;margin-top:6px;margin-bottom:22px">You joined via a referral link. Here are your free shares!</div>
+    <div style="font:700 26px 'Space Grotesk';letter-spacing:-.02em;margin-top:8px">🎁 3 Players, 3 Shares Each!</div>
+    <div style="font:500 13.5px 'Hanken Grotesk';color:#8a938c;margin-top:6px;margin-bottom:22px">You joined via a referral. Here are your free shares!</div>
     <sc-for list="{{ mysteryPacks }}" as="mp">
       <div style="background:#f5f6f3;border-radius:14px;padding:14px 18px;margin-bottom:10px;display:flex;align-items:center;justify-content:space-between">
         <div style="text-align:left">
@@ -3995,9 +3995,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       const price=this.curPrice(p);
       if(!holdings[p.id]) holdings[p.id]={qty:0,avg:0};
       const prev=holdings[p.id];
-      holdings[p.id]={qty:prev.qty+5,avg:(prev.qty*prev.avg+0)/(prev.qty+5)||0};
-      txns.push({id:p.id,name:p.name,side:"BUY",qty:5,price:0,total:0,date:new Date().toISOString(),label:"MYSTERY"});
-      packs.push({name:p.name,team:p.team,qty:5,price:this.money(price)});
+      holdings[p.id]={qty:prev.qty+3,avg:(prev.qty*prev.avg+0)/(prev.qty+3)||0};
+      txns.push({id:p.id,name:p.name,side:"BUY",qty:3,price:0,total:0,date:new Date().toISOString(),label:"MYSTERY"});
+      packs.push({name:p.name,team:p.team,qty:3,price:this.money(price)});
     }
     this.setState({holdings,txns,mysteryOpen:true,mysteryPacks:packs},()=>{ this.persist(); });
   }
