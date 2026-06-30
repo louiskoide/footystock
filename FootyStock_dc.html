@@ -903,7 +903,10 @@
               <span style="font:600 11px 'Hanken Grotesk';background:rgba(255,255,255,.12);color:#c5d9cc;padding:4px 10px;border-radius:999px">Led by {{ myClub.leader_name }}</span>
             </div>
           </div>
-          <button onClick="{{ leaveClub }}" style="flex-shrink:0;background:rgba(255,255,255,.12);border:none;color:#c5d9cc;font:600 12px 'Hanken Grotesk';padding:8px 14px;border-radius:999px;cursor:pointer">Leave</button>
+          <div style="display:flex;gap:8px;flex-shrink:0">
+            <sc-if value="{{ isMyClubLeader }}"><button onClick="{{ goClubEdit }}" style="background:rgba(255,255,255,.12);border:none;color:#c5d9cc;font:600 12px 'Hanken Grotesk';padding:8px 14px;border-radius:999px;cursor:pointer">Edit settings</button></sc-if>
+            <button onClick="{{ leaveClub }}" style="background:rgba(255,255,255,.12);border:none;color:#c5d9cc;font:600 12px 'Hanken Grotesk';padding:8px 14px;border-radius:999px;cursor:pointer">Leave</button>
+          </div>
         </div>
         <!-- invite code (leader only) -->
         <sc-if value="{{ isMyClubLeader }}">
@@ -1020,6 +1023,38 @@
       </div>
       </sc-if><!-- end clubChatReady -->
     </sc-if><!-- end hasClubHome -->
+
+    <!-- EDIT CLUB SETTINGS -->
+    <sc-if value="{{ isClubEdit }}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
+        <button onClick="{{ goClubHome }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back</button>
+        <span style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Edit club settings</span>
+      </div>
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:26px;max-width:520px">
+        <div style="margin-bottom:16px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Club name *</label>
+          <input id="club-edit-name" placeholder="e.g. Sunday League FC" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none;box-sizing:border-box" value="{{ clubEditName }}" />
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Tagline</label>
+          <input id="club-edit-desc" placeholder="Optional tagline" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none;box-sizing:border-box" value="{{ clubEditDesc }}" />
+        </div>
+        <div style="margin-bottom:16px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:10px">Visibility</label>
+          <div style="display:flex;gap:10px">
+            <button onClick="{{ setClubEditPublic }}" style="{{ clubEditPublicBtnStyle }}">Public</button>
+            <button onClick="{{ setClubEditPrivate }}" style="{{ clubEditPrivateBtnStyle }}">Private</button>
+          </div>
+        </div>
+        <div style="margin-bottom:22px">
+          <label style="display:block;font:600 12px 'Hanken Grotesk';color:#46504a;letter-spacing:.04em;text-transform:uppercase;margin-bottom:6px">Min net worth to join</label>
+          <input id="club-edit-minnw" placeholder="e.g. 12000" type="number" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:11px 14px;font:500 14px 'Hanken Grotesk';outline:none;box-sizing:border-box" value="{{ clubEditMinNW }}" />
+        </div>
+        <sc-if value="{{ clubError }}"><div style="color:#e03e3e;font:500 13px 'Hanken Grotesk';margin-bottom:12px">{{ clubError }}</div></sc-if>
+        <sc-if value="{{ clubSuccess }}"><div style="color:#16a85f;font:500 13px 'Hanken Grotesk';margin-bottom:12px">{{ clubSuccess }}</div></sc-if>
+        <button onClick="{{ submitEditClub }}" style="width:100%;padding:13px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 15px 'Hanken Grotesk';cursor:pointer">Save changes</button>
+      </div>
+    </sc-if>
 
   </div>
   </sc-if>
@@ -4231,6 +4266,21 @@ Yan Diomande|RB Leipzig|CM|21|4
     }catch(e){this.setState({clubLoading:false,clubError:e.message.includes('unique')?'A club with that name already exists.':e.message});}
   }
 
+  async updateClub(){
+    const name=(document.getElementById('club-edit-name')?.value||'').trim();
+    const desc=(document.getElementById('club-edit-desc')?.value||'').trim();
+    const minNW=document.getElementById('club-edit-minnw')?.value||'';
+    const isPublic=this.state.clubEditPublic;
+    if(!name){this.setState({clubError:'Club name is required.'});return;}
+    const{myClub}=this.state;
+    this.setState({clubLoading:true,clubError:'',clubSuccess:''});
+    try{
+      await Supa.patch('clubs','id=eq.'+myClub.id,{name,description:desc,is_public:isPublic,min_net_worth:parseFloat(minNW)||0});
+      await this.loadMyClub();
+      this.setState({clubLoading:false,clubSuccess:'Settings saved!',clubView:'home'});
+    }catch(e){this.setState({clubLoading:false,clubError:e.message.includes('unique')?'A club with that name already exists.':e.message});}
+  }
+
   async joinClubByCode(){
     const code=(document.getElementById('club-join-code')?.value||'').trim().toUpperCase();
     if(!code){this.setState({clubError:'Enter an invite code.'});return;}
@@ -5022,11 +5072,13 @@ Yan Diomande|RB Leipzig|CM|21|4
       isClubHome:S.clubView==='home',
       isClubCreate:S.clubView==='create',
       isClubJoin:S.clubView==='join',
+      isClubEdit:S.clubView==='edit',
       noClubHome:!S.myClub&&!S.clubLoading&&S.clubView==='home',
       hasClubHome:!!S.myClub&&S.clubView==='home',
       goClubHome:()=>this.setState({clubView:'home',clubError:'',clubSuccess:''}),
       goClubCreate:()=>this.setState({clubView:'create',clubError:'',clubSuccess:''}),
       goClubJoin:()=>this.setState({clubView:'join',clubError:'',clubSuccess:''}),
+      goClubEdit:()=>this.setState({clubView:'edit',clubError:'',clubSuccess:'',clubEditName:S.myClub?.name||'',clubEditDesc:S.myClub?.description||'',clubEditPublic:S.myClub?.is_public??true,clubEditMinNW:S.myClub?.min_net_worth||''}),
       onClubCreateName:(e)=>this.setState({clubCreateName:e.target.value}),
       onClubCreateDesc:(e)=>this.setState({clubCreateDesc:e.target.value}),
       onClubCreatePublic:(v)=>this.setState({clubCreatePublic:v}),
@@ -5038,6 +5090,12 @@ Yan Diomande|RB Leipzig|CM|21|4
       clubPublicBtnStyle:S.clubCreatePublic?'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #16a85f;background:#f0fdf4;color:#16a85f':'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #e1e4dd;background:#fff;color:#46504a',
       clubPrivateBtnStyle:!S.clubCreatePublic?'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #16a85f;background:#f0fdf4;color:#16a85f':'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #e1e4dd;background:#fff;color:#46504a',
       submitCreateClub:()=>this.createClub(),
+      submitEditClub:()=>this.updateClub(),
+      clubEditName:S.clubEditName||'', clubEditDesc:S.clubEditDesc||'', clubEditMinNW:S.clubEditMinNW||'',
+      setClubEditPublic:()=>this.setState({clubEditPublic:true}),
+      setClubEditPrivate:()=>this.setState({clubEditPublic:false}),
+      clubEditPublicBtnStyle:(S.clubEditPublic??true)?'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #16a85f;background:#f0fdf4;color:#16a85f':'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #e1e4dd;background:#fff;color:#46504a',
+      clubEditPrivateBtnStyle:!(S.clubEditPublic??true)?'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #16a85f;background:#f0fdf4;color:#16a85f':'flex:1;padding:10px;border-radius:10px;font:600 13px Hanken Grotesk;cursor:pointer;border:2px solid #e1e4dd;background:#fff;color:#46504a',
       onClubJoinCode:(e)=>this.setState({clubJoinCode:e.target.value}),
       clubJoinCode:S.clubJoinCode,
       submitJoinClub:()=>this.joinClubByCode(),
