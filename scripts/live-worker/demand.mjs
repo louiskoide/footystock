@@ -42,6 +42,13 @@ function recentMomentum(playerState) {
 // to compute the correct exponential decay regardless of poll cadence.
 export function tickDemand(state, crosswalk, elapsedMs) {
   if (!state.demand) state.demand = {};
+  // Roll trade totals over at midnight regardless of whether any trades happened.
+  const today = new Date().toISOString().slice(0, 10);
+  if (state._tradeDay && state._tradeDay !== today) {
+    state.tradeTotalsYday = state.tradeTotals || { buy: {}, sell: {} };
+    state.tradeTotals = { buy: {}, sell: {} };
+  }
+  state._tradeDay = today;
   state._demandTick = (state._demandTick || 0) + 1;
   const tick = state._demandTick;
   const decayFactor = Math.pow(0.5, elapsedMs / DECAY_HALF_LIFE_MS);
@@ -69,14 +76,6 @@ export function recordTrade(state, id, side, qty = 1) {
   if (!state.demand) state.demand = {};
   const impulse = side === 'buy' ? 0.12 : -0.12;
   state.demand[id] = Math.max(-1, Math.min(1, (state.demand[id] || 0) + impulse));
-
-  // Roll totals over at midnight: snapshot today → yday, reset today.
-  const today = new Date().toISOString().slice(0, 10);
-  if (state._tradeDay && state._tradeDay !== today) {
-    state.tradeTotalsYday = state.tradeTotals || { buy: {}, sell: {} };
-    state.tradeTotals = { buy: {}, sell: {} };
-  }
-  state._tradeDay = today;
 
   if (!state.tradeTotals) state.tradeTotals = { buy: {}, sell: {} };
   if (side === 'buy') {
