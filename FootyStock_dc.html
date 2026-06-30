@@ -4884,7 +4884,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       // reward modal
       showReward:S.showReward, rw, closeReward:()=>this.closeReward(),
       // feedback
-      showLoginGate:!S.loggedIn, portfolioLoading:S.portfolioLoading,
+      showLoginGate:!S.loggedIn&&!S.portfolioLoading, portfolioLoading:S.portfolioLoading,
       loginStepEmail:S.loginStep==='email', loginStepOtp:S.loginStep==='otp',
       loginStepForgot:S.loginStep==='forgot', loginStepReset:S.loginStep==='reset',
       loginShowTabs:S.loginStep==='email'||S.loginStep==='otp',
