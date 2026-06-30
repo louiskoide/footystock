@@ -1531,7 +1531,7 @@ class Component extends DCLogic {
       clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null,
       shareOpen: false, shareCopied: false, mysteryOpen: false, mysteryPacks: [], recoverOpen: false,
       phoneVal: '', phoneSaving: false, phoneSaved: false,
-      loggedIn: !!(localStorage.getItem('fs_pw_reset_v1') && localStorage.getItem('fs_loggedin')), loginStep: 'email', loginEmail: '', loginError: '', loginSending: false, copyTokenLabel: 'Copy code',
+      loggedIn: false, loginStep: 'email', loginEmail: '', loginError: '', loginSending: false, copyTokenLabel: 'Copy code',
     };
   }
   componentDidMount(){
@@ -1627,16 +1627,6 @@ class Component extends DCLogic {
     pollLeaderboard();
     this.leaderboardTimer = setInterval(()=>{ if(this.state.view==='leaders') pollLeaderboard(); }, 60000);
     setTimeout(()=>this.submitScore(), 3000);
-    // force logout all existing sessions — everyone must re-register with password
-    if(!localStorage.getItem('fs_pw_reset_v1')){
-      try{ ['fs_loggedin','fs_token','fs_email','fs_username','footystock_v3','footystock_uid','fs_loggedin','fs_ref_claimed','fs_names_wiped_v1','fs_nameless_deleted_v1','fs_nameless_deleted_v3','fs_wiped_v1'].forEach(k=>localStorage.removeItem(k)); localStorage.setItem('fs_pw_reset_v1','1'); }catch(e){}
-    }
-    // wipe all pre-existing accounts (leaderboard + portfolios) for fresh password-based start
-    if(this._sbUrl && !localStorage.getItem('fs_wiped_v2')){
-      const sbBase=this._sbUrl; const sbHdr=this._sbHdr;
-      fetch(sbBase+'?token=not.is.null',{method:'DELETE',headers:sbHdr}).catch(()=>{});
-      fetch(sbBase.replace('/leaderboard','/portfolios')+'?token=not.is.null',{method:'DELETE',headers:sbHdr}).then(()=>{ try{ localStorage.setItem('fs_wiped_v2','1'); }catch(e){} }).catch(()=>{});
-    }
     // sync portfolio from cloud (handles cross-device and cross-domain merge)
     setTimeout(()=>this.syncFromCloud(), 1000);
     // auto-open reward if claimable on first load
@@ -1673,10 +1663,18 @@ class Component extends DCLogic {
     if(!this._sbUrl){ this.setState({portfolioLoading:false}); return; }
     const token=this.loadToken(); if(!token||token==='anon'){ this.setState({portfolioLoading:false}); return; }
     try{
+      // Check leaderboard first — determines if this token belongs to a real account
+      const lbRows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(token)+'&select=token,name');
+      if(!lbRows||!lbRows.length){
+        // No account for this token — user must log in
+        this.setState({portfolioLoading:false,loggedIn:false});
+        return;
+      }
+      const lbRow=lbRows[0];
+      this.setState({loggedIn:true,username:lbRow.name||''});
+      // Now load portfolio
       const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(token));
       if(!rows||!rows.length){
-        // New user — initialize fresh portfolio in cloud
-        this._persistToCloud({ cash:this.state.cash, holdings:this.state.holdings, txns:this.state.txns, shorts:this.state.shorts, streak:this.state.streak, lastClaim:this.state.lastClaim, joinDate:this.state.joinDate, allTimeHigh:this.state.allTimeHigh });
         this.setState({portfolioLoading:false});
         return;
       }
@@ -3666,7 +3664,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       const payload={token,name,password_hash:hash,net_worth:0,updated_at:new Date().toISOString()};
       const res=await fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload)});
       if(!res.ok){ const e=await res.json().catch(()=>{}); console.error('signup fail',e); this.setState({loginError:(e&&(e.message||e.hint||e.msg||e.error))||'Signup failed ('+res.status+')',loginSending:false}); return; }
-      try{ localStorage.setItem('fs_token',token); localStorage.setItem('fs_loggedin','1'); }catch(e){}
+      try{ localStorage.setItem('fs_token',token); }catch(e){}
       this.saveUsername(name);
       this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
       setTimeout(()=>{ this.submitScore(); this.checkPendingRef(); this.syncFromCloud(); },300);
@@ -3686,7 +3684,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       const row=rows[0];
       const hash=await this._hashPw(pw,(row.name||input).toLowerCase());
       if(hash!==row.password_hash){ this.setState({loginError:'Incorrect password.',loginSending:false}); return; }
-      try{ localStorage.setItem('fs_token',row.token); localStorage.setItem('fs_loggedin','1'); }catch(e){}
+      try{ localStorage.setItem('fs_token',row.token); }catch(e){}
       this.saveUsername(row.name||input);
       this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
       setTimeout(()=>{ this.submitScore(); this.syncFromCloud(); },300);
