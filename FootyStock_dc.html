@@ -458,9 +458,9 @@
                 </g>
               </sc-for>
               <sc-if value="{{ d.dragSel.show }}" hint-placeholder-val="{{ false }}">
-                <rect x="{{ d.dragSel.x1 }}" y="0" width="{{ d.dragSel.w }}" height="260" fill="{{ d.dragSel.fill }}"></rect>
-                <line x1="{{ d.dragSel.lineX1 }}" y1="0" x2="{{ d.dragSel.lineX1 }}" y2="260" stroke="#8a938c" stroke-width="1" stroke-dasharray="3,3"></line>
-                <line x1="{{ d.dragSel.lineX2 }}" y1="0" x2="{{ d.dragSel.lineX2 }}" y2="260" stroke="#8a938c" stroke-width="1" stroke-dasharray="3,3"></line>
+                <rect data-csel="r" x="{{ d.dragSel.x1 }}" y="0" width="{{ d.dragSel.w }}" height="260" fill="{{ d.dragSel.fill }}"></rect>
+                <line data-csel="l1" x1="{{ d.dragSel.lineX1 }}" y1="0" x2="{{ d.dragSel.lineX1 }}" y2="260" stroke="#8a938c" stroke-width="1" stroke-dasharray="3,3"></line>
+                <line data-csel="l2" x1="{{ d.dragSel.lineX2 }}" y1="0" x2="{{ d.dragSel.lineX2 }}" y2="260" stroke="#8a938c" stroke-width="1" stroke-dasharray="3,3"></line>
               </sc-if>
               <sc-if value="{{ d.hover.show }}" hint-placeholder-val="{{ false }}">
                 <line x1="{{ d.hover.x }}" y1="0" x2="{{ d.hover.x }}" y2="260" stroke="#8a938c" stroke-width="1" stroke-dasharray="3,3"></line>
@@ -468,9 +468,9 @@
               </sc-if>
             </svg>
             <sc-if value="{{ d.tooltip.show }}" hint-placeholder-val="{{ false }}">
-              <div style="position:absolute;top:4px;left:{{ d.tooltip.leftPct }}%;transform:translateX(-50%);background:#16201a;color:#fff;font:600 12px 'Hanken Grotesk';padding:6px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;box-shadow:0 6px 14px rgba(0,0,0,.18);z-index:2">
-                <span style="color: {{ d.tooltip.color }}">{{ d.tooltip.line1 }}</span>
-                <span style="color:#cfd6cf;margin-left:6px">{{ d.tooltip.line2 }}</span>
+              <div data-csel="tip" style="position:absolute;top:4px;left:{{ d.tooltip.leftPct }}%;transform:translateX(-50%);background:#16201a;color:#fff;font:600 12px 'Hanken Grotesk';padding:6px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;box-shadow:0 6px 14px rgba(0,0,0,.18);z-index:2">
+                <span data-csel="tip1" style="color: {{ d.tooltip.color }}">{{ d.tooltip.line1 }}</span>
+                <span data-csel="tip2" style="color:#cfd6cf;margin-left:6px">{{ d.tooltip.line2 }}</span>
               </div>
             </sc-if>
             <div style="display:flex;justify-content:space-between;margin-top:8px;font:500 11px 'Hanken Grotesk';color:#a7afa7">
@@ -4749,33 +4749,55 @@ Yan Diomande|RB Leipzig|CM|21|4
           const relX=((clientX-rect.left)/rect.width)*W;
           return Math.max(0,Math.min(slice.length-1,Math.round(relX/(W/(slice.length-1)))));
         };
+        // Store chart data on instance so touch handlers can do direct DOM updates
+        // without calling setState (which rebuilds the DOM and breaks the touch chain).
+        this._chartSlice=slice; this._chartX=X; this._chartW=W; this._chartPointLabel=pointLabel;
         const onChartMove=(e)=>{ const k=idxFromClientX(e.clientX,e.currentTarget.getBoundingClientRect());
           if(this.state.chartHoverIdx!==k) this.setState({chartHoverIdx:k}); };
         const onChartDown=(e)=>{ const k=idxFromClientX(e.clientX,e.currentTarget.getBoundingClientRect());
           this.setState({chartDragStart:k,chartHoverIdx:k}); };
         const onChartUp=()=>{ if(this.state.chartDragStart!=null) this.setState({chartDragStart:null}); };
         const onChartLeave=()=>{ this.setState({chartHoverIdx:null,chartDragStart:null}); };
-        // touchscreens have no hover concept — a finger drag across the chart
-        // is the touch equivalent of mouse-move-while-hovering, so mirror the
-        // mouse handlers off touch coordinates (and block page scroll while
-        // dragging across the chart, since the swipe is meant for the chart).
-        // Cache rect at touchStart so DOM rebuilds during move don't lose it.
-        // RAF-throttle setState in move so we don't trigger a rebuild on every pixel.
         const onChartTouchStart=(e)=>{ e.preventDefault(); const t=e.touches[0];
           this._chartTouchRect=e.currentTarget.getBoundingClientRect();
-          this._chartMoveScheduled=false;
+          this._chartMoveScheduled=false; this._chartLatestTouchX=t.clientX;
           const k=idxFromClientX(t.clientX,this._chartTouchRect);
+          this._chartHoverRaw=k;
           this.setState({chartDragStart:k,chartHoverIdx:k}); };
         const onChartTouchMove=(e)=>{ e.preventDefault(); if(!this._chartTouchRect) return;
           this._chartLatestTouchX=e.touches[0].clientX;
           if(this._chartMoveScheduled) return;
           this._chartMoveScheduled=true;
-          requestAnimationFrame(()=>{ this._chartMoveScheduled=false;
+          requestAnimationFrame(()=>{
+            this._chartMoveScheduled=false;
+            const s=this._chartSlice, Xf=this._chartX, Wf=this._chartW, pl=this._chartPointLabel;
+            if(!s||!Xf) return;
             const k=idxFromClientX(this._chartLatestTouchX,this._chartTouchRect);
-            if(this.state.chartHoverIdx!==k) this.setState({chartHoverIdx:k}); }); };
+            this._chartHoverRaw=k;
+            const ds=this.state.chartDragStart; if(ds==null) return;
+            const x1=Xf(ds), x2=Xf(k), up=s[k]>=s[ds];
+            const fill=up?'rgba(22,168,95,0.12)':'rgba(214,69,69,0.12)';
+            const minX=Math.min(x1,x2), w=Math.max(0.1,Math.abs(x2-x1));
+            const r=document.querySelector('[data-csel="r"]');
+            const l1=document.querySelector('[data-csel="l1"]');
+            const l2=document.querySelector('[data-csel="l2"]');
+            const tip=document.querySelector('[data-csel="tip"]');
+            const tip1=document.querySelector('[data-csel="tip1"]');
+            const tip2=document.querySelector('[data-csel="tip2"]');
+            if(r){r.setAttribute('x',minX.toFixed(1));r.setAttribute('width',w.toFixed(1));r.setAttribute('fill',fill);}
+            if(l1){l1.setAttribute('x1',x1.toFixed(1));l1.setAttribute('x2',x1.toFixed(1));}
+            if(l2){l2.setAttribute('x1',x2.toFixed(1));l2.setAttribute('x2',x2.toFixed(1));}
+            if(tip){tip.style.left=((x2/Wf)*100).toFixed(1)+'%';}
+            if(tip1){const lo=Math.min(ds,k),hi=Math.max(ds,k); const da=s[k]-s[ds],dp=s[ds]?(da/s[ds])*100:0;
+              tip1.style.color=up?'#16a85f':'#e04040';
+              tip1.textContent=(up?'▲ ':'▼ ')+this.money(Math.abs(da))+' ('+Math.abs(dp).toFixed(2)+'%)';}
+            if(tip2&&pl){const lo=Math.min(ds,k),hi=Math.max(ds,k); tip2.textContent=pl(lo)+' – '+pl(hi);}
+          }); };
         const onChartTouchEnd=()=>{ this._chartTouchRect=null; this._chartMoveScheduled=false;
-          const ds=this.state.chartDragStart, hi=this.state.chartHoverIdx;
-          if(ds!=null && hi!=null && ds===hi) this.setState({chartDragStart:null,chartHoverIdx:null});
+          const finalK=this._chartHoverRaw??this.state.chartHoverIdx;
+          const ds=this.state.chartDragStart;
+          if(ds!=null && finalK!=null && ds===finalK) this.setState({chartDragStart:null,chartHoverIdx:null});
+          else if(finalK!=null) this.setState({chartHoverIdx:finalK});
         };
 
         const hoverIdx=S.chartHoverIdx; const dragStartIdx=S.chartDragStart;
