@@ -324,5 +324,5 @@ export function publicSnapshot(state) {
   for (const [id, p] of Object.entries(state.players)) {
     players[id] = { nation: (state._nationOf && state._nationOf[id]) || null, events: p.events.map(({ _fid, ...rest }) => rest) };
   }
-  return { generatedAt: state.generatedAt, season: state.season, teams, players, hype: state.hype || {}, demand: state.demand || {}, priceHist: state.priceHist || {}, tradeTotals: state.tradeTotals || { buy: {}, sell: {} }, shares: state.shares || {}, hateCount: state.hateCount || {} };
+  return { generatedAt: state.generatedAt, season: state.season, teams, players, hype: state.hype || {}, demand: state.demand || {}, priceHist: state.priceHist || {}, tradeTotals: state.tradeTotals || { buy: {}, sell: {} }, tradeTotalsYday: state.tradeTotalsYday || { buy: {}, sell: {} }, shares: state.shares || {}, hateCount: state.hateCount || {} };
 }

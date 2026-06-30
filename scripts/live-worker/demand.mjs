@@ -70,6 +70,14 @@ export function recordTrade(state, id, side, qty = 1) {
   const impulse = side === 'buy' ? 0.12 : -0.12;
   state.demand[id] = Math.max(-1, Math.min(1, (state.demand[id] || 0) + impulse));
 
+  // Roll totals over at midnight: snapshot today → yday, reset today.
+  const today = new Date().toISOString().slice(0, 10);
+  if (state._tradeDay && state._tradeDay !== today) {
+    state.tradeTotalsYday = state.tradeTotals || { buy: {}, sell: {} };
+    state.tradeTotals = { buy: {}, sell: {} };
+  }
+  state._tradeDay = today;
+
   if (!state.tradeTotals) state.tradeTotals = { buy: {}, sell: {} };
   if (side === 'buy') {
     state.tradeTotals.buy[id] = (state.tradeTotals.buy[id] || 0) + qty;

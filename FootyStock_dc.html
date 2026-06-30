@@ -4702,11 +4702,11 @@ Yan Diomande|RB Leipzig|CM|21|4
       }
       const mkGlobal=(obj)=>{ const d=decoratedDB.find(x=>x.id===obj.id); return {name:d?d.name:obj.id,qty:obj.qty,price:d?d.price:'—',onClick:d?d.onClick:()=>{}}; };
       const mostHeld=Object.values(globalTally).sort((a,b)=>b.qty-a.qty).slice(0,3).map(mkGlobal);
-      // Global most-bought / most-sold from the live worker's accumulated trade counters
-      const tradeTotals=(this._wcLive&&this._wcLive.tradeTotals)||{buy:{},sell:{}};
+      // Most-bought / most-sold from yesterday's trade counters (rolled over at midnight by the worker)
+      const tradeTotalsYday=(this._wcLive&&this._wcLive.tradeTotalsYday)||{buy:{},sell:{}};
       const mkTradeRow=(id,count)=>{ const d=decoratedDB.find(x=>x.id===id); return {name:d?d.name:id,qty:count,price:d?d.price:'—',onClick:d?d.onClick:()=>{}}; };
-      const mostBought=Object.entries(tradeTotals.buy||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,n])=>mkTradeRow(id,n));
-      const mostSold=Object.entries(tradeTotals.sell||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,n])=>mkTradeRow(id,n));
+      const mostBought=Object.entries(tradeTotalsYday.buy||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,n])=>mkTradeRow(id,n));
+      const mostSold=Object.entries(tradeTotalsYday.sell||{}).sort((a,b)=>b[1]-a[1]).slice(0,3).map(([id,n])=>mkTradeRow(id,n));
       return {
         date:recapDate,
         sentiment:`${upCount} rising · ${downCount} falling`,
