@@ -4678,8 +4678,22 @@ Yan Diomande|RB Leipzig|CM|21|4
         min=Math.max(0,min-pad); max=max+pad;
         const span=(max-min)||1;
         const X=k=>(W*k/(slice.length-1)); const Y=v=>top+(H-top)*(1-(v-min)/span);
-        const linePath=slice.map((v,k)=>`${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
-        const areaPath=`M0,${Y(slice[0]).toFixed(1)} `+slice.map((v,k)=>`L${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ')+` L${W},${H} L0,${H} Z`;
+        // For 30D/90D daily-close charts, use a step at match-event days so the
+        // price spike appears as a vertical line ON the match day rather than a
+        // diagonal starting from the day before. (7D/24H already have intraday data.)
+        const stepEventIdx=new Set();
+        if(!is24h&&!is90m&&range!==7){
+          p.events.filter(e=>e.offset<range&&e.delta!==0).forEach(e=>{
+            const k=slice.length-1-e.offset; if(k>0&&k<slice.length) stepEventIdx.add(k);
+          });
+        }
+        const pathPts=[];
+        slice.forEach((v,k)=>{
+          if(stepEventIdx.has(k)) pathPts.push(`${X(k).toFixed(1)},${Y(slice[k-1]).toFixed(1)}`);
+          pathPts.push(`${X(k).toFixed(1)},${Y(v).toFixed(1)}`);
+        });
+        const linePath=pathPts.join(' ');
+        const areaPath=`M0,${Y(slice[0]).toFixed(1)} `+pathPts.map(p=>`L${p}`).join(' ')+` L${W},${H} L0,${H} Z`;
         // ceiling/mid/floor reference lines — a reasonable top/bottom band
         // and a midpoint, labeled with their actual price like a real
         // brokerage chart's axis, instead of bare unlabeled gridlines.
