@@ -121,7 +121,9 @@
         const v = resolve(scopeStack, whole);
         if (name.indexOf('on') === 0 && typeof v === 'function') {
           node.removeAttribute(name);
-          node.addEventListener(name.slice(2).toLowerCase(), v);
+          const evName = name.slice(2).toLowerCase();
+          const opts = ['touchstart','touchmove','touchend','touchcancel'].includes(evName) ? {passive:false} : undefined;
+          node.addEventListener(evName, v, opts);
           return;
         }
         node.removeAttribute(name);
