@@ -109,7 +109,12 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
       // roster could get falsely credited with another country's match.
       if (!id || nationOf[id] !== me) continue;
 
-      const minutes = stats.games?.minutes || 0;
+      // API-Football sometimes omits minutes for starters (common for GKs).
+      // If the player started (substitute === false) treat a null/0 as 90.
+      const rawMinutes = stats.games?.minutes;
+      const started = stats.games?.substitute === false;
+      const minutes = (rawMinutes > 0) ? rawMinutes : (started ? 90 : 0);
+
       state.players[id] = state.players[id] || { events: [] };
       const evs = state.players[id].events;
       const existingEv = evs.find(e => e._fid === fid);
