@@ -4765,10 +4765,16 @@ Yan Diomande|RB Leipzig|CM|21|4
         // mouse handlers off touch coordinates (and block page scroll while
         // dragging across the chart, since the swipe is meant for the chart).
         const onChartTouchStart=(e)=>{ e.preventDefault(); const t=e.touches[0]; const k=idxFromClientX(t.clientX,e.currentTarget.getBoundingClientRect());
+          // If no selection active yet, start one; if one already exists, start a fresh one
           this.setState({chartDragStart:k,chartHoverIdx:k}); };
         const onChartTouchMove=(e)=>{ e.preventDefault(); const t=e.touches[0]; const k=idxFromClientX(t.clientX,e.currentTarget.getBoundingClientRect());
           if(this.state.chartHoverIdx!==k) this.setState({chartHoverIdx:k}); };
-        const onChartTouchEnd=()=>{ this.setState({chartDragStart:null,chartHoverIdx:null}); };
+        // On touch end, keep the selection visible so the user can read the comparison.
+        // If they tapped a single point (no drag), clear the selection instead.
+        const onChartTouchEnd=()=>{
+          const ds=this.state.chartDragStart, hi=this.state.chartHoverIdx;
+          if(ds!=null && hi!=null && ds===hi) this.setState({chartDragStart:null,chartHoverIdx:null});
+        };
 
         const hoverIdx=S.chartHoverIdx; const dragStartIdx=S.chartDragStart;
         const dragging = dragStartIdx!=null && hoverIdx!=null;
