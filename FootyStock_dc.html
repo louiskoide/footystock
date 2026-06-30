@@ -653,14 +653,12 @@
             <div style="display:flex;justify-content:space-between;margin-top:7px;font:500 13px 'Hanken Grotesk'"><span style="color:#8a938c">Market value</span><span style="font-family:'Space Grotesk';font-weight:600">{{ d.posValue }}</span></div>
             <div style="display:flex;justify-content:space-between;margin-top:7px;font:500 13px 'Hanken Grotesk'"><span style="color:#8a938c">Unrealised P/L</span><span style="font-family:'Space Grotesk';font-weight:700;color: {{ d.posPlColor }}">{{ d.posPl }}</span></div>
           </sc-if>
-          <sc-if value="{{ d.sharesLabel }}" hint-placeholder-val="{{ false }}">
           <div style="margin-top:16px">
             <div style="display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px"><span>Supply</span><span style="font-family:'Space Grotesk';font-weight:600;color:#16201a">{{ d.sharesLabel }}</span></div>
             <div style="height:5px;background:#eef1ec;border-radius:99px;overflow:hidden"><div style="height:100%;background:#16a85f;border-radius:99px;width:{{ d.sharesBarPct }}%"></div></div>
           </div>
-          </sc-if>
           <div style="display:flex;gap:10px;margin-top:14px">
-            <button onClick="{{ d.onBuy }}" style="flex:1;font:700 14px 'Hanken Grotesk';background: {{ d.soldOut ? '#c4ccc3' : '#16a85f' }};color:#fff;border:none;padding:13px;border-radius:11px;cursor: {{ d.soldOut ? 'not-allowed' : 'pointer' }}">{{ d.soldOut ? 'Sold Out' : 'Buy' }}</button>
+            <button onClick="{{ d.onBuy }}" style="flex:1;font:700 14px 'Hanken Grotesk';background:{{ d.buyBg }};color:#fff;border:none;padding:13px;border-radius:11px;cursor:{{ d.buyCursor }}">{{ d.buyLabel }}</button>
             <button onClick="{{ d.onSell }}" style="flex:1;font:700 14px 'Hanken Grotesk';background: {{ d.sellBg }};color: {{ d.sellColor }};border:1px solid {{ d.sellBorder }};padding:13px;border-radius:11px;cursor: {{ d.sellCursor }}">Sell</button>
           </div>
           <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;text-align:center;margin-top:12px">Buying power · {{ buyingPowerFmt }}<sc-if value="{{ hasMarginUsed }}" hint-placeholder-val="{{ false }}"> <span style="color:#e07a1a">({{ marginUsedFmt }} margin)</span></sc-if></div>
@@ -4861,11 +4859,12 @@ Yan Diomande|RB Leipzig|CM|21|4
           posValue:this.money(posValue),posPl:(posUp?'+':'−')+this.money(Math.abs(posPl)).slice(1),posPlColor:posUp?GREEN:RED,
           watchLabel:watched?'★ Watching':'☆ Watch',watchColor:watched?'#e2a32b':'#8a938c',
           onToggleWatch:()=>this.toggleWatch(p.id),
-          sharesLeft:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; return liveShares&&liveShares[p.id]!=null?liveShares[p.id]:null; })(),
-          sharesTotal:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; const s=liveShares&&liveShares[p.id]; if(s==null) return null; const ls=this._wcLive.shares; const rem=ls[p.id]; const tot=Math.round(120000/Math.max(1,this.curPrice(p))); return tot; })(),
-          sharesLabel:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; if(!liveShares||liveShares[p.id]==null) return null; const rem=liveShares[p.id]; const tot=Math.round(120000/Math.max(1,this.curPrice(p))); return rem+' / '+tot+' shares'; })(),
-          sharesBarPct:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; if(!liveShares||liveShares[p.id]==null) return 100; const rem=liveShares[p.id]; const tot=Math.round(120000/Math.max(1,this.curPrice(p))); return tot>0?Math.round(100*rem/tot):0; })(),
-          soldOut:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; return liveShares&&liveShares[p.id]!=null&&liveShares[p.id]<=0; })(),
+          sharesLabel:(()=>{ const tot=Math.round(120000/Math.max(1,this.curPrice(p))); const liveShares=this._wcLive&&this._wcLive.shares; const rem=liveShares&&liveShares[p.id]!=null?liveShares[p.id]:tot; return rem+' / '+tot+' shares'; })(),
+          sharesBarPct:(()=>{ const tot=Math.round(120000/Math.max(1,this.curPrice(p))); const liveShares=this._wcLive&&this._wcLive.shares; const rem=liveShares&&liveShares[p.id]!=null?liveShares[p.id]:tot; return tot>0?Math.round(100*rem/tot):100; })(),
+          soldOut:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; return !!(liveShares&&liveShares[p.id]!=null&&liveShares[p.id]<=0); })(),
+          buyBg:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; const out=liveShares&&liveShares[p.id]!=null&&liveShares[p.id]<=0; return out?'#c4ccc3':'#16a85f'; })(),
+          buyLabel:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; const out=liveShares&&liveShares[p.id]!=null&&liveShares[p.id]<=0; return out?'Sold Out':'Buy'; })(),
+          buyCursor:(()=>{ const liveShares=this._wcLive&&this._wcLive.shares; const out=liveShares&&liveShares[p.id]!=null&&liveShares[p.id]<=0; return out?'not-allowed':'pointer'; })(),
           onBuy:()=>this.openTrade(p.id,'buy'),onSell:()=>this.openTrade(p.id,'sell'),
           sellBg:hasPos?'#fff':'#f5f6f3',sellColor:hasPos?'#16201a':'#bfc6be',sellBorder:hasPos?'#e1e4dd':'#eef1ec',sellCursor:hasPos?'pointer':'not-allowed',
           onHatewatch:()=>this.openTrade(p.id,'hatewatch'),onCover:()=>this.openTrade(p.id,'cover'),
