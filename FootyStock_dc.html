@@ -1531,7 +1531,7 @@ class Component extends DCLogic {
       clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null,
       shareOpen: false, shareCopied: false, mysteryOpen: false, mysteryPacks: [], recoverOpen: false,
       phoneVal: '', phoneSaving: false, phoneSaved: false,
-      loggedIn: !!(localStorage.getItem('fs_loggedin')), loginStep: 'email', loginEmail: '', loginError: '', loginSending: false, copyTokenLabel: 'Copy code',
+      loggedIn: !!(localStorage.getItem('fs_pw_reset_v1') && localStorage.getItem('fs_loggedin')), loginStep: 'email', loginEmail: '', loginError: '', loginSending: false, copyTokenLabel: 'Copy code',
     };
   }
   componentDidMount(){
@@ -1627,13 +1627,15 @@ class Component extends DCLogic {
     pollLeaderboard();
     this.leaderboardTimer = setInterval(()=>{ if(this.state.view==='leaders') pollLeaderboard(); }, 60000);
     setTimeout(()=>this.submitScore(), 3000);
-    // clear legacy localStorage keys from pre-email-auth era
-    try{ localStorage.removeItem('footystock_v3'); localStorage.removeItem('footystock_uid'); localStorage.removeItem('fs_username'); localStorage.removeItem('fs_email'); }catch(e){}
+    // force logout all existing sessions — everyone must re-register with password
+    if(!localStorage.getItem('fs_pw_reset_v1')){
+      try{ ['fs_loggedin','fs_token','fs_email','fs_username','footystock_v3','footystock_uid','fs_loggedin','fs_ref_claimed','fs_names_wiped_v1','fs_nameless_deleted_v1','fs_nameless_deleted_v3','fs_wiped_v1'].forEach(k=>localStorage.removeItem(k)); localStorage.setItem('fs_pw_reset_v1','1'); }catch(e){}
+    }
     // wipe all pre-existing accounts (leaderboard + portfolios) for fresh password-based start
-    if(this._sbUrl && !localStorage.getItem('fs_wiped_v1')){
+    if(this._sbUrl && !localStorage.getItem('fs_wiped_v2')){
       const sbBase=this._sbUrl; const sbHdr=this._sbHdr;
       fetch(sbBase+'?token=not.is.null',{method:'DELETE',headers:sbHdr}).catch(()=>{});
-      fetch(sbBase.replace('/leaderboard','/portfolios')+'?token=not.is.null',{method:'DELETE',headers:sbHdr}).then(()=>{ try{ localStorage.setItem('fs_wiped_v1','1'); }catch(e){} }).catch(()=>{});
+      fetch(sbBase.replace('/leaderboard','/portfolios')+'?token=not.is.null',{method:'DELETE',headers:sbHdr}).then(()=>{ try{ localStorage.setItem('fs_wiped_v2','1'); }catch(e){} }).catch(()=>{});
     }
     // sync portfolio from cloud (handles cross-device and cross-domain merge)
     setTimeout(()=>this.syncFromCloud(), 1000);
