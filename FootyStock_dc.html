@@ -1431,6 +1431,62 @@
 </div>
 </sc-if>
 
+<!-- ============ TRIGGER MODAL ============ -->
+<sc-if value="{{ triggerOpen }}" hint-placeholder-val="{{ false }}">
+<div style="position:fixed;inset:0;z-index:90;background:rgba(12,20,15,.42);backdrop-filter:blur(3px);display:flex;align-items:center;justify-content:center;padding:20px" onClick="{{ closeTriggerModal }}">
+  <div onClick="{{ stop }}" class="fs-modal-card" style="background:#fff;border-radius:22px;width:100%;max-width:440px;padding:26px;box-shadow:0 30px 80px rgba(10,20,14,.3)">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:18px">
+      <span style="font:700 18px 'Space Grotesk';letter-spacing:-.01em">Price alerts · {{ trig.name }}</span>
+      <button onClick="{{ closeTriggerModal }}" style="background:none;border:none;cursor:pointer;font:400 22px 'Hanken Grotesk';color:#aab2ab;line-height:1">×</button>
+    </div>
+
+    <!-- auto-sell section -->
+    <div style="background:#f5f6f3;border-radius:14px;padding:16px;margin-bottom:12px">
+      <div style="font:700 13px 'Space Grotesk';letter-spacing:-.005em;margin-bottom:10px">Auto-sell</div>
+      <div style="display:flex;gap:10px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px">Top cap — sell if price &ge;</div>
+          <input type="number" value="{{ trig.editTop }}" onInput="{{ trig.onTop }}" placeholder="e.g. 150" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        </div>
+        <div style="flex:1">
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px">Bottom cap — sell if price &le;</div>
+          <input type="number" value="{{ trig.editBottom }}" onInput="{{ trig.onBottom }}" placeholder="e.g. 80" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        </div>
+      </div>
+      <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">Sells all your shares when the price hits either cap. Leave blank to skip.</div>
+    </div>
+
+    <!-- auto-buy section -->
+    <div style="background:#f5f6f3;border-radius:14px;padding:16px;margin-bottom:14px">
+      <div style="font:700 13px 'Space Grotesk';letter-spacing:-.005em;margin-bottom:10px">Auto-buy</div>
+      <div style="display:flex;gap:10px;margin-bottom:8px">
+        <div style="flex:1">
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px">Buy if price &le;</div>
+          <input type="number" value="{{ trig.editBuyAt }}" onInput="{{ trig.onBuyAt }}" placeholder="e.g. 90" min="0" step="0.01" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        </div>
+        <div style="flex:1">
+          <div style="font:600 11px 'Hanken Grotesk';color:#8a938c;margin-bottom:5px">Shares to buy</div>
+          <input type="number" value="{{ trig.editBuyQty }}" onInput="{{ trig.onBuyQty }}" placeholder="1" min="1" step="1" style="width:100%;box-sizing:border-box;font:600 14px 'Space Grotesk';border:1.5px solid #e1e4dd;border-radius:10px;padding:9px 11px;outline:none;color:#16201a;background:#fff">
+        </div>
+      </div>
+      <div style="font:500 11.5px 'Hanken Grotesk';color:#8a938c">Buys automatically when the price drops to your target and adds the player to your watchlist.</div>
+    </div>
+
+    <div style="font:600 12.5px 'Hanken Grotesk';color:#d23b2c;min-height:16px;margin-bottom:8px">{{ trig.error }}</div>
+
+    <div style="display:flex;gap:10px">
+      <button onClick="{{ closeTriggerModal }}" style="flex:1;font:700 14px 'Hanken Grotesk';background:#f5f6f3;color:#46504a;border:none;padding:13px;border-radius:11px;cursor:pointer">Cancel</button>
+      <button onClick="{{ trig.save }}" style="flex:1;font:700 14px 'Hanken Grotesk';background: {{ trig.saveBg }};color:#fff;border:none;padding:13px;border-radius:11px;cursor: {{ trig.saveCursor }}">Save alerts</button>
+    </div>
+  </div>
+</div>
+</sc-if>
+
+<!-- ============ TRIGGER NOTICE TOAST ============ -->
+<sc-if value="{{ triggerNotice }}" hint-placeholder-val="{{ false }}">
+<div onClick="{{ dismissTriggerNotice }}" style="position:fixed;bottom:86px;left:50%;transform:translateX(-50%);z-index:85;background:#16201a;color:#eaf3ed;font:600 13px 'Hanken Grotesk';padding:12px 20px;border-radius:13px;max-width:360px;width:max-content;text-align:center;box-shadow:0 6px 20px rgba(10,20,14,.3);cursor:pointer;white-space:pre-line">{{ triggerNotice }}</div>
+</sc-if>
+
 <!-- ============ SHARE BUTTON ============ -->
 <button onClick="{{ openShare }}" style="position:fixed;bottom:28px;right:130px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#0a4a2f;color:#3ddc8a;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
   <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2"/><circle cx="18" cy="15" r="2"/><circle cx="3" cy="10" r="2"/><line x1="3" y1="10" x2="16" y2="5"/><line x1="3" y1="10" x2="16" y2="15"/></svg>
