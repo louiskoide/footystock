@@ -63,8 +63,17 @@ export function tickDemand(state, crosswalk, elapsedMs) {
 // the shared price. Sized so a handful of real trades ≈ sustained agent
 // momentum for one poll cycle — enough to be meaningful without letting
 // one user dominate a deep market.
+// Also accumulates global trade volume counters so the frontend can show
+// the most-bought / most-sold players across all users.
 export function recordTrade(state, id, side) {
   if (!state.demand) state.demand = {};
   const impulse = side === 'buy' ? 0.12 : -0.12;
   state.demand[id] = Math.max(-1, Math.min(1, (state.demand[id] || 0) + impulse));
+
+  if (!state.tradeTotals) state.tradeTotals = { buy: {}, sell: {} };
+  if (side === 'buy') {
+    state.tradeTotals.buy[id] = (state.tradeTotals.buy[id] || 0) + 1;
+  } else if (side === 'sell') {
+    state.tradeTotals.sell[id] = (state.tradeTotals.sell[id] || 0) + 1;
+  }
 }
