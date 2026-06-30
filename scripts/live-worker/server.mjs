@@ -6,6 +6,7 @@
 import { createServer } from 'http';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { loadCrosswalk } from '../lib/crosswalk.mjs';
 import { makeClient } from './api-football.mjs';
 import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses } from './poll.mjs';
@@ -30,11 +31,41 @@ if (!API_KEY) {
   process.exit(1);
 }
 
+const STATE_PATH = '/data/state-cache.json';
+
+function saveState(s) {
+  try {
+    const serialisable = Object.assign({}, s, {
+      _finalPolls: Array.from(s._finalPolls.entries()),
+      _trackedNations: s._trackedNations ? Array.from(s._trackedNations) : undefined,
+    });
+    writeFileSync(STATE_PATH, JSON.stringify(serialisable));
+  } catch (e) {
+    console.error('state save failed:', e.message);
+  }
+}
+
+function loadState(season) {
+  try {
+    if (!existsSync(STATE_PATH)) return null;
+    const raw = JSON.parse(readFileSync(STATE_PATH, 'utf8'));
+    if (raw.season !== season) { console.log('state cache is from a different season — ignoring.'); return null; }
+    raw._finalPolls = new Map(raw._finalPolls || []);
+    if (raw._trackedNations) raw._trackedNations = new Set(raw._trackedNations);
+    const ageMs = raw.generatedAt ? Date.now() - new Date(raw.generatedAt).getTime() : Infinity;
+    console.log(`Loaded cached state (age: ${Math.round(ageMs / 60000)}m, players: ${Object.keys(raw.players || {}).length}).`);
+    return raw;
+  } catch (e) {
+    console.error('state load failed:', e.message);
+    return null;
+  }
+}
+
 const client = makeClient(API_KEY);
 const crosswalk = loadCrosswalk(HTML_PATH);
 console.log(`Loaded crosswalk: ${crosswalk.length} players across ${new Set(crosswalk.map(p => p.nation)).size} nations.`);
 
-const state = makeInitialState(SEASON);
+const state = loadState(SEASON) || makeInitialState(SEASON);
 
 // Reconcile share rows against existing portfolio holdings, then pre-load into state.
 reconcileShares()
@@ -55,6 +86,7 @@ async function tick() {
     const { liveCount } = await pollOnce(client, crosswalk, state);
     tickDemand(state, crosswalk, elapsed);
     nextDelay = liveCount > 0 ? LIVE_POLL_MS : IDLE_POLL_MS;
+    saveState(state);
   } catch (e) {
     console.error('poll failed:', e.message);
     nextDelay = IDLE_POLL_MS;
