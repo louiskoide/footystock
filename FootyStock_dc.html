@@ -4531,18 +4531,15 @@ Yan Diomande|RB Leipzig|CM|21|4
         const W=760,H=240,top=6;
         let min=Math.min(...slice),max=Math.max(...slice);
         if(is24h||range===7){
-          // daily/weekly charts should read with full intraday volatility —
-          // bound tightly to that period's actual high/low (rounded to a
-          // whole dollar) instead of the "quiet player" padding below, which
-          // would otherwise flatten the line toward the middle of the chart
           min=Math.floor(min); max=Math.ceil(max);
           if(max<=min) max=min+1;
         } else {
-          // same floor as sparkPts: a quiet, flat-priced player shouldn't get
-          // zoomed into noise and rendered as a rollercoaster
-          const minSpan=price*0.12;
+          const minSpan=max*0.12;
           if(max-min<minSpan){ const mid=(max+min)/2; min=mid-minSpan/2; max=mid+minSpan/2; }
         }
+        // Add headroom so data points and their marker circles never clip at the chart edge.
+        const pad=(max-min)*0.06;
+        min=Math.max(0,min-pad); max=max+pad;
         const span=(max-min)||1;
         const X=k=>(W*k/(slice.length-1)); const Y=v=>top+(H-top)*(1-(v-min)/span);
         const linePath=slice.map((v,k)=>`${X(k).toFixed(1)},${Y(v).toFixed(1)}`).join(' ');
