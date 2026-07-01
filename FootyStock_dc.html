@@ -5625,8 +5625,8 @@ Yan Diomande|RB Leipzig|CM|21|4
       const scores={};
       Object.entries(byClub).forEach(([clubId,members])=>{
         const nws=members.map(m=>this._compNW(m,DB));
-        const best=Math.max(...nws);
-        scores[clubId]=(best/10000-1)*100;
+        const avg=nws.reduce((a,b)=>a+b,0)/nws.length;
+        scores[clubId]=(avg/10000-1)*100;
       });
       this.setState({compLiveScores:scores});
     }catch(e){ console.warn('loadCompLiveScores:',e.message); }
@@ -6812,8 +6812,8 @@ Yan Diomande|RB Leipzig|CM|21|4
           const hasScore=entry.final_score!==null&&entry.final_score!==undefined;
           let displayScore=hasScore?entry.final_score:null;
           if(!hasScore){
-            if(isMe){ displayScore=(this.compNetWorth()/10000-1)*100; }
-            else if(liveScores[entry.club_id]!=null){ displayScore=liveScores[entry.club_id]; }
+            if(liveScores[entry.club_id]!=null){ displayScore=liveScores[entry.club_id]; }
+            else if(isMe){ displayScore=(this.compNetWorth()/10000-1)*100; }
           }
           const cupsChange=entry.cups_delta!=null?(entry.cups_delta>0?'+'+entry.cups_delta:String(entry.cups_delta)):'—';
           const divLabel=entry.home_division+(entry.play_up_divisions>0?' ↑'+entry.play_up_divisions:'');
