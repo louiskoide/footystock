@@ -2416,6 +2416,7 @@ class Component extends DCLogic {
       promotionToShow: null, showPromotion: false,
       compTradeOpen: false, compSearch: '', compError: '',
       compTab: 'table',
+      compLiveScores: {},
       compShorts: {},
       compPlayerViewId: null,
       compTeammateViewId: null,
@@ -5384,6 +5385,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       const uid=this.getUserId();
       await this.ensureCompPortfolio(myGroup.id,myClub.id,uid);
       this.setState({activeCompGroup:myGroup,compGroupEntry:myEntry,compGroupClubs:allEntries,compGroupLoading:false});
+      this.loadCompLiveScores();
     }catch(e){
       console.warn('loadCompetition:',e.message);
       this.setState({compGroupLoading:false});
@@ -5608,6 +5610,26 @@ Yan Diomande|RB Leipzig|CM|21|4
     this.setState({compTab:tab,compPlayerViewId:null,compTeammateViewId:null,compError:''});
     if(tab==='activity') this.loadCompActivities();
     if(tab==='teammates') this.loadCompTeamPortfolios();
+    if(tab==='table') this.loadCompLiveScores();
+  }
+
+  async loadCompLiveScores(){
+    const{activeCompGroup,DB}=this.state; if(!activeCompGroup) return;
+    try{
+      const rows=await Supa.get('comp_member_portfolios','group_id=eq.'+activeCompGroup.id+'&select=club_id,cash,holdings,shorts');
+      const byClub={};
+      (rows||[]).forEach(r=>{
+        if(!byClub[r.club_id]) byClub[r.club_id]=[];
+        byClub[r.club_id].push(r);
+      });
+      const scores={};
+      Object.entries(byClub).forEach(([clubId,members])=>{
+        const nws=members.map(m=>this._compNW(m,DB));
+        const best=Math.max(...nws);
+        scores[clubId]=(best/10000-1)*100;
+      });
+      this.setState({compLiveScores:scores});
+    }catch(e){ console.warn('loadCompLiveScores:',e.message); }
   }
   openCompPlayerView(id){ this.setState({compPlayerViewId:id,selectedId:id,compTeammateViewId:null,compTradeModalOpen:false,compTradeQty:1,compError:''}); }
   closeCompPlayerView(){ this.setState({compPlayerViewId:null,compError:''}); }
@@ -6783,28 +6805,37 @@ Yan Diomande|RB Leipzig|CM|21|4
         if(!S.activeCompGroup) return [];
         const entries=[...(S.compGroupClubs||[])];
         const myClubId=S.myClub?.id;
+        const liveScores=S.compLiveScores||{};
         const rankColors={1:'#f5c518',2:'#8a9ba8',3:'#c97c3a'};
-        return entries.map((entry,idx)=>{
+        const rows=entries.map((entry,idx)=>{
           const isMe=entry.club_id===myClubId;
           const hasScore=entry.final_score!==null&&entry.final_score!==undefined;
           let displayScore=hasScore?entry.final_score:null;
-          if(isMe&&!hasScore){
-            const nw=this.compNetWorth();
-            displayScore=(nw/10000-1)*100;
+          if(!hasScore){
+            if(isMe){ displayScore=(this.compNetWorth()/10000-1)*100; }
+            else if(liveScores[entry.club_id]!=null){ displayScore=liveScores[entry.club_id]; }
           }
-          const rank=entry.rank||(idx+1);
           const cupsChange=entry.cups_delta!=null?(entry.cups_delta>0?'+'+entry.cups_delta:String(entry.cups_delta)):'—';
           const divLabel=entry.home_division+(entry.play_up_divisions>0?' ↑'+entry.play_up_divisions:'');
           return {
+            club_id:entry.club_id,
             rank:entry.rank||'—',
             rankColor:rankColors[entry.rank]||'#8a938c',
             clubName:entry.club_name+(isMe?' ★':''),
             isMe,divLabel,
+            displayScore,
             scoreStr:displayScore!=null?((displayScore>=0?'+':'')+displayScore.toFixed(1)+'%'):'—',
             scoreColor:displayScore!=null?(displayScore>=0?'#16a85f':'#d23b2c'):'#8a938c',
             cupsChange,
           };
         });
+        rows.sort((a,b)=>{
+          if(a.displayScore==null&&b.displayScore==null) return 0;
+          if(a.displayScore==null) return 1;
+          if(b.displayScore==null) return -1;
+          return b.displayScore-a.displayScore;
+        });
+        return rows;
       })(),
       compNWStr:(()=>{ const v=this.compNetWorth(); return '$'+v.toFixed(0); })(),
       compGainStr:(()=>{
