@@ -1695,40 +1695,69 @@
   <!-- ============ LEADERBOARD VIEW ============ -->
   <sc-if value="{{ isLeaders }}" hint-placeholder-val="{{ false }}">
   <div class="fs-page-pad" style="padding:24px 26px 0">
-    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:4px">
+    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:18px">
       <div style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Leaderboard</div>
       <button onClick="{{ goProfile }}" style="font:600 13px 'Hanken Grotesk';background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:9px 16px;cursor:pointer;display:inline-flex;align-items:center;gap:6px">👤 My Profile</button>
     </div>
-    <div style="display:flex;align-items:center;justify-content:space-between;margin:0 2px 18px;flex-wrap:wrap;gap:8px">
-      <div style="font:500 13px 'Hanken Grotesk';color:#8a938c">Click any row to view a profile.</div>
-      <div style="font:600 12px 'Hanken Grotesk';color:#16201a;background:#f0f2ee;border-radius:8px;padding:6px 12px">Trading P/L</div>
+    <!-- tab switcher -->
+    <div style="display:flex;gap:6px;margin-bottom:18px">
+      <button onClick="{{ goLbPlayers }}" style="font:600 13px 'Hanken Grotesk';padding:8px 18px;border-radius:999px;border:none;cursor:pointer;background:{{ isLbPlayers ? '#16201a' : '#f0f2ee' }};color:{{ isLbPlayers ? '#fff' : '#46504a' }}">Traders</button>
+      <button onClick="{{ goLbClubs }}" style="font:600 13px 'Hanken Grotesk';padding:8px 18px;border-radius:999px;border:none;cursor:pointer;background:{{ isLbClubs ? '#16201a' : '#f0f2ee' }};color:{{ isLbClubs ? '#fff' : '#46504a' }}">Clubs</button>
     </div>
-    <!-- name prompt: shown when user hasn't set a display name yet -->
-    <sc-if value="{{ lbNameData.showPrompt }}" hint-placeholder-val="{{ false }}">
-    <div style="background:#f0faf4;border:1px solid #b6e8cc;border-radius:14px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
-      <span style="font:500 13.5px 'Hanken Grotesk';color:#16201a;flex:1;min-width:180px">Set a display name to appear on the leaderboard</span>
-      <input onInput="{{ lbNameData.onInput }}" onKeyDown="{{ lbNameData.onKeyDown }}" placeholder="Your name" maxlength="32" style="font:500 14px 'Hanken Grotesk';border:1px solid #b6e8cc;border-radius:9px;padding:8px 13px;outline:none;width:160px">
-      <button onClick="{{ lbNameData.onSave }}" style="font:600 13.5px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;border-radius:9px;padding:9px 18px;cursor:pointer">Save</button>
-    </div>
+
+    <!-- traders tab -->
+    <sc-if value="{{ isLbPlayers }}">
+      <sc-if value="{{ lbNameData.showPrompt }}" hint-placeholder-val="{{ false }}">
+      <div style="background:#f0faf4;border:1px solid #b6e8cc;border-radius:14px;padding:16px 20px;margin-bottom:18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <span style="font:500 13.5px 'Hanken Grotesk';color:#16201a;flex:1;min-width:180px">Set a display name to appear on the leaderboard</span>
+        <input onInput="{{ lbNameData.onInput }}" onKeyDown="{{ lbNameData.onKeyDown }}" placeholder="Your name" maxlength="32" style="font:500 14px 'Hanken Grotesk';border:1px solid #b6e8cc;border-radius:9px;padding:8px 13px;outline:none;width:160px">
+        <button onClick="{{ lbNameData.onSave }}" style="font:600 13.5px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;border-radius:9px;padding:9px 18px;cursor:pointer">Save</button>
+      </div>
+      </sc-if>
+      <sc-if value="{{ lbNameData.showEdit }}" hint-placeholder-val="{{ false }}">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
+        <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">Your name:</span>
+        <input onInput="{{ lbNameData.onInput }}" onKeyDown="{{ lbNameData.onKeyDown }}" placeholder="{{ lbNameData.current }}" maxlength="32" style="font:500 14px 'Hanken Grotesk';border:1px solid #e3e6e0;border-radius:9px;padding:7px 12px;outline:none;width:160px">
+        <button onClick="{{ lbNameData.onSave }}" style="font:600 13px 'Hanken Grotesk';background:#f0faf4;color:#16a85f;border:1px solid #b6e8cc;border-radius:9px;padding:8px 14px;cursor:pointer">Update</button>
+      </div>
+      </sc-if>
+      <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-bottom:12px">Click any row to view a profile.</div>
+      <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
+        <div class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Rank</span><span>Trader</span><span style="text-align:right">{{ lbColLabel }}</span></div>
+        <sc-for list="{{ leaderboard }}" as="l" hint-placeholder-count="12">
+          <div onClick="{{ l.onClick }}" class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }};cursor:pointer" style-hover="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background:#fafbf8;cursor:pointer">
+            <span style="font:700 15px 'Space Grotesk';color: {{ l.rankColor }}">{{ l.medal }}</span>
+            <span style="display:flex;align-items:center;gap:10px"><span class="fs-avatar-badge" style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk'">{{ l.name }}</b><sc-if value="{{ l.showFounder }}"><span style="font-size:14px;line-height:1" title="Founder">🏅</span></sc-if></span>
+            <span style="text-align:right;font:700 14px 'Space Grotesk';color: {{ l.profitColor }}">{{ l.profitArrow }}{{ l.profit }}</span>
+          </div>
+        </sc-for>
+      </div>
     </sc-if>
-    <!-- name edit: shown when name is set -->
-    <sc-if value="{{ lbNameData.showEdit }}" hint-placeholder-val="{{ false }}">
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:18px;flex-wrap:wrap">
-      <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">Your name:</span>
-      <input onInput="{{ lbNameData.onInput }}" onKeyDown="{{ lbNameData.onKeyDown }}" placeholder="{{ lbNameData.current }}" maxlength="32" style="font:500 14px 'Hanken Grotesk';border:1px solid #e3e6e0;border-radius:9px;padding:7px 12px;outline:none;width:160px">
-      <button onClick="{{ lbNameData.onSave }}" style="font:600 13px 'Hanken Grotesk';background:#f0faf4;color:#16a85f;border:1px solid #b6e8cc;border-radius:9px;padding:8px 14px;cursor:pointer">Update</button>
-    </div>
-    </sc-if>
-    <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
-      <div class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Rank</span><span>Trader</span><span style="text-align:right">{{ lbColLabel }}</span></div>
-      <sc-for list="{{ leaderboard }}" as="l" hint-placeholder-count="12">
-        <div onClick="{{ l.onClick }}" class="fs-row-leader" style="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ l.rowBg }};cursor:pointer" style-hover="display:grid;grid-template-columns:60px 1fr 160px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background:#fafbf8;cursor:pointer">
-          <span style="font:700 15px 'Space Grotesk';color: {{ l.rankColor }}">{{ l.medal }}</span>
-          <span style="display:flex;align-items:center;gap:10px"><span class="fs-avatar-badge" style="width:30px;height:30px;border-radius:999px;background: {{ l.avatarBg }};color:#fff;font:700 12px 'Space Grotesk';display:inline-flex;align-items:center;justify-content:center;flex-shrink:0">{{ l.initials }}</span><b style="font:600 15px 'Hanken Grotesk'">{{ l.name }}</b><sc-if value="{{ l.showFounder }}"><span style="font-size:14px;line-height:1" title="Founder">🏅</span></sc-if></span>
-          <span style="text-align:right;font:700 14px 'Space Grotesk';color: {{ l.profitColor }}">{{ l.profitArrow }}{{ l.profit }}</span>
+
+    <!-- clubs tab -->
+    <sc-if value="{{ isLbClubs }}">
+      <sc-if value="{{ clubsLbLoading }}">
+        <div style="text-align:center;padding:50px 0;font:500 13px 'Hanken Grotesk';color:#8a938c">Loading clubs…</div>
+      </sc-if>
+      <sc-if value="{{ !clubsLbLoading }}">
+        <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
+          <div style="display:grid;grid-template-columns:60px 1fr 110px 90px;gap:14px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase">
+            <span>Rank</span><span>Club</span><span style="text-align:center">Division</span><span style="text-align:right">Cups</span>
+          </div>
+          <sc-for list="{{ clubsLeaderboard }}" as="c" hint-placeholder-count="10">
+            <div style="display:grid;grid-template-columns:60px 1fr 110px 90px;gap:14px;align-items:center;padding:13px 22px;border-bottom:1px solid #f3f4f0;background: {{ c.rowBg }}">
+              <span style="font:700 15px 'Space Grotesk';color: {{ c.rankColor }}">{{ c.rank }}</span>
+              <span style="display:flex;flex-direction:column;min-width:0">
+                <b style="font:600 15px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ c.name }}</b>
+                <span style="font:500 11px 'Hanken Grotesk';color:#8a938c">Led by {{ c.leaderName }}</span>
+              </span>
+              <span style="text-align:center;font:600 12px 'Hanken Grotesk';color: {{ c.divColor }}">{{ c.divName }}</span>
+              <span style="text-align:right;font:700 14px 'Space Grotesk';color:#16201a">{{ c.cupsStr }}</span>
+            </div>
+          </sc-for>
         </div>
-      </sc-for>
-    </div>
+      </sc-if>
+    </sc-if>
   </div>
   </sc-if>
 
@@ -2411,6 +2440,7 @@ class Component extends DCLogic {
       clubJoinCode: '', clubJoinSearch: '',
       clubError: '', clubSuccess: '',
       clubMessages: [], clubChatInput: '', clubChatSending: false, clubChatReady: null, clubSearchQuery: '',
+      lbTab: 'players', clubsLeaderboard: [], clubsLbLoading: false,
       compGroupLoading: false, activeCompGroup: null, compGroupEntry: null, compGroupClubs: [],
       compPortfolio: {cash:10000, holdings:{}}, compPortfolioLoading: false,
       pendingPacks: [], showPackReveal: false, packRevealFlipped: [],
@@ -4432,7 +4462,7 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
 
   // ---------- actions ----------
-  nav(v){ this.setState({view:v,selectedArticleId:null}); if(v==='clubs'){ this.loadMyClub().then(()=>{ if(this.state.myClub&&this.state.clubView==='competition') this.loadCompetition(); }); this.loadClubMessages(); } }
+  nav(v){ this.setState({view:v,selectedArticleId:null}); if(v==='leaders'){ this.loadClubsLeaderboard(); } if(v==='clubs'){ this.loadMyClub().then(()=>{ if(this.state.myClub&&this.state.clubView==='competition') this.loadCompetition(); }); this.loadClubMessages(); } }
   goHome(){ this.setState({view:'market'}); }
   openPlayer(id){ this.setState({view:'detail',selectedId:id,range:90,comments:[],commentsLoading:true,commentsPlayerId:id,commentInput:'',commentReplyTo:null,commentReplyInput:''}); window.scrollTo(0,0); this.fetchComments(id); }
   goBack(){ this.setState({view:'market'}); }
@@ -4918,6 +4948,14 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
 
   // ---------- leaderboard ----------
+  async loadClubsLeaderboard(){
+    if(this.state.clubsLbLoading) return;
+    this.setState({clubsLbLoading:true});
+    try{
+      const rows=await Supa.get('clubs','order=cups.desc&select=id,name,cups,leader_name&limit=100');
+      this.setState({clubsLeaderboard:rows||[],clubsLbLoading:false});
+    }catch(e){ this.setState({clubsLbLoading:false}); }
+  }
   submitScore(){
     const name=this.loadUsername(); if(!name||!this._sbUrl) return;
     const trading_pnl=Math.round(this.tradingPnl());
@@ -6324,6 +6362,26 @@ Yan Diomande|RB Leipzig|CM|21|4
     const hasSelectedArticle=!!selectedArticle, noSelectedArticle=!selectedArticle;
 
     // ---- leaderboard ----
+    const lbTab=S.lbTab||'players';
+    const isLbPlayers=lbTab==='players';
+    const isLbClubs=lbTab==='clubs';
+    const goLbPlayers=()=>this.setState({lbTab:'players'});
+    const goLbClubs=()=>{ this.setState({lbTab:'clubs'}); this.loadClubsLeaderboard(); };
+    const _divLabel=(cups)=>{
+      if(cups>=30) return{name:'Diamond',emoji:'💎',color:'#60a5fa'};
+      if(cups>=15) return{name:'Platinum',emoji:'🔷',color:'#7fb89a'};
+      if(cups>=8)  return{name:'Gold',emoji:'🥇',color:'#f5c518'};
+      if(cups>=3)  return{name:'Silver',emoji:'🥈',color:'#8a9ba8'};
+      return{name:'Bronze',emoji:'🥉',color:'#c97c3a'};
+    };
+    const lbMedals={1:'🥇',2:'🥈',3:'🥉'};
+    const clubsLeaderboard=(S.clubsLeaderboard||[]).map((c,i)=>{
+      const rk=i+1; const div=_divLabel(c.cups||0);
+      return { rank:lbMedals[rk]||String(rk), rankColor:rk<=3?'#16201a':'#aab2ab',
+        name:c.name+(c.id===S.myClub?.id?' ★':''), leaderName:c.leader_name,
+        cupsStr:(c.cups||0)+' cups', divName:div.emoji+' '+div.name, divColor:div.color,
+        rowBg:c.id===S.myClub?.id?'#f0faf4':'transparent' };
+    });
     const lb=this.leaderboardData(); const medals={1:'🥇',2:'🥈',3:'🥉'};
     const avatarColors=['#16a85f','#0c1f15','#2a6fdb','#b8543a','#7a4fbf','#c98a1e','#1f8a5b','#4a5568'];
     const lbSortBy=S.lbSortBy||'netWorth';
@@ -6444,6 +6502,8 @@ Yan Diomande|RB Leipzig|CM|21|4
       hasWatch:S.watch.length>0, noWatch:S.watch.length===0, watchList,
       // leaderboard
       leaderboard, lbNameData, goLeaders:()=>this.nav('leaders'),
+      isLbPlayers, isLbClubs, goLbPlayers, goLbClubs,
+      clubsLeaderboard, clubsLbLoading:S.clubsLbLoading,
       lbSortTradingPnl: ()=>this.setState({lbSortBy:'tradingPnl'}),
       lbColLabel: 'Trading P/L',
       // profile
@@ -6650,7 +6710,7 @@ Yan Diomande|RB Leipzig|CM|21|4
         return {...meta,progressPct};
       })(),
       hasActiveComp:!!(S.activeCompGroup&&S.activeCompGroup.status==='active'),
-      noActiveComp:!(S.activeCompGroup)&&!S.compGroupLoading,
+      noActiveComp:!S.compGroupLoading&&(!S.activeCompGroup||S.activeCompGroup.status!=='active'),
       compEndsStr:S.activeCompGroup?new Date(S.activeCompGroup.week_end).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}):'',
       compTab:S.compTab||'table',
       isCompPlayerView:!!(S.compPlayerViewId&&S.activeCompGroup),
