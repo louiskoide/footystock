@@ -32,10 +32,14 @@ if (!API_KEY) {
 }
 
 const STATE_PATH = '/data/state-cache.json';
+// Bump this whenever a deploy needs a clean rebuild of player events / nationOf.
+// Any cached state without this version gets its player data wiped and rebuilt.
+const STATE_VERSION = 2;
 
 function saveState(s) {
   try {
     const serialisable = Object.assign({}, s, {
+      _stateVersion: STATE_VERSION,
       _finalPolls: Array.from(s._finalPolls.entries()),
       _trackedNations: s._trackedNations ? Array.from(s._trackedNations) : undefined,
       _squadFetched: s._squadFetched instanceof Set ? Array.from(s._squadFetched) : [],
@@ -51,15 +55,21 @@ function loadState(season) {
     if (!existsSync(STATE_PATH)) return null;
     const raw = JSON.parse(readFileSync(STATE_PATH, 'utf8'));
     if (raw.season !== season) { console.log('state cache is from a different season — ignoring.'); return null; }
-    // If _squadFetched was stored as {} (pre-fix serialization bug), it means
-    // squad discovery was broken — clear _finalPolls so all recent fixtures
-    // get re-processed once squads are properly re-fetched this restart.
-    if (!Array.isArray(raw._squadFetched)) raw._finalPolls = [];
+    if (raw._stateVersion !== STATE_VERSION) {
+      // Schema migration: wipe player events, nationOf, and finalPolls so they
+      // get rebuilt cleanly from the API this restart. Preserves team status,
+      // demand, and priceHist which are expensive/slow to regenerate.
+      console.log(`State schema v${raw._stateVersion || 0} → v${STATE_VERSION}: clearing player data for clean rebuild.`);
+      raw._finalPolls = [];
+      raw._nationOf = {};
+      raw.players = {};
+      raw._squadFetched = undefined;
+    }
     raw._finalPolls = new Map(raw._finalPolls || []);
     if (raw._trackedNations) raw._trackedNations = new Set(raw._trackedNations);
     raw._squadFetched = new Set(Array.isArray(raw._squadFetched) ? raw._squadFetched : []);
     const ageMs = raw.generatedAt ? Date.now() - new Date(raw.generatedAt).getTime() : Infinity;
-    console.log(`Loaded cached state (age: ${Math.round(ageMs / 60000)}m, players: ${Object.keys(raw.players || {}).length}).`);
+    console.log(`Loaded cached state v${raw._stateVersion || 0} (age: ${Math.round(ageMs / 60000)}m, players: ${Object.keys(raw.players || {}).length}).`);
     return raw;
   } catch (e) {
     console.error('state load failed:', e.message);
