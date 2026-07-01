@@ -124,7 +124,7 @@
     <div class="fs-nav" style="display:flex;align-items:center;gap:4px;padding:0 22px 0">
       <sc-for list="{{ navTabs }}" as="t" hint-placeholder-count="5">
         <button onClick="{{ t.onClick }}" style="position:relative;background:none;border:none;cursor:pointer;font:600 14px 'Hanken Grotesk';color: {{ t.color }};padding:11px 14px 13px">
-          {{ t.label }}
+          {{ t.label }}<sc-if value="{{ t.badge }}"><span style="position:absolute;top:8px;right:4px;min-width:17px;height:17px;border-radius:999px;background:#e53e3e;color:#fff;font:700 10px 'Hanken Grotesk';display:inline-flex;align-items:center;justify-content:center;padding:0 4px">{{ t.badge }}</span></sc-if>
           <span style="position:absolute;left:14px;right:14px;bottom:0;height:2.5px;border-radius:3px;background: {{ t.underline }}"></span>
         </button>
       </sc-for>
@@ -1735,7 +1735,7 @@
             <div style="font:600 11px 'Hanken Grotesk';letter-spacing:.06em;text-transform:uppercase;color:#3ddc8a;margin-bottom:3px">{{ pk.label }}</div>
             <div style="font:700 15px 'Space Grotesk';color:#eaf3ed">{{ pk.stocksLabel }}</div>
           </div>
-          <button onClick="{{ openPackReveal }}" style="font:700 13px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer">Open</button>
+          <button onClick="{{ pk.open }}" style="font:700 13px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;border-radius:10px;padding:10px 18px;cursor:pointer">Open</button>
         </div>
       </sc-for>
     </sc-if>
@@ -6097,10 +6097,11 @@ Yan Diomande|RB Leipzig|CM|21|4
     ];
 
     // nav tabs
-    const packsBadge=(S.pendingPacks||[]).length>0||Object.keys(S.packedHoldings||{}).length>0;
-    const tabsDef=[['market','Market'],['articles','Articles'],['portfolio','Portfolio'],['packs',packsBadge?'Packs 🎁':'Packs'],['watch','Watchlist'],['clubs','Clubs'],['leaders','Leaderboard'],['profile','Profile']];
-    const navTabs=tabsDef.map(([k,label])=>{ const on=S.view===k||(k==='market'&&S.view==='detail'); return {label,onClick:()=>this.nav(k),
-      color:on?'#16201a':'#9aa39b',underline:on?'#16a85f':'transparent'}; });
+    const pendingPacksCount=(S.pendingPacks||[]).length;
+    const tabsDef=[['market','Market'],['articles','Articles'],['portfolio','Portfolio'],['packs','Packs'],['watch','Watchlist'],['clubs','Clubs'],['leaders','Leaderboard'],['profile','Profile']];
+    const navTabs=tabsDef.map(([k,label])=>{ const on=S.view===k||(k==='market'&&S.view==='detail');
+      const badge=k==='packs'&&pendingPacksCount>0?String(pendingPacksCount):'';
+      return {label,badge,onClick:()=>this.nav(k),color:on?'#16201a':'#9aa39b',underline:on?'#16a85f':'transparent'}; });
 
     // portfolio summary
     const nw=this.netWorth(), pl=this.tradingPnl(), plUp=pl>=0;
@@ -7092,7 +7093,8 @@ Yan Diomande|RB Leipzig|CM|21|4
       })(),
       pendingPacksList:(S.pendingPacks||[]).map((pk,i)=>({
         label:`${pk.division||'Pack'} Division · ${pk.rank===1?'1st Place':'2nd Place'}`,
-        stocksLabel:`${pk.stocks.length} player${pk.stocks.length!==1?'s':''}`,
+        stocksLabel:`${(pk.stocks||[]).length} player${(pk.stocks||[]).length!==1?'s':''}`,
+        open:()=>{ this.setState({pendingPacks:[pk,...(this.state.pendingPacks||[]).filter((_,j)=>j!==i)]},()=>this.openPackReveal()); },
       })),
       // packed holdings
       packedList:(()=>{
