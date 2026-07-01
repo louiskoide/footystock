@@ -1113,54 +1113,139 @@
 
         <!-- ===== SUB-VIEW: COMP PLAYER DETAIL ===== -->
         <sc-if value="{{ isCompPlayerView }}">
-          <div>
-            <!-- player header -->
-            <div style="background:#fff;border:1px solid #e8eae4;border-radius:20px;padding:22px 20px;margin-bottom:16px">
-              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
-                <div>
-                  <div style="font:700 22px 'Space Grotesk';color:#16201a">{{ compPlayerDetail.name }}</div>
-                  <div style="font:500 13px 'Hanken Grotesk';color:#8a938c">{{ compPlayerDetail.pos }} · {{ compPlayerDetail.team }}</div>
-                </div>
-                <div style="text-align:right">
-                  <div style="font:700 22px 'Space Grotesk'">{{ compPlayerDetail.priceStr }}</div>
-                  <div style="font:500 12px 'Hanken Grotesk';color:{{ compPlayerDetail.change1dColor }}">{{ compPlayerDetail.change1dStr }} today</div>
+          <div style="display:flex;flex-direction:column;gap:14px">
+
+            <!-- chart card -->
+            <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:20px 20px 16px">
+              <!-- meta -->
+              <div style="display:flex;align-items:center;gap:9px;flex-wrap:wrap">
+                <span style="display:inline-flex;align-items:center;justify-content:center;font:700 11px 'Space Grotesk';color:#586159;background:#eef1ec;border-radius:6px;padding:4px 8px;flex-shrink:0">{{ d.lg }}</span>
+                <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">{{ d.team }} · {{ d.pos }}</span>
+              </div>
+              <div style="font:700 28px 'Space Grotesk';letter-spacing:-.02em;margin-top:7px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">{{ d.name }}</div>
+              <div style="display:flex;align-items:baseline;gap:10px;margin-top:5px;flex-wrap:wrap">
+                <span style="font:700 30px 'Space Grotesk';letter-spacing:-.02em">{{ d.price }}</span>
+                <span style="display:inline-flex;align-items:center;gap:6px;background: {{ d.wkBg }};color: {{ d.wkColor }};font:700 12px 'Hanken Grotesk';padding:4px 10px;border-radius:999px">{{ d.wkArrow }} {{ d.wkAbs }} · 7d</span>
+              </div>
+              <div style="display:flex;gap:6px;margin-top:7px;flex-wrap:wrap">
+                <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;padding:3px 9px;border-radius:999px">Vol {{ d.volDisplay }}</span>
+                <span style="font:600 11px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;padding:3px 9px;border-radius:999px">90d {{ d.rangeDisplay }}</span>
+              </div>
+              <!-- range tabs -->
+              <div style="display:flex;gap:6px;margin:16px 0 4px">
+                <sc-for list="{{ rangeTabs }}" as="r" hint-placeholder-count="5">
+                  <button onClick="{{ r.onClick }}" style="font:600 12px 'Hanken Grotesk';background: {{ r.bg }};color: {{ r.color }};border:none;padding:6px 13px;border-radius:8px;cursor:pointer">{{ r.label }}</button>
+                </sc-for>
+              </div>
+              <!-- chart -->
+              <div style="position:relative;margin-top:6px">
+                <svg viewBox="0 0 760 220" width="100%" height="220" preserveAspectRatio="none" style="display:block;overflow:visible;cursor:crosshair;touch-action:none"
+                     onMouseMove="{{ d.onChartMove }}" onMouseDown="{{ d.onChartDown }}" onMouseUp="{{ d.onChartUp }}" onMouseLeave="{{ d.onChartLeave }}"
+                     onTouchStart="{{ d.onChartTouchStart }}" onTouchMove="{{ d.onChartTouchMove }}" onTouchEnd="{{ d.onChartTouchEnd }}" onTouchCancel="{{ d.onChartTouchEnd }}">
+                  <defs><linearGradient id="fsAreaComp" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="{{ d.chartColor }}" stop-opacity="0.18"></stop><stop offset="100%" stop-color="{{ d.chartColor }}" stop-opacity="0"></stop></linearGradient></defs>
+                  <sc-for list="{{ d.gridY }}" as="g" hint-placeholder-count="3">
+                    <g>
+                      <line x1="0" y1="{{ g.y }}" x2="745" y2="{{ g.y }}" stroke="#eef1ec" stroke-width="1" stroke-dasharray="4,4"></line>
+                      <text x="749" y="{{ g.y }}" dy="3.5" font-size="10" text-anchor="start" fill="#a7afa7">{{ g.label }}</text>
+                    </g>
+                  </sc-for>
+                  <path d="{{ d.areaPath }}" fill="url(#fsAreaComp)"></path>
+                  <polyline points="{{ d.linePath }}" fill="none" stroke="{{ d.chartColor }}" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"></polyline>
+                  <sc-for list="{{ d.markers }}" as="m" hint-placeholder-count="5">
+                    <g>
+                      <circle cx="{{ m.x }}" cy="{{ m.y }}" r="{{ m.r }}" fill="#fff" stroke="{{ m.color }}" stroke-width="2.5"></circle>
+                      <sc-if value="{{ m.hasIcon }}" hint-placeholder-val="{{ false }}"><text x="{{ m.x }}" y="{{ m.ty }}" font-size="11" text-anchor="middle">{{ m.icon }}</text></sc-if>
+                    </g>
+                  </sc-for>
+                  <sc-if value="{{ d.hover.show }}" hint-placeholder-val="{{ false }}">
+                    <line x1="{{ d.hover.x }}" y1="0" x2="{{ d.hover.x }}" y2="220" stroke="#8a938c" stroke-width="1" stroke-dasharray="3,3"></line>
+                    <circle cx="{{ d.hover.x }}" cy="{{ d.hover.y }}" r="4" fill="{{ d.chartColor }}" stroke="#fff" stroke-width="2"></circle>
+                  </sc-if>
+                </svg>
+                <sc-if value="{{ d.tooltip.show }}" hint-placeholder-val="{{ false }}">
+                  <div style="position:absolute;top:4px;left:{{ d.tooltip.leftPct }}%;transform:translateX(-50%);background:#16201a;color:#fff;font:600 12px 'Hanken Grotesk';padding:6px 10px;border-radius:8px;white-space:nowrap;pointer-events:none;box-shadow:0 6px 14px rgba(0,0,0,.18);z-index:2">
+                    <span style="color: {{ d.tooltip.color }}">{{ d.tooltip.line1 }}</span>
+                    <span style="color:#cfd6cf;margin-left:6px">{{ d.tooltip.line2 }}</span>
+                  </div>
+                </sc-if>
+                <div style="display:flex;justify-content:space-between;margin-top:6px;font:500 11px 'Hanken Grotesk';color:#a7afa7">
+                  <sc-for list="{{ d.axisLabels }}" as="a" hint-placeholder-count="5"><span>{{ a.label }}</span></sc-for>
                 </div>
               </div>
-              <!-- my comp position -->
-              <div style="background:#f8faf6;border-radius:12px;padding:12px 14px;margin-bottom:14px">
-                <div style="font:700 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">My Comp Position</div>
+            </div>
+
+            <!-- comp position + trade buttons -->
+            <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:18px 20px">
+              <div style="font:700 11px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px">My Comp Position</div>
+              <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">Long</span>
+                <span style="font:600 13px 'Hanken Grotesk';color:#16201a">{{ compPlayerDetail.holdingStr }}</span>
+              </div>
+              <sc-if value="{{ compPlayerDetail.hasHolding }}">
                 <div style="display:flex;justify-content:space-between;margin-bottom:4px">
-                  <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">Long</span>
-                  <span style="font:600 12px 'Hanken Grotesk';color:#16201a">{{ compPlayerDetail.holdingStr }}</span>
+                  <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">P&amp;L</span>
+                  <span style="font:600 13px 'Hanken Grotesk';color:{{ compPlayerDetail.plColor }}">{{ compPlayerDetail.plStr }}</span>
                 </div>
-                <sc-if value="{{ compPlayerDetail.hasHolding }}">
-                  <div style="display:flex;justify-content:space-between">
-                    <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">P&amp;L</span>
-                    <span style="font:600 12px 'Hanken Grotesk';color:{{ compPlayerDetail.plColor }}">{{ compPlayerDetail.plStr }}</span>
-                  </div>
-                </sc-if>
-                <sc-if value="{{ compPlayerDetail.hasShort }}">
-                  <div style="display:flex;justify-content:space-between;margin-top:4px">
-                    <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">Hatewatch</span>
-                    <span style="font:600 12px 'Hanken Grotesk';color:#16201a">{{ compPlayerDetail.shortStr }}</span>
-                  </div>
-                  <div style="display:flex;justify-content:space-between;margin-top:2px">
-                    <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">HW P&amp;L</span>
-                    <span style="font:600 12px 'Hanken Grotesk';color:{{ compPlayerDetail.shortPnlColor }}">{{ compPlayerDetail.shortPnlStr }}</span>
-                  </div>
-                </sc-if>
-              </div>
-              <!-- trade buttons -->
-              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-                <button onClick="{{ compPlayerDetail.onBuy }}" style="padding:12px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer;opacity:{{ compPlayerDetail.canBuy ? 1 : 0.4 }}">Buy</button>
-                <button onClick="{{ compPlayerDetail.onSell }}" style="padding:12px;background:#fbe9e7;color:#d23b2c;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer;opacity:{{ compPlayerDetail.canSell ? 1 : 0.4 }}">Sell</button>
-                <button onClick="{{ compPlayerDetail.onHatewatch }}" style="padding:12px;background:#fee2e2;color:#b91c1c;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer;opacity:{{ compPlayerDetail.canHatewatch ? 1 : 0.4 }}">🐻 Hatewatch</button>
-                <button onClick="{{ compPlayerDetail.onCover }}" style="padding:12px;background:#f0fdf4;color:#16a85f;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer;opacity:{{ compPlayerDetail.canCover ? 1 : 0.4 }}">✅ Cover</button>
+              </sc-if>
+              <sc-if value="{{ compPlayerDetail.hasShort }}">
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                  <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">Hatewatching</span>
+                  <span style="font:600 13px 'Hanken Grotesk';color:#16201a">{{ compPlayerDetail.shortStr }}</span>
+                </div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                  <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">HW P&amp;L</span>
+                  <span style="font:600 13px 'Hanken Grotesk';color:{{ compPlayerDetail.shortPnlColor }}">{{ compPlayerDetail.shortPnlStr }}</span>
+                </div>
+              </sc-if>
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px">
+                <button onClick="{{ compPlayerDetail.onBuy }}" style="padding:13px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer">Buy</button>
+                <button onClick="{{ compPlayerDetail.onSell }}" style="padding:13px;background:#fbe9e7;color:#d23b2c;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer;opacity:{{ compPlayerDetail.canSell ? 1 : 0.4 }}">Sell</button>
+                <button onClick="{{ compPlayerDetail.onHatewatch }}" style="padding:13px;background:#fff;color:#b91c1c;border:1.5px solid #b91c1c;border-radius:12px;font:700 13px 'Hanken Grotesk';cursor:pointer">Hatewatch</button>
+                <button onClick="{{ compPlayerDetail.onCover }}" style="padding:13px;background:{{ compPlayerDetail.hasShort ? '#b91c1c' : '#f5f6f3' }};color:{{ compPlayerDetail.hasShort ? '#fff' : '#bfc6be' }};border:1.5px solid {{ compPlayerDetail.hasShort ? '#b91c1c' : '#eef1ec' }};border-radius:12px;font:700 13px 'Hanken Grotesk';cursor:{{ compPlayerDetail.canCover ? 'pointer' : 'not-allowed' }}">Cover</button>
               </div>
               <sc-if value="{{ compError }}">
                 <div style="color:#d23b2c;font:500 12px 'Hanken Grotesk';margin-top:10px;text-align:center">{{ compError }}</div>
               </sc-if>
             </div>
+
+            <!-- signal drivers -->
+            <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:18px 20px">
+              <div style="font:700 15px 'Space Grotesk';letter-spacing:-.01em">What's driving the price</div>
+              <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;margin-top:3px">{{ d.driverSummary }}</div>
+              <div style="display:flex;flex-direction:column;gap:14px;margin-top:16px">
+                <sc-for list="{{ d.signals }}" as="s" hint-placeholder-count="5">
+                  <div>
+                    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px">
+                      <span style="font:600 13px 'Hanken Grotesk';color:#46504a">{{ s.label }}</span>
+                      <span style="font:600 13px 'Space Grotesk';color: {{ s.valColor }}">{{ s.display }}</span>
+                    </div>
+                    <div style="height:7px;background:#eef1ec;border-radius:999px;overflow:hidden"><div style="height:100%;width: {{ s.pct }};background: {{ s.barColor }};border-radius:999px"></div></div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+
+            <!-- recent performances -->
+            <div style="background:#fff;border:1px solid #e8eae4;border-radius:18px;padding:18px 20px">
+              <div style="font:700 15px 'Space Grotesk';letter-spacing:-.01em;margin-bottom:3px">{{ d.eventsTitle }}</div>
+              <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:12px">{{ d.eventsSub }}</div>
+              <sc-if value="{{ d.noEvents }}" hint-placeholder-val="{{ false }}"><div style="padding:13px 0;font:500 13px 'Hanken Grotesk';color:#8a938c;border-top:1px solid #f1f3ef">{{ d.emptyText }}</div></sc-if>
+              <div style="overflow-x:auto">
+              <sc-for list="{{ d.events }}" as="e" hint-placeholder-count="5">
+                <div style="display:grid;grid-template-columns:80px 1fr 64px 56px 80px;gap:10px;align-items:center;padding:10px 0;border-top:1px solid #f1f3ef;min-width:340px">
+                  <span style="font:600 11px 'Hanken Grotesk';color:#8a938c">{{ e.date }}</span>
+                  <span style="display:flex;flex-direction:column"><b style="font:600 13px 'Hanken Grotesk'">{{ e.fixture }}</b><span style="font:500 12px 'Hanken Grotesk';letter-spacing:.02em">{{ e.balls }}{{ e.boots }}{{ e.card }}</span></span>
+                  <span style="text-align:center">
+                    <sc-if value="{{ e.isBench }}" hint-placeholder-val="{{ false }}"><span style="font:600 10px 'Hanken Grotesk';color:#8a938c;background:#f1f3ef;border-radius:6px;padding:3px 6px">🪑 Bench</span></sc-if>
+                    <sc-if value="{{ e.notBench }}" hint-placeholder-val="{{ true }}"><span style="font:700 12px 'Space Grotesk';color:#46504a">{{ e.minsLabel }}</span></sc-if>
+                  </span>
+                  <span style="text-align:center;font:700 12px 'Space Grotesk';color:#46504a">{{ e.ratingLabel }}</span>
+                  <span style="text-align:right;font:700 12px 'Space Grotesk';color: {{ e.deltaColor }}">{{ e.deltaArrow }}{{ e.delta }}</span>
+                </div>
+              </sc-for>
+              </div>
+            </div>
+
           </div>
         </sc-if>
 
@@ -5524,7 +5609,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     if(tab==='activity') this.loadCompActivities();
     if(tab==='teammates') this.loadCompTeamPortfolios();
   }
-  openCompPlayerView(id){ this.setState({compPlayerViewId:id,compTeammateViewId:null,compTradeModalOpen:false,compTradeQty:1,compError:''}); }
+  openCompPlayerView(id){ this.setState({compPlayerViewId:id,selectedId:id,compTeammateViewId:null,compTradeModalOpen:false,compTradeQty:1,compError:''}); }
   closeCompPlayerView(){ this.setState({compPlayerViewId:null,compError:''}); }
   openCompTeammateView(userId){ this.setState({compTeammateViewId:userId,compPlayerViewId:null,compError:''}); }
   closeCompTeammateView(){ this.setState({compTeammateViewId:null,compError:''}); }
