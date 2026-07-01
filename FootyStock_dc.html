@@ -6367,18 +6367,14 @@ Yan Diomande|RB Leipzig|CM|21|4
     const isLbClubs=lbTab==='clubs';
     const goLbPlayers=()=>this.setState({lbTab:'players'});
     const goLbClubs=()=>{ this.setState({lbTab:'clubs'}); this.loadClubsLeaderboard(); };
-    const _divLabel=(cups)=>{
-      if(cups>=50) return{name:'Platinum',emoji:'🔷',color:'#7fb89a'};
-      if(cups>=25) return{name:'Gold',emoji:'🥇',color:'#f5c518'};
-      if(cups>=10) return{name:'Silver',emoji:'🥈',color:'#8a9ba8'};
-      return{name:'Bronze',emoji:'🥉',color:'#c97c3a'};
-    };
     const lbMedals={1:'🥇',2:'🥈',3:'🥉'};
     const clubsLeaderboard=(S.clubsLeaderboard||[]).map((c,i)=>{
-      const rk=i+1; const div=_divLabel(c.cups||0);
+      const rk=i+1;
+      const divName=this.compDivision(c.cups||0);
+      const meta=this.compDivMeta(divName);
       return { rank:lbMedals[rk]||String(rk), rankColor:rk<=3?'#16201a':'#aab2ab',
         name:c.name+(c.id===S.myClub?.id?' ★':''), leaderName:c.leader_name,
-        cupsStr:(c.cups||0)+' cups', divName:div.emoji+' '+div.name, divColor:div.color,
+        cupsStr:(c.cups||0)+' cups', divName:meta.emoji+' '+meta.name, divColor:meta.color,
         rowBg:c.id===S.myClub?.id?'#f0faf4':'transparent' };
     });
     const lb=this.leaderboardData(); const medals={1:'🥇',2:'🥈',3:'🥉'};
