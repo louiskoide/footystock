@@ -3610,7 +3610,13 @@ Yan Diomande|RB Leipzig|CM|21|4
       const wc=(nation&&D.WC[nation])?D.WC[nation]:null;
       const liveTeam = (live && live.teams && nation) ? live.teams[nation] : null;
       const wcEff = liveTeam || wc;
-      const starsEff = (livePlayer && livePlayer.events && livePlayer.events.length) ? livePlayer.events : stars;
+      // If the worker is live and has squad data for this nation, trust it
+      // exclusively — don't fall back to stale hand-typed STARS which may
+      // show wrong results (e.g. a player "benched" who actually scored).
+      const nationTracked = !!(liveTeam && liveTeam.squad && liveTeam.squad.length);
+      const starsEff = (livePlayer && livePlayer.events && livePlayer.events.length) ? livePlayer.events
+        : nationTracked ? null
+        : stars;
       // API-Football's official squad list (live.teams[nation].squad) is the
       // sole ground truth for "actually picked for the World Cup" — no more
       // hand-typed guessing. Until the worker has fetched a nation's squad,

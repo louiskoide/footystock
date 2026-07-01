@@ -51,6 +51,10 @@ function loadState(season) {
     if (!existsSync(STATE_PATH)) return null;
     const raw = JSON.parse(readFileSync(STATE_PATH, 'utf8'));
     if (raw.season !== season) { console.log('state cache is from a different season — ignoring.'); return null; }
+    // If _squadFetched was stored as {} (pre-fix serialization bug), it means
+    // squad discovery was broken — clear _finalPolls so all recent fixtures
+    // get re-processed once squads are properly re-fetched this restart.
+    if (!Array.isArray(raw._squadFetched)) raw._finalPolls = [];
     raw._finalPolls = new Map(raw._finalPolls || []);
     if (raw._trackedNations) raw._trackedNations = new Set(raw._trackedNations);
     raw._squadFetched = new Set(Array.isArray(raw._squadFetched) ? raw._squadFetched : []);
