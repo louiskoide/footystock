@@ -125,9 +125,10 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
       if (!id || nationOf[id] !== me) continue;
 
       // API-Football sometimes omits minutes for starters (common for GKs).
-      // If the player started (substitute === false) treat a null/0 as 90.
+      // Use substitute !== true (not strict === false) so null/undefined also
+      // counts as "started"; treat null/0 minutes as 90 for starters.
       const rawMinutes = stats.games?.minutes;
-      const started = stats.games?.substitute === false;
+      const started = stats.games?.substitute !== true;
       const minutes = (rawMinutes > 0) ? rawMinutes : (started ? 90 : 0);
 
       state.players[id] = state.players[id] || { events: [] };
@@ -145,7 +146,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
       }
 
       const ownGoals = (marksByPlayer[id] || []).filter(m => m.kind === 'owngoal').length;
-      const rating = computeRating(stats, { knockout, result, cleanSheet: oppGoals === 0, ownGoals, goalsConceded: oppGoals });
+      const rating = computeRating(stats, { minutes, knockout, result, cleanSheet: oppGoals === 0, ownGoals, goalsConceded: oppGoals });
       if (rating == null) continue;
 
       const goals = stats.goals?.total || 0;

@@ -17,8 +17,10 @@
 // cleanSheet/ownGoals are computed by the caller (poll.mjs) from data already
 // in scope there: cleanSheet from the fixture's goals-against, ownGoals from
 // the real fixtureEvents feed (detail matching /own/i) — never invented here.
-export function computeRating(stats, { knockout = false, result = 'draw', cleanSheet = false, ownGoals = 0, goalsConceded = 0 } = {}) {
-  const minutes = stats.games?.minutes || 0;
+export function computeRating(stats, { minutes: minutesOverride, knockout = false, result = 'draw', cleanSheet = false, ownGoals = 0, goalsConceded = 0 } = {}) {
+  // Accept a caller-supplied minutes override: poll.mjs corrects null/0 from
+  // API-Football for starters (common for GKs) before calling here.
+  const minutes = minutesOverride !== undefined ? minutesOverride : (stats.games?.minutes || 0);
   if (minutes <= 0) return null; // did not play — no event to record
 
   const goals = stats.goals?.total || 0;

@@ -34,7 +34,7 @@ if (!API_KEY) {
 const STATE_PATH = '/data/state-cache.json';
 // Bump this whenever a deploy needs a clean rebuild of player events / nationOf.
 // Any cached state without this version gets its player data wiped and rebuilt.
-const STATE_VERSION = 2;
+const STATE_VERSION = 3;
 
 function saveState(s) {
   try {
