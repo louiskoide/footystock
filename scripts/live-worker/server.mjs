@@ -34,7 +34,12 @@ if (!API_KEY) {
 const STATE_PATH = '/data/state-cache.json';
 // Bump this whenever a deploy needs a clean rebuild of player events / nationOf.
 // Any cached state without this version gets its player data wiped and rebuilt.
-const STATE_VERSION = 3;
+// IMPORTANT: migrations preserve _finalPolls (grace-poll counters) so that
+// fixtures already fully polled (counter >= FINAL_GRACE_POLLS) are NOT
+// re-fetched after a player-data wipe. Only wipe _finalPolls if you need to
+// force a complete re-fetch of all fixture stats (e.g. after a rating formula
+// change) — and expect a rebuild burst to consume ~400 API calls.
+const STATE_VERSION = 4;
 
 function saveState(s) {
   try {
@@ -56,14 +61,16 @@ function loadState(season) {
     const raw = JSON.parse(readFileSync(STATE_PATH, 'utf8'));
     if (raw.season !== season) { console.log('state cache is from a different season — ignoring.'); return null; }
     if (raw._stateVersion !== STATE_VERSION) {
-      // Schema migration: wipe player events, nationOf, and finalPolls so they
-      // get rebuilt cleanly from the API this restart. Preserves team status,
-      // demand, and priceHist which are expensive/slow to regenerate.
-      console.log(`State schema v${raw._stateVersion || 0} → v${STATE_VERSION}: clearing player data for clean rebuild.`);
-      raw._finalPolls = [];
+      // Schema migration: wipe player events and nationOf so they get rebuilt
+      // from the API. Preserves _finalPolls so fixtures already grace-polled
+      // to exhaustion are NOT re-fetched — this is the key budget guard.
+      // Preserves teams, demand, and priceHist (expensive/slow to regenerate).
+      console.log(`State schema v${raw._stateVersion || 0} → v${STATE_VERSION}: clearing player/nation data for clean rebuild.`);
       raw._nationOf = {};
       raw.players = {};
       raw._squadFetched = undefined;
+      // _finalPolls preserved intentionally — keeps grace-poll counters so
+      // already-finalised fixtures aren't re-fetched en masse.
     }
     raw._finalPolls = new Map(raw._finalPolls || []);
     if (raw._trackedNations) raw._trackedNations = new Set(raw._trackedNations);

@@ -7,7 +7,11 @@ import { computeRating } from './rating.mjs';
 
 const WC_LEAGUE_ID = 1;
 const LIVE_STATUSES = new Set(['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE', 'INT']);
-const FINAL_GRACE_POLLS = 24; // re-check a finished fixture up to 24 times (~2h at 5-min idle) for late API stat corrections
+const FINAL_GRACE_POLLS = 5;  // re-check a finished fixture up to 5 times (~25min at 5-min idle) for late API stat corrections
+// Max finished fixtures processed per poll cycle. Prevents a STATE_VERSION
+// wipe (which resets all grace counters to 0) from hitting 50+ fixtures
+// simultaneously and blowing the daily API budget in a single rebuild burst.
+const FINISHED_PER_CYCLE = 8;
 
 function buildFlatIndex(crosswalkPlayers) {
   return crosswalkPlayers.map(p => ({ id: p.id, name: p.name, norm: normName(p.name) }));
@@ -279,9 +283,15 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
   await applyGroupStandings(client, state.season, state, log);
   const trackedNations = state._trackedNations;
   const nationOf = state._nationOf;
-  let liveCount = 0, finishedNew = 0;
+  let liveCount = 0, finishedNew = 0, finishedThisCycle = 0;
 
-  for (const fixture of fixtures) {
+  // Sort fixtures oldest-first so we rebuild chronologically (group stage
+  // events before knockout — avoids a situation where a rebuild burst fetches
+  // random recent fixtures and leaves early group games in a stale-player state).
+  const sortedFixtures = [...fixtures].sort((a, b) =>
+    new Date(a.fixture.date) - new Date(b.fixture.date));
+
+  for (const fixture of sortedFixtures) {
     const status = fixture.fixture.status.short;
     const fid = fixture.fixture.id;
     if (status === 'NS' || status === 'TBD' || status === 'PST') continue;
@@ -293,11 +303,15 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
       // it for a few more cycles before treating it as truly final.
       const polls = state._finalPolls.get(fid) || 0;
       if (polls >= FINAL_GRACE_POLLS) continue;
+      // Cap finished-fixture processing per cycle: prevents a grace-counter
+      // reset (STATE_VERSION bump) from hitting all 50+ finished fixtures at
+      // once and exhausting the daily API budget in a single rebuild burst.
+      if (finishedThisCycle >= FINISHED_PER_CYCLE) continue;
       const ok = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
       // Only spend a grace poll on a fetch that actually succeeded — a
       // transient API error (rate limit, timeout) must not permanently give
       // up on a fixture's data after 3 unlucky failures in a row.
-      if (ok) state._finalPolls.set(fid, polls + 1);
+      if (ok) { state._finalPolls.set(fid, polls + 1); finishedThisCycle++; }
       finishedNew++;
     } else if (LIVE_STATUSES.has(status)) {
       await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: true, elapsed: fixture.fixture.status.elapsed });
