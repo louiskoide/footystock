@@ -1750,13 +1750,14 @@
     <div style="font:700 14px 'Hanken Grotesk';letter-spacing:.04em;text-transform:uppercase;color:#16201a;margin-top:6px;margin-bottom:10px">Packed players</div>
     <sc-if value="{{ hasPackedHoldings }}">
     <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:30px">
-      <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 70px 100px 100px;gap:12px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Player</span><span style="text-align:right">Shares</span><span style="text-align:right">Value</span><span style="text-align:right"></span></div>
+      <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 60px 80px 90px 80px;gap:10px;padding:12px 18px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Player</span><span style="text-align:right">Qty</span><span style="text-align:right">Price</span><span style="text-align:right">Value</span><span style="text-align:right"></span></div>
       <sc-for list="{{ packedList }}" as="pk">
-        <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 70px 100px 100px;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #f3f4f0">
-          <span style="display:flex;flex-direction:column"><b style="font:600 15px 'Hanken Grotesk'">{{ pk.name }}</b><span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ pk.team }} · {{ pk.pos }}</span></span>
-          <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ pk.qty }}</span>
-          <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ pk.valueStr }}</span>
-          <span style="text-align:right"><button onClick="{{ pk.sell }}" style="font:600 12px 'Hanken Grotesk';background:#f5f6f3;color:#46504a;border:1px solid #e1e4dd;border-radius:8px;padding:6px 14px;cursor:pointer">Sell</button></span>
+        <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 60px 80px 90px 80px;gap:10px;align-items:center;padding:12px 18px;border-bottom:1px solid #f3f4f0">
+          <span style="display:flex;flex-direction:column"><b style="font:600 14px 'Hanken Grotesk'">{{ pk.name }}</b><span style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ pk.team }} · {{ pk.pos }}</span></span>
+          <span style="text-align:right;font:600 13px 'Space Grotesk'">{{ pk.qty }}</span>
+          <span style="text-align:right;display:flex;flex-direction:column;align-items:flex-end"><span style="font:600 13px 'Space Grotesk'">{{ pk.priceStr }}</span><span style="font:600 11px 'Hanken Grotesk';color:{{ pk.pctColor }}">{{ pk.pctStr }}</span></span>
+          <span style="text-align:right;font:600 13px 'Space Grotesk'">{{ pk.valueStr }}</span>
+          <span style="text-align:right"><button onClick="{{ pk.sell }}" style="font:600 12px 'Hanken Grotesk';background:#f5f6f3;color:#46504a;border:1px solid #e1e4dd;border-radius:8px;padding:5px 12px;cursor:pointer">Sell</button></span>
         </div>
       </sc-for>
     </div>
@@ -7103,8 +7104,18 @@ Yan Diomande|RB Leipzig|CM|21|4
       // packed holdings
       packedList:(()=>{
         const ph=S.packedHoldings||{};
-        return Object.keys(ph).map(id=>{ const p=this.byId(id); if(!p) return null; const h=ph[id]; const val=this.curPrice(p)*h.qty;
-          return {id,name:p.name,team:p.team,pos:p.pos,qty:h.qty,valueStr:'$'+val.toFixed(0),sell:()=>this.sellPackedRow(id)}; }).filter(Boolean);
+        return Object.keys(ph).map(id=>{ const p=this.byId(id); if(!p) return null; const h=ph[id];
+          const cur=this.curPrice(p); const val=cur*h.qty;
+          const packPrice=h.price||cur;
+          const pct=packPrice>0?((cur-packPrice)/packPrice*100):0;
+          const pctStr=(pct>=0?'+':'')+pct.toFixed(1)+'%';
+          const pctColor=pct>=0?'#16a85f':'#d23b2c';
+          return {id,name:p.name,team:p.team,pos:p.pos,qty:h.qty,
+            priceStr:'$'+cur.toFixed(2),
+            valueStr:'$'+val.toFixed(2),
+            pctStr,pctColor,val,
+            sell:()=>this.sellPackedRow(id)};
+        }).filter(Boolean).sort((a,b)=>b.val-a.val);
       })(),
       hasPackedHoldings:Object.keys(S.packedHoldings||{}).length>0,
       // pack sell dialog
