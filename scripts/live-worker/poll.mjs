@@ -1,6 +1,7 @@
 // Polling loop: pulls WC2026 fixtures from API-Football, computes our own
 // player ratings from raw events (CLAUDE.md rule 4), and keeps an in-memory
 // prices.json-shaped state object up to date. server.mjs just serves it.
+// Crosswalk rebuilt: Amad Diallo (Man Utd/Ivory Coast) added to roster 2026-07-01.
 import { canonNation, normName } from '../lib/crosswalk.mjs';
 import { computeRating } from './rating.mjs';
 

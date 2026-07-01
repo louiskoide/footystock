@@ -2789,7 +2789,6 @@ Omar Alderete|Getafe|CB|28|6
 Mathías Villasanti|Atlético Mineiro|CM|26|6
 Harry Souttar|Sheffield United|CB|27|6
 Kye Rowles|Hearts|CB|26|6
-Aaron Mooy|Celtic|CM|35|6
 Jackson Irvine|St. Pauli|CM|32|6
 Craig Goodwin|Adelaide United|LW|33|6
 Eloy Room|FC Cincinnati|GK|35|6
@@ -2800,6 +2799,7 @@ Odilon Kossounou|Atalanta|CB|24|5
 Ghislain Konan|Stade Rennes|LB|29|6
 Seko Fofana|Rennes|CM|30|5
 Simon Adingra|Brighton|LW|23|4
+Amad Diallo|Man Utd|RW|23|3
 Aymen Dahmen|CS Sfaxien|GK|28|6
 Montassar Talbi|Lorient|CB|26|6
 Mohamed Drager|Al-Ahli|LB|29|6
@@ -3281,10 +3281,10 @@ Yan Diomande|RB Leipzig|CM|21|4
       Switzerland:{status:'Through to the R32 · Group B',fixtures:[F('06-13','Bosnia',2,1),F('06-19','Qatar',2,0)]},
       Qatar:{status:'Eliminated · Group B',fixtures:[F('06-13','Canada',0,3),F('06-19','Switzerland',0,2)]},
       Haiti:{status:'Eliminated · Group C',fixtures:[F('06-13','Scotland',0,1),F('06-19','Brazil',0,3),F('06-24','Morocco',2,4)]},
-      Paraguay:{status:'Group D',fixtures:[F('06-12','USA',1,4),F('06-19','Turkey',0,2),F('06-22','Australia',1,1)]},
+      Paraguay:{status:'Through to R16 · beat Germany on penalties',fixtures:[F('06-12','USA',1,4),F('06-19','Turkey',0,2),F('06-22','Australia',1,1),F('06-29','Germany',1,1)]},
       Australia:{status:'Eliminated · Group D',fixtures:[F('06-12','Turkey',1,1),F('06-19','USA',0,2),F('06-22','Paraguay',1,1)]},
       'Curaçao':{status:'Eliminated · Group E',fixtures:[F('06-15','Germany',1,7),F('06-18','Ecuador',0,4),F('06-22','Ivory Coast',0,3)]},
-      'Ivory Coast':{status:'Eliminated · Group E',fixtures:[F('06-15','Ecuador',1,1),F('06-18','Germany',1,2),F('06-22','Curaçao',3,0)]},
+      'Ivory Coast':{status:'Eliminated · R32',fixtures:[F('06-15','Ecuador',1,1),F('06-18','Germany',1,2),F('06-22','Curaçao',3,0),F('07-01','Norway',1,2)]},
       Tunisia:{status:'Eliminated · Group F',fixtures:[F('06-16','Sweden',2,1),F('06-21','Japan',0,4),F('06-24','Netherlands',0,3)]},
       'Cape Verde':{status:'Eliminated · Group H',fixtures:[F('06-15','Spain',0,0),F('06-21','Uruguay',0,2),F('06-24','Saudi Arabia',1,1)]},
       'Saudi Arabia':{status:'Eliminated · Group H',fixtures:[F('06-15','Uruguay',1,1),F('06-21','Spain',0,4),F('06-24','Cape Verde',1,1)]},
@@ -3323,7 +3323,9 @@ Yan Diomande|RB Leipzig|CM|21|4
       'john-mcginn-aston-villa':[S('06-13','Haiti',1,0,7.5,'Scored Scotland\u2019s winner')],
       'pedri-barcelona':[S('06-15','Cape Verde',0,0,6.9,'Tidy but contained'),S('06-21','Saudi Arabia',0,1,7.8,'Pulled the strings in the 4-0')],
       'raphinha-barcelona':[S('06-13','Morocco',0,1,7.3,'Assist in the draw'),S('06-19','Haiti',0,0,7.0,'Tidy outlet as Cunha’s brace and a Vinícius strike sealed the rout')],
-      'miguel-almiron-newcastle':[{...S('06-19','Turkey',0,0,4.2,'Sent off on the hour in the 0-2 loss to Turkey'),red:true,min:60}]
+      'miguel-almiron-newcastle':[{...S('06-19','Turkey',0,0,4.2,'Sent off on the hour in the 0-2 loss to Turkey'),red:true,min:60}],
+      'julio-enciso-brighton':[S('06-29','Germany',1,0,8.2,'Header gave Paraguay the lead in the biggest upset of 2026; scored in 1-1 draw before winning on penalties')],
+      'amad-diallo-man-utd':[S('07-01','Norway',1,0,7.5,'Scored for Ivory Coast but they fell 2-1 to Norway in the R32')]
     };
     const NW=(tag,text,bias,d)=>({tag,text,bias,d});
     const NEWS={
@@ -3477,9 +3479,9 @@ Yan Diomande|RB Leipzig|CM|21|4
     add('Nigeria','Victor Osimhen,Wilfred Ndidi,Alex Iwobi,Ademola Lookman,Stanley Nwabali,William Troost-Ekong,Calvin Bassey,Frank Onyeka,Samuel Chukwueze');
     add('Haiti','Duckens Nazon,Frantzdy Pierrot,Johnny Placide,Carlens Arcus,Ricardo Adé');
     add('Paraguay','Miguel Almirón,Julio Enciso,Gustavo Gómez,Roberto Fernández,Omar Alderete,Mathías Villasanti');
-    add('Australia','Mathew Ryan,Riley McGree,Harry Souttar,Kye Rowles,Aaron Mooy,Jackson Irvine,Craig Goodwin');
+    add('Australia','Mathew Ryan,Riley McGree,Harry Souttar,Kye Rowles,Jackson Irvine,Craig Goodwin');
     add('Curaçao','Leandro Bacuna,Rangelo Janga,Eloy Room,Juninho Bacuna,Jeremy Antonisse');
-    add('Ivory Coast','Sébastien Haller,Franck Kessié,Wilfried Singo,Yahia Fofana,Odilon Kossounou,Ghislain Konan,Seko Fofana,Simon Adingra');
+    add('Ivory Coast','Sébastien Haller,Franck Kessié,Wilfried Singo,Yahia Fofana,Odilon Kossounou,Ghislain Konan,Seko Fofana,Simon Adingra,Amad Diallo');
     add('Tunisia','Wahbi Khazri,Ellyes Skhiri,Aymen Dahmen,Montassar Talbi,Mohamed Drager,Anis Ben Slimane,Seifeddine Jaziri');
     add('Cape Verde','Garry Rodrigues,Vozinha,Stopira,Jovane Cabral,Ryan Mendes');
     add('Saudi Arabia','Salem Al-Dawsari,Mohammed Kanno,Firas Al-Buraikan,Mohammed Al-Owais,Yasser Al-Shahrani,Abdulelah Al-Malki,Sami Al-Najei');
