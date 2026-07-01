@@ -333,6 +333,7 @@
 
     const ComponentClass = new Function(code + '\nreturn Component;')();
     componentInstance = new ComponentClass({});
+    window.__fs_app = componentInstance;  // useful for browser debugging
     if (componentInstance.componentDidMount) componentInstance.componentDidMount();
     render();
   });
