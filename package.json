@@ -1,0 +1,19 @@
+{
+  "name": "footystock",
+  "version": "1.0.0",
+  "description": "",
+  "main": "support.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "http://local_proxy@127.0.0.1:41729/git/louiskoide/footystock"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "playwright": "^1.61.1"
+  }
+}
