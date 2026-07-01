@@ -756,6 +756,24 @@
     <sc-if value="{{ noShorts }}" hint-placeholder-val="{{ true }}">
       <div style="background:#fff;border:1px dashed #fcd9d6;border-radius:16px;padding:30px;text-align:center;margin-bottom:30px;font:500 13px 'Hanken Grotesk';color:#b91c1c">No hatewatch positions. Find a player you think is overvalued and bet against them.</div>
     </sc-if>
+
+    <!-- PACKED PLAYERS SECTION -->
+    <sc-if value="{{ hasPackedHoldings }}">
+    <div style="font:700 18px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 6px">Packed players</div>
+    <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:13px">Free from pack rewards — excluded from trading P/L</div>
+    <div class="fs-scrollx" style="background:#fff;border:1px solid #e0e8ff;border-radius:16px;overflow:hidden;margin-bottom:30px">
+      <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 70px 100px 100px;gap:12px;padding:12px 22px;border-bottom:1px solid #e8eef8;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Player</span><span style="text-align:right">Shares</span><span style="text-align:right">Value</span><span style="text-align:right">Action</span></div>
+      <sc-for list="{{ packedList }}" as="pk">
+        <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 70px 100px 100px;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #f3f4f0">
+          <span style="display:flex;flex-direction:column"><b style="font:600 15px 'Hanken Grotesk'">{{ pk.name }}</b><span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ pk.team }} · {{ pk.pos }}</span></span>
+          <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ pk.qty }}</span>
+          <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ pk.valueStr }}</span>
+          <span style="text-align:right"><button onClick="{{ pk.sell }}" style="font:600 12px 'Hanken Grotesk';background:#f5f6f3;color:#46504a;border:1px solid #e1e4dd;border-radius:8px;padding:5px 12px;cursor:pointer">Sell</button></span>
+        </div>
+      </sc-for>
+    </div>
+    </sc-if>
+
     <div style="font:700 18px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 13px">Transaction history</div>
     <sc-if value="{{ hasTxns }}" hint-placeholder-val="{{ false }}">
     <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden">
@@ -1553,11 +1571,38 @@
             </sc-for>
           </div>
           <sc-if value="{{ packAllFlipped }}">
-            <button onClick="{{ claimPack }}" style="width:100%;padding:14px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 15px 'Hanken Grotesk';cursor:pointer">Add to My Portfolio</button>
+            <button onClick="{{ claimPack }}" style="width:100%;padding:14px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 15px 'Hanken Grotesk';cursor:pointer">Add to Pack →</button>
           </sc-if>
           <sc-if value="{{ !packAllFlipped }}">
             <div style="font:500 12px 'Hanken Grotesk';color:#7fb89a">Tap each card to reveal your players</div>
           </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- PACK SELL OVERLAY -->
+    <sc-if value="{{ showPackSell }}">
+      <div style="position:fixed;inset:0;z-index:9200;background:rgba(0,0,0,.88);display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px">
+        <div style="background:#fff;border-radius:24px;padding:28px 24px;max-width:400px;width:100%;max-height:85vh;overflow-y:auto">
+          <div style="font:700 11px 'Hanken Grotesk';letter-spacing:.08em;text-transform:uppercase;color:#16a85f;margin-bottom:4px">Pack opened!</div>
+          <div style="font:700 18px 'Space Grotesk';color:#16201a;margin-bottom:4px">Sell now or keep?</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:20px">These go to your Packed section and won't affect your trading P/L. Tick any you want to sell right now.</div>
+          <sc-for list="{{ packSellList }}" as="item">
+            <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #f3f4f0">
+              <div onClick="{{ item.toggle }}" style="width:22px;height:22px;border-radius:6px;border:2px solid {{ item.sel ? '#16a85f' : '#d6dccf' }};background:{{ item.sel ? '#16a85f' : '#fff' }};flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer">
+                <sc-if value="{{ item.sel }}"><span style="color:#fff;font-size:14px;font-weight:700">✓</span></sc-if>
+              </div>
+              <div style="flex:1;min-width:0">
+                <div style="font:600 14px 'Hanken Grotesk';white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ item.name }}</div>
+                <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ item.team }} · {{ item.pos }}</div>
+              </div>
+              <div style="font:700 14px 'Space Grotesk';color:#16201a">{{ item.priceStr }}</div>
+            </div>
+          </sc-for>
+          <div style="display:flex;gap:10px;margin-top:20px">
+            <button onClick="{{ keepAllPacked }}" style="flex:1;padding:13px;background:#f5f6f3;color:#46504a;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer">Keep all</button>
+            <button onClick="{{ confirmPackSell }}" style="flex:1;padding:13px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer">{{ packSellBtnLabel }}</button>
+          </div>
         </div>
       </div>
     </sc-if>
@@ -2245,7 +2290,7 @@
         <div style="font:700 16px 'Space Grotesk';color:#16a85f">{{ mp.price }}</div>
       </div>
     </sc-for>
-    <button onClick="{{ closeMystery }}" style="width:100%;margin-top:10px;font:700 15px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:15px;border-radius:13px;cursor:pointer">Start trading!</button>
+    <button onClick="{{ openMysteryPackSell }}" style="width:100%;margin-top:10px;font:700 15px 'Hanken Grotesk';background:#16a85f;color:#fff;border:none;padding:15px;border-radius:13px;cursor:pointer">View my pack →</button>
   </div>
 </div>
 </sc-if>
@@ -2444,6 +2489,7 @@ class Component extends DCLogic {
       compGroupLoading: false, activeCompGroup: null, compGroupEntry: null, compGroupClubs: [],
       compPortfolio: {cash:10000, holdings:{}}, compPortfolioLoading: false,
       pendingPacks: [], showPackReveal: false, packRevealFlipped: [],
+      packedHoldings: {}, showPackSell: false, packSellItems: [], packSellSel: {},
       promotionToShow: null, showPromotion: false,
       compTradeOpen: false, compSearch: '', compError: '',
       compTab: 'table',
@@ -2602,8 +2648,8 @@ class Component extends DCLogic {
     // load referral count and phone
     this.getReferralCount();
     this.loadMyPhone();
-    // load pending competition packs
-    this.setState({pendingPacks: this.loadPendingPacks()});
+    // load pending competition packs and packed holdings
+    this.setState({pendingPacks: this.loadPendingPacks(), packedHoldings: this.loadPackedHoldings()});
   }
   componentWillUnmount(){ clearInterval(this.timer); clearInterval(this.liveTimer); clearInterval(this.leaderboardTimer); clearInterval(this.clubTimer); }
 
@@ -4446,7 +4492,8 @@ Yan Diomande|RB Leipzig|CM|21|4
   costBasis(){ let v=0; const h=this.state.holdings; for(const id in h){ v+=h[id].qty*h[id].avg; } return v; }
   shortsLiability(){ let v=0; const sh=this.state.shorts; for(const id in sh){ const p=this.byId(id); if(p) v+=this.curPrice(p)*sh[id].qty; } return v; }
   shortsPnl(){ let v=0; const sh=this.state.shorts; for(const id in sh){ const p=this.byId(id); if(p) v+=(sh[id].avg-this.curPrice(p))*sh[id].qty; } return v; }
-  netWorth(){ return this.state.cash + this.holdingsValue() - this.shortsLiability(); }
+  packedHoldingsValue(){ let v=0; const ph=this.state.packedHoldings||{}; for(const id in ph){ const p=this.byId(id); if(p) v+=this.curPrice(p)*ph[id].qty; } return v; }
+  netWorth(){ return this.state.cash + this.holdingsValue() + this.packedHoldingsValue() - this.shortsLiability(); }
   allTimePL(){ return this.netWorth() - 10000; }
   // Trading-only P&L: holdings value + proceeds from sells - cost of buys +
   // short proceeds - cover costs - open short liability. Excludes daily login
@@ -5059,25 +5106,24 @@ Yan Diomande|RB Leipzig|CM|21|4
       const r=this.rand01(useSeed+"mystery"+i);
       picks.push(pool[Math.floor(r*pool.length)]);
     }
-    const holdings={...this.state.holdings};
-    const txns=[...this.state.txns];
-    const packs=[];
+    const ph={...(this.state.packedHoldings||{})};
+    const packSellItems=[];
+    const displayPacks=[];
     for(const p of picks){
       const price=this.curPrice(p);
-      if(!holdings[p.id]) holdings[p.id]={qty:0,avg:0};
-      const prev=holdings[p.id];
-      holdings[p.id]={qty:prev.qty+3,avg:(prev.qty*prev.avg+0)/(prev.qty+3)||0};
-      txns.push({id:p.id,name:p.name,side:"BUY",qty:3,price:0,total:0,date:new Date().toISOString(),label:"MYSTERY"});
-      packs.push({name:p.name,team:p.team,qty:3,price:this.money(price)});
-      // Notify worker so supply is decremented globally. If the player is sold
-      // out, the worker will expand total by 3 (new issuance) rather than block.
+      if(ph[p.id]) ph[p.id]={...ph[p.id],qty:ph[p.id].qty+3};
+      else ph[p.id]={qty:3,price,packDate:new Date().toISOString()};
+      displayPacks.push({name:p.name,team:p.team,qty:3,price:this.money(price)});
+      packSellItems.push({id:p.id,name:p.name,team:p.team,pos:p.pos,priceStr:'$'+Math.round(price)});
+      // Notify worker so supply is decremented globally.
       if(this._liveWorkerBase){
         const pr=parseFloat(price.toFixed(2));
         fetch(this._liveWorkerBase+'/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:p.id,side:'buy',qty:3,price:pr,referral:true})}).catch(()=>{});
         if(this._wcLive){ this._wcLive.shares=this._wcLive.shares||{}; const ls=this._wcLive.shares[p.id]; const tot=ls?ls.total:Math.round(120000/Math.max(1,pr)); const rem=ls?ls.remaining:tot; this._wcLive.shares[p.id]={remaining:Math.max(0,rem-3),total:rem<3?tot+3:tot}; }
       }
     }
-    this.setState({holdings,txns,mysteryOpen:true,mysteryPacks:packs},()=>{ this.persist(); });
+    this.savePackedHoldings(ph);
+    this.setState({packedHoldings:ph,mysteryOpen:true,mysteryPacks:displayPacks,packSellItems,packSellSel:{}});
   }
   async getReferralCount(){
     try{
@@ -5402,6 +5448,37 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
   savePendingPacks(packs){
     try{ localStorage.setItem('footystock_packs_'+this.getUserId(),JSON.stringify(packs)); }catch(e){}
+  }
+  loadPackedHoldings(){
+    try{ const raw=localStorage.getItem('footystock_packed_'+this.getUserId()); return raw?JSON.parse(raw):{}; }
+    catch(e){ return {}; }
+  }
+  savePackedHoldings(ph){
+    try{ localStorage.setItem('footystock_packed_'+this.getUserId(),JSON.stringify(ph)); }catch(e){}
+  }
+  togglePackSell(id){
+    const sel={...this.state.packSellSel}; sel[id]=!sel[id]; this.setState({packSellSel:sel});
+  }
+  confirmPackSell(){
+    const {packSellSel,packSellItems}=this.state;
+    let cash=this.state.cash;
+    const ph={...(this.state.packedHoldings||{})};
+    packSellItems.forEach(item=>{
+      if(packSellSel[item.id]){
+        const p=this.byId(item.id);
+        if(p&&ph[item.id]){ cash+=this.curPrice(p)*ph[item.id].qty; delete ph[item.id]; }
+      }
+    });
+    this.savePackedHoldings(ph);
+    this.setState({packedHoldings:ph,cash,showPackSell:false,packSellItems:[],packSellSel:{}},()=>this.save());
+  }
+  sellPackedRow(id){
+    const ph={...(this.state.packedHoldings||{})}; const p=this.byId(id);
+    if(!ph[id]||!p) return;
+    const cash=this.state.cash+this.curPrice(p)*ph[id].qty;
+    delete ph[id];
+    this.savePackedHoldings(ph);
+    this.setState({packedHoldings:ph,cash},()=>this.save());
   }
 
   checkPromotion(oldCups, newCups, clubId){
@@ -5784,17 +5861,22 @@ Yan Diomande|RB Leipzig|CM|21|4
   claimPack(){
     const packs=this.state.pendingPacks||[]; if(!packs.length) return;
     const pack=packs[0];
-    const holdings={...this.state.holdings};
+    const ph={...(this.state.packedHoldings||{})};
+    const seen={};
+    const packSellItems=[];
     pack.stocks.forEach(s=>{
-      const ex=holdings[s.id];
-      if(ex){ const nq=ex.qty+1; holdings[s.id]={qty:nq,avg:parseFloat(((ex.avg*ex.qty+s.price)/nq).toFixed(2))}; }
-      else{ holdings[s.id]={qty:1,avg:s.price}; }
+      if(ph[s.id]) ph[s.id]={...ph[s.id],qty:ph[s.id].qty+1};
+      else ph[s.id]={qty:1,price:s.price,packDate:new Date().toISOString()};
+      if(!seen[s.id]){
+        seen[s.id]=true;
+        const p=this.byId(s.id);
+        packSellItems.push({id:s.id,name:s.name||(p&&p.name)||'',team:s.team||(p&&p.team)||'',pos:s.pos||(p&&p.pos)||'',priceStr:'$'+Math.round(s.price)});
+      }
     });
     const remaining=packs.slice(1);
     this.savePendingPacks(remaining);
-    this.setState({holdings,pendingPacks:remaining,showPackReveal:false,packRevealFlipped:[]});
-    this.save();
-    if(remaining.length>0) setTimeout(()=>this.openPackReveal(),300);
+    this.savePackedHoldings(ph);
+    this.setState({packedHoldings:ph,pendingPacks:remaining,showPackReveal:false,packRevealFlipped:[],showPackSell:true,packSellItems,packSellSel:{}});
   }
 
   // ============ RENDER ============
@@ -6974,6 +7056,20 @@ Yan Diomande|RB Leipzig|CM|21|4
         const n=(S.pendingPacks||[]).length;
         return n===1?'1 reward pack waiting':''+n+' reward packs waiting';
       })(),
+      // packed holdings
+      packedList:(()=>{
+        const ph=S.packedHoldings||{};
+        return Object.keys(ph).map(id=>{ const p=this.byId(id); if(!p) return null; const h=ph[id]; const val=this.curPrice(p)*h.qty;
+          return {id,name:p.name,team:p.team,pos:p.pos,qty:h.qty,valueStr:'$'+val.toFixed(0),sell:()=>this.sellPackedRow(id)}; }).filter(Boolean);
+      })(),
+      hasPackedHoldings:Object.keys(S.packedHoldings||{}).length>0,
+      // pack sell dialog
+      showPackSell:S.showPackSell,
+      packSellList:(S.packSellItems||[]).map(item=>({ ...item, sel:!!(S.packSellSel||{})[item.id], toggle:()=>this.togglePackSell(item.id) })),
+      packSellBtnLabel:(()=>{ const n=Object.values(S.packSellSel||{}).filter(Boolean).length; return n>0?`Sell ${n} now`:'Done'; })(),
+      confirmPackSell:()=>this.confirmPackSell(),
+      keepAllPacked:()=>this.setState({showPackSell:false,packSellItems:[],packSellSel:{}}),
+      openMysteryPackSell:()=>this.setState({mysteryOpen:false,showPackSell:true}),
       openPackReveal:()=>this.openPackReveal(),
       showPackReveal:S.showPackReveal,
       packRevealTitle:(()=>{
