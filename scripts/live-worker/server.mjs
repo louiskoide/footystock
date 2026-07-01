@@ -13,7 +13,7 @@ import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses } from '.
 import { refreshHype } from './hype.mjs';
 import { tickDemand, recordTrade, recordHatewatch } from './demand.mjs';
 import { submitScore, getLeaderboard } from './leaderboard.mjs';
-import { loadShares, decrementShares, incrementShares, expandAndDecrementShares, reconcileShares } from './shares.mjs';
+import { loadShares, decrementShares, incrementShares, expandAndDecrementShares, reconcileShares, repairShareTotals } from './shares.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -67,9 +67,10 @@ console.log(`Loaded crosswalk: ${crosswalk.length} players across ${new Set(cros
 
 const state = loadState(SEASON) || makeInitialState(SEASON);
 
-// Reconcile share rows against existing portfolio holdings, then pre-load into state.
-// Pass a price lookup so the reconciler can seed rows for players with holdings but no row.
-reconcileShares()
+// On boot: repair stale share totals (from low-price period), reconcile against
+// portfolio holdings, then pre-load into state.
+repairShareTotals()
+  .then(() => reconcileShares())
   .then(() => loadShares())
   .then(rows => {
     state.shares = state.shares || {};
