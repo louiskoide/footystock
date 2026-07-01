@@ -3762,7 +3762,13 @@ Yan Diomande|RB Leipzig|CM|21|4
       // fair value, so genuine hype bubbles and sell-offs are visible but
       // fundamentals still anchor the price.
       const demandScore = (live && live.demand) ? (live.demand[id] || 0) : 0;
-      const price = fairValue * Math.exp(0.15 * demandScore);
+      let price = fairValue * Math.exp(0.15 * demandScore);
+      // Circuit breaker: cap single-day move at ±50% vs yesterday's worker-recorded
+      // close. Prevents a huge spike when the API comes back online after downtime
+      // (stale prices snap back to reality all at once).
+      { const _wh = this._wcLive?.priceHist?.[id];
+        const _prev = _wh && _wh.length >= 2 ? _wh[_wh.length - 2] : null;
+        if (_prev > 0) price = Math.max(_prev * 0.5, Math.min(_prev * 1.5, price)); }
 
       // history 90d ending at current price. A player with a real signal
       // (WC performance or curated news) actually drifted to get here, so
