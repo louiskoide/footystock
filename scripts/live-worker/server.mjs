@@ -38,6 +38,7 @@ function saveState(s) {
     const serialisable = Object.assign({}, s, {
       _finalPolls: Array.from(s._finalPolls.entries()),
       _trackedNations: s._trackedNations ? Array.from(s._trackedNations) : undefined,
+      _squadFetched: s._squadFetched instanceof Set ? Array.from(s._squadFetched) : [],
     });
     writeFileSync(STATE_PATH, JSON.stringify(serialisable));
   } catch (e) {
@@ -52,6 +53,7 @@ function loadState(season) {
     if (raw.season !== season) { console.log('state cache is from a different season — ignoring.'); return null; }
     raw._finalPolls = new Map(raw._finalPolls || []);
     if (raw._trackedNations) raw._trackedNations = new Set(raw._trackedNations);
+    raw._squadFetched = new Set(Array.isArray(raw._squadFetched) ? raw._squadFetched : []);
     const ageMs = raw.generatedAt ? Date.now() - new Date(raw.generatedAt).getTime() : Infinity;
     console.log(`Loaded cached state (age: ${Math.round(ageMs / 60000)}m, players: ${Object.keys(raw.players || {}).length}).`);
     return raw;
@@ -140,6 +142,12 @@ const server = createServer((req, res) => {
   if (url.pathname === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, generatedAt: state.generatedAt }));
+    return;
+  }
+
+  if (url.pathname === '/debug/unmatched') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(state._unmatchedSquadNames || {}));
     return;
   }
 

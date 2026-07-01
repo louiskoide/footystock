@@ -15,13 +15,27 @@ function buildFlatIndex(crosswalkPlayers) {
 
 function matchPlayer(flatIndex, apiName) {
   const norm = normName(apiName);
+  // 1. Exact normalized match
   let hit = flatIndex.find(c => c.norm === norm);
   if (hit) return hit.id;
-  // Fall back to surname match (API-Football sometimes returns a short
-  // display name like "Mbappé" where our roster has "Kylian Mbappé").
-  const surname = norm.split(' ').pop();
-  hit = flatIndex.find(c => c.norm.split(' ').pop() === surname);
-  return hit ? hit.id : null;
+
+  const words = norm.split(' ');
+  const surname = words[words.length - 1];
+
+  // 2. Reversed name order — API-Football uses "Last First" for many
+  //    Asian players (e.g. "Suzuki Zion" for our "Zion Suzuki").
+  if (words.length >= 2) {
+    const reversed = words.slice(1).join(' ') + ' ' + words[0];
+    hit = flatIndex.find(c => c.norm === reversed);
+    if (hit) return hit.id;
+  }
+
+  // 3. Surname-only match (API returns display short name like "Mbappé").
+  //    Only use if the surname is unique in the index to avoid false matches.
+  const surnameMatches = flatIndex.filter(c => c.norm.split(' ').pop() === surname);
+  if (surnameMatches.length === 1) return surnameMatches[0].id;
+
+  return null;
 }
 
 function isKnockout(round) {
@@ -181,14 +195,19 @@ async function discoverNations(client, fixtures, flatIndex, state, log) {
       state.teams[nation] = state.teams[nation] || { fixtures: [] };
       state.teams[nation].squad = squad;
       let matched = 0;
+      state._unmatchedSquadNames = state._unmatchedSquadNames || {};
       for (const squadName of squad) {
         const id = matchPlayer(flatIndex, squadName);
-        if (!id) continue;
+        if (!id) {
+          state._unmatchedSquadNames[squadName] = nation;
+          continue;
+        }
+        delete state._unmatchedSquadNames[squadName];
         state._nationOf[id] = nation;
         matched++;
       }
       if (matched > 0) state._trackedNations.add(nation);
-      log(`squad: ${nation} -> ${squad.length} players (${matched} on our roster)`);
+      log(`squad: ${nation} -> ${squad.length} players (${matched} matched, ${squad.length - matched} unmatched)`);
       // Only mark this team as fetched once the call actually succeeded —
       // a transient failure (rate limit, timeout) must retry next poll
       // rather than permanently losing that nation's roster mapping.
