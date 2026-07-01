@@ -1,8 +1,5 @@
 // Supabase-backed share supply — persists across worker restarts.
-// Each player starts with floor(20000 / anchor) shares, where anchor is the
-// player's fundamental market value (Transfermarkt-style, in $M-equivalent).
-// Using anchor instead of live price keeps supply stable — price surges don't
-// artificially inflate or deflate the share count.
+// Each player starts with floor(120000 / currentPrice) shares.
 // Buys decrement remaining; sells/covers increment (up to total cap).
 // The worker seeds missing rows on first trade so no manual seeding needed.
 
@@ -14,33 +11,7 @@ const HEADERS = {
   'Authorization': `Bearer ${SUPABASE_KEY}`,
 };
 
-const MARKET_CAP_TARGET = 20_000; // total shares × anchor ≈ $20k per player
-
-// Anchor values (Transfermarkt market value, $M) keyed by player slug.
-// Used to compute stable share supply independent of live price movements.
-// Tier-based fallback: tier 1→228, 2→158, 3→99, 4→58 (midpoints of tierBase).
-const ANCHORS = {
-  'erling-haaland-man-city':200,'kylian-mbappe-real-madrid':200,'lionel-messi-inter-miami':120,
-  'vinicius-junior-real-madrid':180,'jude-bellingham-real-madrid':180,'mohamed-salah-liverpool':130,
-  'bukayo-saka-arsenal':150,'phil-foden-man-city':150,'jamal-musiala-bayern':150,
-  'lamine-yamal-barcelona':180,'florian-wirtz-liverpool':170,'pedri-barcelona':120,
-  'martin-odegaard-arsenal':100,'enzo-fernandez-chelsea':90,'cole-palmer-chelsea':130,
-  'gavi-barcelona':90,'declan-rice-arsenal':100,'virgil-van-dijk-liverpool':80,
-  'trent-alexander-arnold-liverpool':80,'federico-valverde-real-madrid':90,
-  'bernardo-silva-man-city':70,'joshua-kimmich-bayern':60,'kevin-de-bruyne-napoli':60,
-  'bruno-fernandes-man-utd':70,'son-heung-min-spurs':60,'marcus-rashford-barcelona':70,
-  'harry-kane-bayern':80,'robert-lewandowski-barcelona':50,'cristiano-ronaldo-al-nassr':30,
-  'lautaro-martinez-inter':90,'raphinha-barcelona':75,'luis-diaz-bayern':80,
-  'ousmane-dembele-paris-sg':80,'michael-olise-bayern':85,'xabi-simons-leipzig':80,
-  'dani-olmo-leipzig':65,'kai-havertz-arsenal':70,'rodri-man-city':100,
-  'william-saliba-arsenal':80,'alexander-isak-newcastle':80,'ollie-watkins-aston-villa':70,
-  'cody-gakpo-liverpool':60,'darwin-nunez-liverpool':60,'matheus-cunha-man-utd':45,
-  'rasmus-hojlund-man-utd':65,'khvicha-kvaratskhelia-napoli':100,'rafael-leao-milan':80,
-  'christian-pulisic-milan':55,'theo-hernandez-milan':55,'folarin-balogun-monaco':35,
-  'breel-embolo-monaco':25,'desire-doue-paris-sg':50,'bradley-barcola-paris-sg':50,
-  'warren-zaire-emery-paris-sg':60,'mika-godts-ajax':20,'bart-verbruggen-brighton':20,
-  'marcos-llorente-atletico':25,'gio-lo-celso-villarreal':12,'julian-quinones-club-america':8,
-};
+const MARKET_CAP_TARGET = 120_000; // total shares × price ≈ $120k per player
 
 // In-memory cache to avoid a Supabase round-trip on every trade.
 // Keyed by player_id → { remaining, total }
@@ -65,11 +36,9 @@ export async function loadShares() {
   return cache || {};
 }
 
-// Compute share supply from anchor (stable fundamental value), not live price.
-// Falls back to a tier-based estimate for players not in ANCHORS.
-export function sharesForPrice(price, id) {
-  const anchor = (id && ANCHORS[id]) ? ANCHORS[id] : Math.max(8, price);
-  return Math.max(10, Math.round(MARKET_CAP_TARGET / Math.max(1, anchor)));
+// Compute initial share count from price.
+export function sharesForPrice(price) {
+  return Math.max(10, Math.round(MARKET_CAP_TARGET / Math.max(1, price)));
 }
 
 // Sum shares already held across all portfolios for a given player.
@@ -90,7 +59,7 @@ async function existingHoldings(id) {
 // Subtracts already-held shares so existing portfolios are reflected from day one.
 async function ensureRow(id, price) {
   if (cache && cache[id]) return;
-  const total = sharesForPrice(price, id);
+  const total = sharesForPrice(price);
   const held = await existingHoldings(id);
   const remaining = Math.max(0, total - held);
   try {
@@ -148,7 +117,7 @@ export async function reconcileShares(priceOf) {
     for (const [pid, held] of Object.entries(heldMap)) {
       if (existingIds.has(pid) || held <= 0) continue;
       const price = priceOf ? priceOf(pid) : 100;
-      const total = sharesForPrice(price, pid);
+      const total = sharesForPrice(price);
       const remaining = Math.max(0, total - held);
       await sbFetch('shares', {
         method: 'POST',
@@ -222,10 +191,13 @@ export async function incrementShares(id, qty, price) {
   } catch (e) { console.error('shares increment error:', e.message); }
 }
 
-// One-time repair: recalculate total for every row using anchor-based formula.
-// Adjusts remaining proportionally so held shares are preserved.
-// Called once on worker boot to fix stale totals from the low-price period.
-export async function repairShareTotals() {
+// Repair stale share totals using current live prices.
+// When prices were low/stale, totals were seeded at wrong values (e.g. 1200
+// shares for Yamal at $100 instead of ~171 at $700). This recomputes total
+// from the current price and adjusts remaining proportionally.
+// priceOf(id) → current live price for that player.
+export async function repairShareTotals(priceOf) {
+  if (!priceOf) return; // can't repair without price lookup
   try {
     const [sharesResp, portfoliosResp] = await Promise.all([
       sbFetch('shares?select=player_id,remaining,total'),
@@ -244,8 +216,12 @@ export async function repairShareTotals() {
     }
 
     for (const row of shareRows) {
-      const correctTotal = sharesForPrice(0, row.player_id); // 0 triggers anchor lookup
-      if (correctTotal === row.total) continue; // already correct
+      const price = priceOf(row.player_id);
+      if (!price || price <= 0) continue;
+      const correctTotal = sharesForPrice(price);
+      // Only fix rows that are significantly wrong (>20% off) to avoid
+      // churning rows that are just slightly off due to normal price drift.
+      if (Math.abs(correctTotal - row.total) / row.total < 0.2) continue;
       const held = heldMap[row.player_id] || 0;
       const correctRemaining = Math.max(0, correctTotal - held);
       await sbFetch(`shares?player_id=eq.${encodeURIComponent(row.player_id)}`, {

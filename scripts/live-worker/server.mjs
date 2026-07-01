@@ -67,16 +67,17 @@ console.log(`Loaded crosswalk: ${crosswalk.length} players across ${new Set(cros
 
 const state = loadState(SEASON) || makeInitialState(SEASON);
 
-// On boot: repair stale share totals (from low-price period), reconcile against
-// portfolio holdings, then pre-load into state.
-repairShareTotals()
-  .then(() => reconcileShares())
+// Reconcile share rows against existing portfolio holdings, then pre-load into state.
+reconcileShares()
   .then(() => loadShares())
   .then(rows => {
     state.shares = state.shares || {};
     for (const [id, s] of Object.entries(rows)) state.shares[id] = { remaining: s.remaining, total: s.total };
   })
   .catch(e => console.error('shares init failed:', e.message));
+
+// Repair stale share totals once on first /price-closes call (has full price map).
+let _sharesRepaired = false;
 
 let nextDelay = IDLE_POLL_MS;
 let lastTickAt = Date.now();
@@ -212,6 +213,11 @@ const server = createServer((req, res) => {
           res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request'); return;
         }
         recordPriceCloses(state, closes, dayKey);
+        // Repair stale share totals using the frontend-computed prices.
+        if (!_sharesRepaired) {
+          _sharesRepaired = true;
+          repairShareTotals(id => closes[id] || 0).catch(() => {});
+        }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (e) {

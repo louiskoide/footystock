@@ -4285,7 +4285,7 @@ Yan Diomande|RB Leipzig|CM|21|4
         txns.unshift({side:'BUY',id:order.id,name:p.name,qty,price,total,date:this.todayStr()});
         cash-=total;
         // Optimistically reduce supply so display updates immediately
-        if(this._wcLive){ this._wcLive.shares=this._wcLive.shares||{}; const ls=this._wcLive.shares[order.id]; const tot=ls?ls.total:Math.round(20000/Math.max(1,p.anchor)); const rem=ls?ls.remaining:tot; this._wcLive.shares[order.id]={remaining:Math.max(0,rem-qty),total:tot}; }
+        if(this._wcLive){ this._wcLive.shares=this._wcLive.shares||{}; const ls=this._wcLive.shares[order.id]; const tot=ls?ls.total:Math.round(120000/Math.max(1,price)); const rem=ls?ls.remaining:tot; this._wcLive.shares[order.id]={remaining:Math.max(0,rem-qty),total:tot}; }
       } else if(order.side==='sell'){
         const cur=holdings[order.id]; if(!cur||cur.qty<qty) continue;
         const newQty=cur.qty-qty; if(newQty<=0) delete holdings[order.id]; else holdings[order.id]={qty:newQty,avg:cur.avg};
@@ -4675,7 +4675,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       if(this._liveWorkerBase){
         const pr=parseFloat(price.toFixed(2));
         fetch(this._liveWorkerBase+'/trade',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({id:p.id,side:'buy',qty:3,price:pr,referral:true})}).catch(()=>{});
-        if(this._wcLive){ this._wcLive.shares=this._wcLive.shares||{}; const ls=this._wcLive.shares[p.id]; const tot=ls?ls.total:Math.round(20000/Math.max(1,p.anchor)); const rem=ls?ls.remaining:tot; this._wcLive.shares[p.id]={remaining:Math.max(0,rem-3),total:rem<3?tot+3:tot}; }
+        if(this._wcLive){ this._wcLive.shares=this._wcLive.shares||{}; const ls=this._wcLive.shares[p.id]; const tot=ls?ls.total:Math.round(120000/Math.max(1,pr)); const rem=ls?ls.remaining:tot; this._wcLive.shares[p.id]={remaining:Math.max(0,rem-3),total:rem<3?tot+3:tot}; }
       }
     }
     this.setState({holdings,txns,mysteryOpen:true,mysteryPacks:packs},()=>{ this.persist(); });
@@ -5757,8 +5757,8 @@ Yan Diomande|RB Leipzig|CM|21|4
           posValue:this.money(posValue),posPl:(posUp?'+':'−')+this.money(Math.abs(posPl)).slice(1),posPlColor:posUp?GREEN:RED,
           watchLabel:watched?'★ Watching':'☆ Watch',watchColor:watched?'#e2a32b':'#8a938c',
           onToggleWatch:()=>this.toggleWatch(p.id),
-          sharesLabel:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; const tot=ls?ls.total:Math.round(20000/Math.max(1,p.anchor)); const rem=ls?ls.remaining:tot; return rem+' / '+tot+' shares'; })(),
-          sharesBarPct:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; const tot=ls?ls.total:Math.round(20000/Math.max(1,p.anchor)); const rem=ls?ls.remaining:tot; return tot>0?Math.round(100*rem/tot):100; })(),
+          sharesLabel:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; const tot=ls?ls.total:Math.round(120000/Math.max(1,this.curPrice(p))); const rem=ls?ls.remaining:tot; return rem+' / '+tot+' shares'; })(),
+          sharesBarPct:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; const tot=ls?ls.total:Math.round(120000/Math.max(1,this.curPrice(p))); const rem=ls?ls.remaining:tot; return tot>0?Math.round(100*rem/tot):100; })(),
           soldOut:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; return !!(ls&&ls.remaining<=0); })(),
           buyBg:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; return (ls&&ls.remaining<=0)?'#c4ccc3':'#16a85f'; })(),
           buyLabel:(()=>{ const ls=this._wcLive&&this._wcLive.shares&&this._wcLive.shares[p.id]; return (ls&&ls.remaining<=0)?'Sold Out':'Buy'; })(),
