@@ -1105,154 +1105,330 @@
     <!-- ============ COMPETITION SCREEN ============ -->
     <sc-if value="{{ isClubCompetition }}">
       <div>
+        <!-- header bar -->
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:22px">
-          <button onClick="{{ goClubHome }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back</button>
+          <button onClick="{{ compBackBtn }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">&#x2190; Back</button>
           <span style="font:700 20px 'Space Grotesk';letter-spacing:-.01em">Competition</span>
         </div>
 
-        <!-- division + cups card -->
-        <div style="background:linear-gradient(135deg,{{ compDivInfo.bgDark }},{{ compDivInfo.bgDark2 }});border-radius:20px;padding:24px 26px;margin-bottom:20px;color:#fff">
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
-            <div>
-              <div style="font:600 11px 'Hanken Grotesk';letter-spacing:.06em;text-transform:uppercase;color:{{ compDivInfo.labelColor }};margin-bottom:8px">{{ compDivInfo.emoji }} {{ compDivInfo.name }} Division</div>
-              <div style="font:700 48px 'Space Grotesk';line-height:1;margin-bottom:4px">{{ myClubCups }}</div>
-              <div style="font:500 12px 'Hanken Grotesk';color:rgba(255,255,255,.55)">total cups</div>
-            </div>
-            <sc-if value="{{ !compDivInfo.isMax }}">
-              <div style="text-align:right;min-width:130px">
-                <div style="font:500 11px 'Hanken Grotesk';color:rgba(255,255,255,.55);margin-bottom:6px">Next: {{ compDivInfo.nextName }}</div>
-                <div style="background:rgba(255,255,255,.15);border-radius:999px;height:7px;overflow:hidden">
-                  <div style="background:{{ compDivInfo.color }};height:100%;width:{{ compDivInfo.progressPct }}%;border-radius:999px;transition:width .4s"></div>
-                </div>
-                <div style="font:500 11px 'Hanken Grotesk';color:rgba(255,255,255,.45);margin-top:5px">{{ myClubCups }} / {{ compDivInfo.nextThreshold }} cups</div>
-              </div>
-            </sc-if>
-            <sc-if value="{{ compDivInfo.isMax }}">
-              <div style="text-align:right">
-                <div style="font:600 12px 'Hanken Grotesk';color:{{ compDivInfo.color }}">Max Division</div>
-                <div style="font:500 11px 'Hanken Grotesk';color:rgba(255,255,255,.45);margin-top:4px">{{ myClubCups }} cups</div>
-              </div>
-            </sc-if>
-          </div>
-        </div>
-
-        <!-- too few members warning -->
-        <sc-if value="{{ clubTooSmall }}">
-          <div style="background:#fef9ec;border:1px solid #f5d87a;border-radius:14px;padding:18px 20px;margin-bottom:20px">
-            <div style="font:700 14px 'Space Grotesk';color:#92610a;margin-bottom:4px">Need More Members</div>
-            <div style="font:500 13px 'Hanken Grotesk';color:#6b4d0e;line-height:1.5">Your club needs at least 5 members to enter competitions. Invite more friends using your invite code!</div>
-          </div>
-        </sc-if>
-
-        <!-- loading -->
-        <sc-if value="{{ compGroupLoading }}">
-          <div style="text-align:center;padding:50px 0;font:500 13px 'Hanken Grotesk';color:#8a938c">Loading competition…</div>
-        </sc-if>
-
-        <!-- active competition -->
-        <sc-if value="{{ hasActiveComp }}">
-          <!-- league table -->
-          <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">This Week's Table</div>
-          <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:8px">
-            <div style="display:grid;grid-template-columns:30px 1fr 72px 56px;padding:9px 16px;background:#f8faf6;border-bottom:1px solid #eeecea">
-              <span style="font:700 10px 'Hanken Grotesk';color:#8a938c;text-transform:uppercase">#</span>
-              <span style="font:700 10px 'Hanken Grotesk';color:#8a938c;text-transform:uppercase">Club</span>
-              <span style="font:700 10px 'Hanken Grotesk';color:#8a938c;text-transform:uppercase;text-align:right">Score</span>
-              <span style="font:700 10px 'Hanken Grotesk';color:#8a938c;text-transform:uppercase;text-align:right">Cups</span>
-            </div>
-            <sc-for list="{{ compTableRows }}" as="row" hint-placeholder-count="6">
-              <div style="display:grid;grid-template-columns:30px 1fr 72px 56px;padding:12px 16px;border-bottom:1px solid #f3f4f0;background:{{ row.isMe ? '#f0fdf4' : '#fff' }}">
-                <span style="font:700 14px 'Space Grotesk';color:{{ row.rankColor }}">{{ row.rank }}</span>
+        <!-- ===== SUB-VIEW: COMP PLAYER DETAIL ===== -->
+        <sc-if value="{{ isCompPlayerView }}">
+          <div>
+            <!-- player header -->
+            <div style="background:#fff;border:1px solid #e8eae4;border-radius:20px;padding:22px 20px;margin-bottom:16px">
+              <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:14px">
                 <div>
-                  <div style="font:600 13px 'Hanken Grotesk';color:#16201a">{{ row.clubName }}</div>
-                  <div style="font:500 10px 'Hanken Grotesk';color:#8a938c">{{ row.divLabel }}</div>
+                  <div style="font:700 22px 'Space Grotesk';color:#16201a">{{ compPlayerDetail.name }}</div>
+                  <div style="font:500 13px 'Hanken Grotesk';color:#8a938c">{{ compPlayerDetail.pos }} · {{ compPlayerDetail.team }}</div>
                 </div>
-                <div style="text-align:right;font:600 13px 'Hanken Grotesk';color:{{ row.scoreColor }}">{{ row.scoreStr }}</div>
-                <div style="text-align:right;font:500 12px 'Hanken Grotesk';color:#8a938c">{{ row.cupsChange }}</div>
+                <div style="text-align:right">
+                  <div style="font:700 22px 'Space Grotesk'">{{ compPlayerDetail.priceStr }}</div>
+                  <div style="font:500 12px 'Hanken Grotesk';color:{{ compPlayerDetail.change1dColor }}">{{ compPlayerDetail.change1dStr }} today</div>
+                </div>
               </div>
-            </sc-for>
+              <!-- my comp position -->
+              <div style="background:#f8faf6;border-radius:12px;padding:12px 14px;margin-bottom:14px">
+                <div style="font:700 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px">My Comp Position</div>
+                <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+                  <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">Long</span>
+                  <span style="font:600 12px 'Hanken Grotesk';color:#16201a">{{ compPlayerDetail.holdingStr }}</span>
+                </div>
+                <sc-if value="{{ compPlayerDetail.hasHolding }}">
+                  <div style="display:flex;justify-content:space-between">
+                    <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">P&amp;L</span>
+                    <span style="font:600 12px 'Hanken Grotesk';color:{{ compPlayerDetail.plColor }}">{{ compPlayerDetail.plStr }}</span>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ compPlayerDetail.hasShort }}">
+                  <div style="display:flex;justify-content:space-between;margin-top:4px">
+                    <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">Hatewatch</span>
+                    <span style="font:600 12px 'Hanken Grotesk';color:#16201a">{{ compPlayerDetail.shortStr }}</span>
+                  </div>
+                  <div style="display:flex;justify-content:space-between;margin-top:2px">
+                    <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">HW P&amp;L</span>
+                    <span style="font:600 12px 'Hanken Grotesk';color:{{ compPlayerDetail.shortPnlColor }}">{{ compPlayerDetail.shortPnlStr }}</span>
+                  </div>
+                </sc-if>
+              </div>
+              <!-- trade buttons -->
+              <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+                <button onClick="{{ compPlayerDetail.onBuy }}" style="padding:12px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer;opacity:{{ compPlayerDetail.canBuy ? 1 : 0.4 }}">Buy</button>
+                <button onClick="{{ compPlayerDetail.onSell }}" style="padding:12px;background:#fbe9e7;color:#d23b2c;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer;opacity:{{ compPlayerDetail.canSell ? 1 : 0.4 }}">Sell</button>
+                <button onClick="{{ compPlayerDetail.onHatewatch }}" style="padding:12px;background:#fee2e2;color:#b91c1c;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer;opacity:{{ compPlayerDetail.canHatewatch ? 1 : 0.4 }}">🐻 Hatewatch</button>
+                <button onClick="{{ compPlayerDetail.onCover }}" style="padding:12px;background:#f0fdf4;color:#16a85f;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer;opacity:{{ compPlayerDetail.canCover ? 1 : 0.4 }}">✅ Cover</button>
+              </div>
+              <sc-if value="{{ compError }}">
+                <div style="color:#d23b2c;font:500 12px 'Hanken Grotesk';margin-top:10px;text-align:center">{{ compError }}</div>
+              </sc-if>
+            </div>
           </div>
-          <div style="text-align:center;font:500 11px 'Hanken Grotesk';color:#b0b8b4;margin-bottom:24px">Ends {{ compEndsStr }} · Score = average % gain across all members</div>
+        </sc-if>
 
-          <!-- my comp portfolio -->
-          <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">My Comp Portfolio</div>
-          <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:20px;margin-bottom:6px">
-            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+        <!-- ===== SUB-VIEW: TEAMMATE PORTFOLIO ===== -->
+        <sc-if value="{{ isCompTeammateView }}">
+          <sc-if value="{{ compTeammatePortfolio }}">
+            <div style="background:#fff;border:1px solid #e8eae4;border-radius:20px;padding:22px 20px;margin-bottom:16px">
+              <div style="margin-bottom:18px">
+                <div style="font:700 20px 'Space Grotesk'">{{ compTeammatePortfolio.displayName }}</div>
+                <div style="font:700 28px 'Space Grotesk';color:#16201a;margin-top:4px">{{ compTeammatePortfolio.nwStr }}</div>
+                <div style="font:500 13px 'Hanken Grotesk';color:{{ compTeammatePortfolio.gainColor }}">{{ compTeammatePortfolio.gainStr }}</div>
+              </div>
+              <sc-if value="{{ compTeammatePortfolio.hasHoldings }}">
+                <div style="font:700 12px 'Hanken Grotesk';color:#8a938c;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">Holdings</div>
+                <sc-for list="{{ compTeammatePortfolio.holdings }}" as="h" hint-placeholder-count="3">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid #f3f4f0">
+                    <div>
+                      <div style="font:600 13px 'Hanken Grotesk'">{{ h.name }}</div>
+                      <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ h.qty }}× @ ${{ h.avg }} · {{ h.team }}</div>
+                    </div>
+                    <div style="text-align:right">
+                      <div style="font:600 13px 'Hanken Grotesk'">{{ h.valueStr }}</div>
+                      <div style="font:500 11px 'Hanken Grotesk';color:{{ h.plColor }}">{{ h.plStr }}</div>
+                    </div>
+                  </div>
+                </sc-for>
+              </sc-if>
+              <sc-if value="{{ compTeammatePortfolio.hasShorts }}">
+                <div style="font:700 12px 'Hanken Grotesk';color:#8a938c;letter-spacing:.05em;text-transform:uppercase;margin:12px 0 8px">Hatewatching</div>
+                <sc-for list="{{ compTeammatePortfolio.shorts }}" as="s" hint-placeholder-count="2">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid #f3f4f0">
+                    <div>
+                      <div style="font:600 13px 'Hanken Grotesk'">{{ s.name }}</div>
+                      <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ s.qty }}× @ ${{ s.avg }}</div>
+                    </div>
+                    <div style="text-align:right;font:600 12px 'Hanken Grotesk';color:{{ s.pnlColor }}">{{ s.pnlStr }}</div>
+                  </div>
+                </sc-for>
+              </sc-if>
+              <div style="border-top:1px solid #eeefec;margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';color:#8a938c">
+                <span>Cash</span><span style="font-weight:600;color:#16201a">{{ compTeammatePortfolio.cashStr }}</span>
+              </div>
+            </div>
+          </sc-if>
+        </sc-if>
+
+        <!-- ===== MAIN COMPETITION VIEW ===== -->
+        <sc-if value="{{ isCompMainView }}">
+
+          <!-- division + cups card -->
+          <div style="background:linear-gradient(135deg,{{ compDivInfo.bgDark }},{{ compDivInfo.bgDark2 }});border-radius:20px;padding:24px 26px;margin-bottom:20px;color:#fff">
+            <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px">
               <div>
-                <div style="font:700 28px 'Space Grotesk';color:#16201a">{{ compNWStr }}</div>
-                <div style="font:500 13px 'Hanken Grotesk';color:{{ compGainColor }}">{{ compGainStr }}</div>
+                <div style="font:600 11px 'Hanken Grotesk';letter-spacing:.06em;text-transform:uppercase;color:{{ compDivInfo.labelColor }};margin-bottom:8px">{{ compDivInfo.emoji }} {{ compDivInfo.name }} Division</div>
+                <div style="font:700 48px 'Space Grotesk';line-height:1;margin-bottom:4px">{{ myClubCups }}</div>
+                <div style="font:500 12px 'Hanken Grotesk';color:rgba(255,255,255,.55)">total cups</div>
               </div>
-              <button onClick="{{ openCompTrade }}" style="background:#0c1f15;border:none;color:#3ddc8a;font:700 13px 'Hanken Grotesk';padding:10px 18px;border-radius:12px;cursor:pointer">Trade</button>
-            </div>
-            <sc-if value="{{ compHasHoldings }}">
-              <sc-for list="{{ compHoldingRows }}" as="h" hint-placeholder-count="3">
-                <div style="display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-top:1px solid #f3f4f0">
-                  <div>
-                    <div style="font:600 13px 'Hanken Grotesk'">{{ h.name }}</div>
-                    <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ h.qty }}× @ ${{ h.avg }}</div>
+              <sc-if value="{{ !compDivInfo.isMax }}">
+                <div style="text-align:right;min-width:130px">
+                  <div style="font:500 11px 'Hanken Grotesk';color:rgba(255,255,255,.55);margin-bottom:6px">Next: {{ compDivInfo.nextName }}</div>
+                  <div style="background:rgba(255,255,255,.15);border-radius:999px;height:7px;overflow:hidden">
+                    <div style="background:{{ compDivInfo.color }};height:100%;width:{{ compDivInfo.progressPct }}%;border-radius:999px;transition:width .4s"></div>
                   </div>
-                  <div style="text-align:right">
-                    <div style="font:600 13px 'Hanken Grotesk'">{{ h.valueStr }}</div>
-                    <div style="font:500 11px 'Hanken Grotesk';color:{{ h.plColor }}">{{ h.plStr }}</div>
+                  <div style="font:500 11px 'Hanken Grotesk';color:rgba(255,255,255,.45);margin-top:5px">{{ myClubCups }} / {{ compDivInfo.nextThreshold }} cups</div>
+                </div>
+              </sc-if>
+              <sc-if value="{{ compDivInfo.isMax }}">
+                <div style="text-align:right">
+                  <div style="font:600 12px 'Hanken Grotesk';color:{{ compDivInfo.color }}">Max Division</div>
+                  <div style="font:500 11px 'Hanken Grotesk';color:rgba(255,255,255,.45);margin-top:4px">{{ myClubCups }} cups</div>
+                </div>
+              </sc-if>
+            </div>
+          </div>
+
+          <!-- too few members warning -->
+          <sc-if value="{{ clubTooSmall }}">
+            <div style="background:#fef9ec;border:1px solid #f5d87a;border-radius:14px;padding:18px 20px;margin-bottom:20px">
+              <div style="font:700 14px 'Space Grotesk';color:#92610a;margin-bottom:4px">Need More Members</div>
+              <div style="font:500 13px 'Hanken Grotesk';color:#6b4d0e;line-height:1.5">Your club needs at least 5 members to enter competitions. Invite more friends using your invite code!</div>
+            </div>
+          </sc-if>
+
+          <!-- loading -->
+          <sc-if value="{{ compGroupLoading }}">
+            <div style="text-align:center;padding:50px 0;font:500 13px 'Hanken Grotesk';color:#8a938c">Loading competition…</div>
+          </sc-if>
+
+          <!-- no active comp -->
+          <sc-if value="{{ noActiveComp }}">
+            <div style="background:#fff;border:1px dashed #d6dccf;border-radius:16px;padding:40px 24px;text-align:center;margin-bottom:24px">
+              <div style="font:700 17px 'Space Grotesk';margin-bottom:8px">No competition this week yet</div>
+              <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;line-height:1.5">Clubs are auto-matched every Wednesday at midnight UTC. Check back then!</div>
+            </div>
+          </sc-if>
+
+          <!-- TAB BAR -->
+          <sc-if value="{{ hasActiveComp }}">
+            <div style="display:flex;gap:4px;background:#f3f4f0;border-radius:12px;padding:4px;margin-bottom:20px">
+              <button onClick="{{ goCompTableTab }}" style="flex:1;padding:8px 4px;border:none;border-radius:9px;font:600 12px 'Hanken Grotesk';cursor:pointer;transition:all .15s;background:{{ isCompTableTab ? '#fff' : 'transparent' }};color:{{ isCompTableTab ? '#16201a' : '#8a938c' }};box-shadow:{{ isCompTableTab ? '0 1px 3px rgba(0,0,0,.1)' : 'none' }}">Table</button>
+              <button onClick="{{ goCompPortfolioTab }}" style="flex:1;padding:8px 4px;border:none;border-radius:9px;font:600 12px 'Hanken Grotesk';cursor:pointer;transition:all .15s;background:{{ isCompPortfolioTab ? '#fff' : 'transparent' }};color:{{ isCompPortfolioTab ? '#16201a' : '#8a938c' }};box-shadow:{{ isCompPortfolioTab ? '0 1px 3px rgba(0,0,0,.1)' : 'none' }}">Portfolio</button>
+              <button onClick="{{ goCompTeammatesTab }}" style="flex:1;padding:8px 4px;border:none;border-radius:9px;font:600 12px 'Hanken Grotesk';cursor:pointer;transition:all .15s;background:{{ isCompTeammatesTab ? '#fff' : 'transparent' }};color:{{ isCompTeammatesTab ? '#16201a' : '#8a938c' }};box-shadow:{{ isCompTeammatesTab ? '0 1px 3px rgba(0,0,0,.1)' : 'none' }}">Teammates</button>
+              <button onClick="{{ goCompActivityTab }}" style="flex:1;padding:8px 4px;border:none;border-radius:9px;font:600 12px 'Hanken Grotesk';cursor:pointer;transition:all .15s;background:{{ isCompActivityTab ? '#fff' : 'transparent' }};color:{{ isCompActivityTab ? '#16201a' : '#8a938c' }};box-shadow:{{ isCompActivityTab ? '0 1px 3px rgba(0,0,0,.1)' : 'none' }}">Activity</button>
+            </div>
+
+            <!-- TAB: TABLE -->
+            <sc-if value="{{ isCompTableTab }}">
+              <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:8px">
+                <div style="display:grid;grid-template-columns:30px 1fr 72px 56px;padding:9px 16px;background:#f8faf6;border-bottom:1px solid #eeecea">
+                  <span style="font:700 10px 'Hanken Grotesk';color:#8a938c;text-transform:uppercase">#</span>
+                  <span style="font:700 10px 'Hanken Grotesk';color:#8a938c;text-transform:uppercase">Club</span>
+                  <span style="font:700 10px 'Hanken Grotesk';color:#8a938c;text-transform:uppercase;text-align:right">Score</span>
+                  <span style="font:700 10px 'Hanken Grotesk';color:#8a938c;text-transform:uppercase;text-align:right">Cups</span>
+                </div>
+                <sc-for list="{{ compTableRows }}" as="row" hint-placeholder-count="6">
+                  <div style="display:grid;grid-template-columns:30px 1fr 72px 56px;padding:12px 16px;border-bottom:1px solid #f3f4f0;background:{{ row.isMe ? '#f0fdf4' : '#fff' }}">
+                    <span style="font:700 14px 'Space Grotesk';color:{{ row.rankColor }}">{{ row.rank }}</span>
+                    <div>
+                      <div style="font:600 13px 'Hanken Grotesk';color:#16201a">{{ row.clubName }}</div>
+                      <div style="font:500 10px 'Hanken Grotesk';color:#8a938c">{{ row.divLabel }}</div>
+                    </div>
+                    <div style="text-align:right;font:600 13px 'Hanken Grotesk';color:{{ row.scoreColor }}">{{ row.scoreStr }}</div>
+                    <div style="text-align:right;font:500 12px 'Hanken Grotesk';color:#8a938c">{{ row.cupsChange }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="text-align:center;font:500 11px 'Hanken Grotesk';color:#b0b8b4;margin-bottom:20px">Ends {{ compEndsStr }} · Score = avg % gain across all members</div>
+
+              <!-- rewards + cup reference -->
+              <div style="font:700 15px 'Space Grotesk';margin:0 2px 12px">Rewards — {{ compDivInfo.name }}</div>
+              <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:16px;margin-bottom:16px">
+                <div style="display:flex;gap:8px;margin-bottom:12px">
+                  <div style="flex:1;background:#fffbeb;border-radius:10px;padding:12px;text-align:center">
+                    <div style="font:700 10px 'Hanken Grotesk';color:#d4a017;text-transform:uppercase;margin-bottom:6px">🥇 1st</div>
+                    <div style="font:600 12px 'Hanken Grotesk';color:#16201a;line-height:1.4">{{ compReward1 }}</div>
+                  </div>
+                  <div style="flex:1;background:#f7f7f7;border-radius:10px;padding:12px;text-align:center">
+                    <div style="font:700 10px 'Hanken Grotesk';color:#8a9ba8;text-transform:uppercase;margin-bottom:6px">🥈 2nd</div>
+                    <div style="font:600 12px 'Hanken Grotesk';color:#16201a;line-height:1.4">{{ compReward2 }}</div>
                   </div>
                 </div>
-              </sc-for>
+                <div style="font:500 11px 'Hanken Grotesk';color:#8a938c;text-align:center">Packs added to your main portfolio</div>
+              </div>
+              <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:20px">
+                <sc-for list="{{ compCupRows }}" as="cr" hint-placeholder-count="6">
+                  <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #f3f4f0">
+                    <span style="font:600 13px 'Hanken Grotesk';color:#16201a">{{ cr.label }}</span>
+                    <span style="font:700 12px 'Space Grotesk';color:{{ cr.color }}">{{ cr.cups }}</span>
+                  </div>
+                </sc-for>
+              </div>
             </sc-if>
-            <sc-if value="{{ !compHasHoldings }}">
-              <div style="text-align:center;padding:16px 0;font:500 13px 'Hanken Grotesk';color:#b0b8b4">No holdings yet. Hit Trade to start competing!</div>
+
+            <!-- TAB: PORTFOLIO -->
+            <sc-if value="{{ isCompPortfolioTab }}">
+              <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:20px;margin-bottom:6px">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+                  <div>
+                    <div style="font:700 28px 'Space Grotesk';color:#16201a">{{ compNWStr }}</div>
+                    <div style="font:500 13px 'Hanken Grotesk';color:{{ compGainColor }}">{{ compGainStr }}</div>
+                  </div>
+                  <button onClick="{{ openCompTrade }}" style="background:#0c1f15;border:none;color:#3ddc8a;font:700 13px 'Hanken Grotesk';padding:10px 18px;border-radius:12px;cursor:pointer">+ Trade</button>
+                </div>
+                <sc-if value="{{ compHasHoldings }}">
+                  <div style="font:700 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.05em;text-transform:uppercase;margin-bottom:8px">Holdings</div>
+                  <sc-for list="{{ compHoldingRows }}" as="h" hint-placeholder-count="3">
+                    <div onClick="{{ h.onClick }}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #f3f4f0;cursor:pointer">
+                      <div>
+                        <div style="font:600 13px 'Hanken Grotesk'">{{ h.name }}</div>
+                        <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ h.qty }}× @ ${{ h.avg }} · {{ h.team }}</div>
+                      </div>
+                      <div style="text-align:right">
+                        <div style="font:600 13px 'Hanken Grotesk'">{{ h.valueStr }}</div>
+                        <div style="font:500 11px 'Hanken Grotesk';color:{{ h.plColor }}">{{ h.plStr }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </sc-if>
+                <sc-if value="{{ !compHasHoldings }}">
+                  <div style="text-align:center;padding:10px 0;font:500 13px 'Hanken Grotesk';color:#b0b8b4">No holdings yet. Tap + Trade to start!</div>
+                </sc-if>
+                <sc-if value="{{ compHasShorts }}">
+                  <div style="font:700 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.05em;text-transform:uppercase;margin:14px 0 8px">Hatewatching 🐻</div>
+                  <sc-for list="{{ compShortRows }}" as="s" hint-placeholder-count="2">
+                    <div onClick="{{ s.onClick }}" style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-top:1px solid #f3f4f0;cursor:pointer">
+                      <div>
+                        <div style="font:600 13px 'Hanken Grotesk'">{{ s.name }}</div>
+                        <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ s.qty }}× short @ ${{ s.avg }} · {{ s.team }}</div>
+                      </div>
+                      <div style="text-align:right;font:600 12px 'Hanken Grotesk';color:{{ s.pnlColor }}">{{ s.pnlStr }}</div>
+                    </div>
+                  </sc-for>
+                </sc-if>
+                <div style="border-top:1px solid #eeefec;margin-top:10px;padding-top:10px;display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';color:#8a938c">
+                  <span>Cash remaining</span><span style="font-weight:600;color:#16201a">{{ compCashStr }}</span>
+                </div>
+              </div>
+              <div style="font:500 11px 'Hanken Grotesk';color:#b0b8b4;text-align:center;margin-bottom:20px">Comp portfolio resets to $10,000 each week</div>
             </sc-if>
-            <div style="border-top:1px solid #eeefec;margin-top:8px;padding-top:10px;display:flex;justify-content:space-between;font:500 12px 'Hanken Grotesk';color:#8a938c">
-              <span>Cash remaining</span><span style="font-weight:600;color:#16201a">{{ compCashStr }}</span>
-            </div>
-          </div>
-          <div style="font:500 11px 'Hanken Grotesk';color:#b0b8b4;text-align:center;margin-bottom:24px">Comp portfolio resets to $10,000 each week</div>
+
+            <!-- TAB: TEAMMATES -->
+            <sc-if value="{{ isCompTeammatesTab }}">
+              <sc-if value="{{ compTeammatesLoaded }}">
+                <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:20px">
+                  <sc-for list="{{ compTeammateRows }}" as="tm" hint-placeholder-count="5">
+                    <div onClick="{{ tm.onClick }}" style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid #f3f4f0;cursor:{{ tm.canClick ? 'pointer' : 'default' }};background:{{ tm.isMe ? '#f0fdf4' : '#fff' }}">
+                      <div>
+                        <div style="font:600 13px 'Hanken Grotesk';color:#16201a">{{ tm.displayName }}{{ tm.isMe ? ' (you)' : '' }}</div>
+                        <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ tm.nwStr }}</div>
+                      </div>
+                      <div style="text-align:right">
+                        <div style="font:700 13px 'Space Grotesk';color:{{ tm.color }}">{{ tm.pctStr }}</div>
+                        <div style="font:500 11px 'Hanken Grotesk';color:{{ tm.color }}">{{ tm.gainStr }}</div>
+                      </div>
+                    </div>
+                  </sc-for>
+                </div>
+              </sc-if>
+              <sc-if value="{{ !compTeammatesLoaded }}">
+                <div style="text-align:center;padding:40px 0;font:500 13px 'Hanken Grotesk';color:#8a938c">Loading teammates…</div>
+              </sc-if>
+            </sc-if>
+
+            <!-- TAB: ACTIVITY -->
+            <sc-if value="{{ isCompActivityTab }}">
+              <sc-if value="{{ compActivitiesLoading }}">
+                <div style="text-align:center;padding:40px 0;font:500 13px 'Hanken Grotesk';color:#8a938c">Loading activity…</div>
+              </sc-if>
+              <sc-if value="{{ !compActivitiesLoading }}">
+                <sc-if value="{{ compActivityRows.length > 0 }}">
+                  <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:20px">
+                    <sc-for list="{{ compActivityRows }}" as="act" hint-placeholder-count="5">
+                      <div style="padding:12px 16px;border-bottom:1px solid #f3f4f0">
+                        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+                          <div>
+                            <span style="font:700 13px 'Hanken Grotesk'">{{ act.displayName }}</span>
+                            <span style="font:500 13px 'Hanken Grotesk';color:#8a938c"> {{ act.label }} </span>
+                            <span style="font:600 13px 'Hanken Grotesk'">{{ act.playerName }}</span>
+                          </div>
+                          <span style="font:500 11px 'Hanken Grotesk';color:#b0b8b4;white-space:nowrap;margin-left:8px">{{ act.timeStr }}</span>
+                        </div>
+                        <div style="font:500 11px 'Hanken Grotesk';color:#8a938c;margin-top:2px">{{ act.emoji }} {{ act.qty }}× @ {{ act.priceStr }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ compActivityRows.length === 0 }}">
+                  <div style="background:#fff;border:1px dashed #d6dccf;border-radius:16px;padding:40px 24px;text-align:center;margin-bottom:20px">
+                    <div style="font:500 13px 'Hanken Grotesk';color:#8a938c">No activity yet this week</div>
+                  </div>
+                </sc-if>
+              </sc-if>
+            </sc-if>
+
+            <!-- pack notification (always visible in main view) -->
+            <sc-if value="{{ hasPendingPacks }}">
+              <div onClick="{{ openPackReveal }}" style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:16px;padding:18px 22px;cursor:pointer;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
+                <div>
+                  <div style="font:600 11px 'Hanken Grotesk';letter-spacing:.06em;text-transform:uppercase;color:#3ddc8a;margin-bottom:4px">Reward Ready!</div>
+                  <div style="font:700 16px 'Space Grotesk';color:#eaf3ed">{{ pendingPacksLabel }}</div>
+                </div>
+                <span style="font-size:28px">🎁</span>
+              </div>
+            </sc-if>
+          </sc-if>
+
         </sc-if>
-
-        <!-- no active comp -->
-        <sc-if value="{{ noActiveComp }}">
-          <div style="background:#fff;border:1px dashed #d6dccf;border-radius:16px;padding:40px 24px;text-align:center;margin-bottom:24px">
-            <div style="font:700 17px 'Space Grotesk';margin-bottom:8px">No competition this week yet</div>
-            <div style="font:500 13px 'Hanken Grotesk';color:#8a938c;line-height:1.5">Clubs are auto-matched every Wednesday at midnight UTC. Check back then!</div>
-          </div>
-        </sc-if>
-
-        <!-- pending pack notification -->
-        <sc-if value="{{ hasPendingPacks }}">
-          <div onClick="{{ openPackReveal }}" style="background:linear-gradient(135deg,#0c1f15,#11321f);border-radius:16px;padding:20px 22px;cursor:pointer;margin-bottom:20px;display:flex;align-items:center;justify-content:space-between">
-            <div>
-              <div style="font:600 11px 'Hanken Grotesk';letter-spacing:.06em;text-transform:uppercase;color:#3ddc8a;margin-bottom:4px">Reward Ready!</div>
-              <div style="font:700 16px 'Space Grotesk';color:#eaf3ed">{{ pendingPacksLabel }}</div>
-            </div>
-            <span style="font-size:28px">🎁</span>
-          </div>
-        </sc-if>
-
-        <!-- rewards this division -->
-        <div style="font:700 17px 'Space Grotesk';margin:0 2px 14px">Rewards — {{ compDivInfo.name }} Division</div>
-        <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;padding:20px;margin-bottom:12px">
-          <div style="display:flex;gap:10px;margin-bottom:14px">
-            <div style="flex:1;background:#fffbeb;border-radius:12px;padding:14px 12px;text-align:center">
-              <div style="font:700 11px 'Hanken Grotesk';color:#d4a017;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">🥇 1st Place</div>
-              <div style="font:600 13px 'Hanken Grotesk';color:#16201a;line-height:1.5">{{ compReward1 }}</div>
-            </div>
-            <div style="flex:1;background:#f7f7f7;border-radius:12px;padding:14px 12px;text-align:center">
-              <div style="font:700 11px 'Hanken Grotesk';color:#8a9ba8;letter-spacing:.04em;text-transform:uppercase;margin-bottom:8px">🥈 2nd Place</div>
-              <div style="font:600 13px 'Hanken Grotesk';color:#16201a;line-height:1.5">{{ compReward2 }}</div>
-            </div>
-          </div>
-          <div style="font:500 11px 'Hanken Grotesk';color:#8a938c;text-align:center">Stock packs are added directly to your main portfolio</div>
-        </div>
-
-        <!-- cup table reference -->
-        <div style="font:700 17px 'Space Grotesk';margin:20px 2px 14px">Cup Rewards — {{ compDivInfo.name }}</div>
-        <div style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:30px">
-          <sc-for list="{{ compCupRows }}" as="cr" hint-placeholder-count="6">
-            <div style="display:flex;justify-content:space-between;align-items:center;padding:11px 16px;border-bottom:1px solid #f3f4f0">
-              <span style="font:600 13px 'Hanken Grotesk';color:#16201a">{{ cr.label }}</span>
-              <span style="font:700 13px 'Space Grotesk';color:{{ cr.color }}">{{ cr.cups }}</span>
-            </div>
-          </sc-for>
-        </div>
+        <!-- end isCompMainView -->
       </div>
     </sc-if>
 
@@ -1300,37 +1476,79 @@
       </div>
     </sc-if>
 
-    <!-- COMP TRADE MODAL -->
+    <!-- OLD COMP TRADE SEARCH MODAL (search → opens player detail) -->
     <sc-if value="{{ compTradeOpen }}">
       <div onClick="{{ closeCompTrade }}" style="position:fixed;inset:0;z-index:8500;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center">
         <div onClick="{{ stopCompTrade }}" style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:78vh;overflow-y:auto">
           <div style="display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px">
-            <span style="font:700 18px 'Space Grotesk'">Trade — Comp</span>
+            <span style="font:700 18px 'Space Grotesk'">Search Players — Comp</span>
             <button onClick="{{ closeCompTrade }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c">Close</button>
           </div>
-          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:16px">Cash: {{ compCashStr }} · Portfolio resets weekly</div>
-          <sc-if value="{{ compError }}"><div style="color:#d23b2c;font:500 12px 'Hanken Grotesk';margin-bottom:10px">{{ compError }}</div></sc-if>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-bottom:16px">Cash: {{ compCashStr }} · Tap a player to trade</div>
           <input id="comp-search-input" value="{{ compSearch }}" onInput="{{ onCompSearch }}" placeholder="Search players…" style="width:100%;border:1px solid #e1e4dd;border-radius:10px;padding:10px 14px;font:500 13px 'Hanken Grotesk';outline:none;margin-bottom:14px;box-sizing:border-box" />
-          <sc-if value="{{ compSearchResults.length === 0 && compSearch.length > 0 }}">
-            <div style="text-align:center;padding:20px;font:500 13px 'Hanken Grotesk';color:#8a938c">No players found</div>
-          </sc-if>
           <sc-if value="{{ compSearch.length === 0 }}">
             <div style="text-align:center;padding:20px;font:500 13px 'Hanken Grotesk';color:#b0b8b4">Type a player or team name to search</div>
           </sc-if>
+          <sc-if value="{{ compSearchResults.length === 0 && compSearch.length > 0 }}">
+            <div style="text-align:center;padding:20px;font:500 13px 'Hanken Grotesk';color:#8a938c">No players found</div>
+          </sc-if>
           <sc-for list="{{ compSearchResults }}" as="p" hint-placeholder-count="4">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:11px 0;border-bottom:1px solid #f3f4f0">
+            <div onClick="{{ p.onSelect }}" style="display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid #f3f4f0;cursor:pointer">
               <div>
                 <div style="font:600 13px 'Hanken Grotesk';color:#16201a">{{ p.name }}</div>
                 <div style="font:500 11px 'Hanken Grotesk';color:#8a938c">{{ p.team }} · ${{ p.priceStr }}</div>
               </div>
-              <div style="display:flex;gap:6px">
-                <button onClick="{{ p.onBuy }}" style="background:#16a85f;color:#fff;border:none;border-radius:8px;padding:7px 14px;font:700 12px 'Hanken Grotesk';cursor:pointer;opacity:{{ p.cantAfford ? 0.4 : 1 }}">Buy</button>
-                <sc-if value="{{ p.hasHolding }}">
-                  <button onClick="{{ p.onSell }}" style="background:#fbe9e7;color:#d23b2c;border:none;border-radius:8px;padding:7px 12px;font:700 12px 'Hanken Grotesk';cursor:pointer">Sell</button>
-                </sc-if>
-              </div>
+              <span style="font:500 12px 'Hanken Grotesk';color:#8a938c">&#x2192;</span>
             </div>
           </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- COMP TRADE MODAL (proper qty picker, mirrors main trade modal) -->
+    <sc-if value="{{ compTradeModalOpen }}">
+      <div onClick="{{ closeCompTradeModal }}" style="position:fixed;inset:0;z-index:8600;background:rgba(0,0,0,.5);display:flex;align-items:flex-end;justify-content:center">
+        <div onClick="{{ stopCompTradeModal }}" style="background:#fff;border-radius:20px 20px 0 0;padding:24px;width:100%;max-width:500px;max-height:78vh;overflow-y:auto">
+          <sc-if value="{{ ctr }}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px">
+              <div>
+                <div style="font:700 18px 'Space Grotesk'">{{ ctr.name }}</div>
+                <div style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ ctr.pos }} · {{ ctr.team }}</div>
+              </div>
+              <button onClick="{{ closeCompTradeModal }}" style="background:none;border:none;cursor:pointer;font:600 13px 'Hanken Grotesk';color:#8a938c;padding:0">Close</button>
+            </div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin:14px 0 16px">
+              <span style="font:700 22px 'Space Grotesk'">{{ ctr.priceStr }}</span>
+              <span style="font:700 12px 'Hanken Grotesk';color:{{ ctr.sideColor }};background:{{ ctr.sideColor }}1a;padding:4px 10px;border-radius:999px">{{ ctr.sideLabel }}</span>
+            </div>
+            <!-- qty picker -->
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px">
+              <button onClick="{{ ctr.dec }}" style="width:38px;height:38px;border-radius:50%;border:1.5px solid #e1e4dd;background:#fff;font:700 18px 'Space Grotesk';cursor:pointer;color:#16201a">−</button>
+              <span style="flex:1;text-align:center;font:700 26px 'Space Grotesk'">{{ ctr.qty }}</span>
+              <button onClick="{{ ctr.inc }}" style="width:38px;height:38px;border-radius:50%;border:1.5px solid #e1e4dd;background:#fff;font:700 18px 'Space Grotesk';cursor:pointer;color:#16201a">+</button>
+            </div>
+            <!-- quick qty chips -->
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+              <sc-for list="{{ ctr.quickQtys }}" as="q" hint-placeholder-count="4">
+                <button onClick="{{ q.onClick }}" style="padding:6px 14px;border-radius:999px;border:1px solid #e1e4dd;background:#f8faf6;font:600 12px 'Hanken Grotesk';cursor:pointer;color:#46504a">{{ q.label }}</button>
+              </sc-for>
+            </div>
+            <!-- total + cash after -->
+            <div style="background:#f8faf6;border-radius:12px;padding:14px;margin-bottom:14px">
+              <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+                <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">Total</span>
+                <span style="font:700 13px 'Hanken Grotesk';color:#16201a">{{ ctr.total }}</span>
+              </div>
+              <div style="display:flex;justify-content:space-between">
+                <span style="font:500 13px 'Hanken Grotesk';color:#8a938c">Cash after</span>
+                <span style="font:700 13px 'Hanken Grotesk';color:{{ ctr.cashAfterColor }}">{{ ctr.cashAfter }}</span>
+              </div>
+            </div>
+            <sc-if value="{{ ctr.error }}">
+              <div style="color:#d23b2c;font:500 12px 'Hanken Grotesk';margin-bottom:10px;text-align:center">{{ ctr.error }}</div>
+            </sc-if>
+            <button onClick="{{ ctr.confirm }}" style="width:100%;padding:14px;background:{{ ctr.confirmBg }};color:#fff;border:none;border-radius:13px;font:700 15px 'Hanken Grotesk';cursor:{{ ctr.confirmCursor }};opacity:{{ ctr.confirmOpacity }}">{{ ctr.confirmLabel }}</button>
+          </sc-if>
         </div>
       </div>
     </sc-if>
@@ -2040,6 +2258,22 @@ alter table comp_member_portfolios disable row level security;
 -- Add cups column to clubs
 alter table clubs add column if not exists cups integer default 0;
 
+alter table comp_member_portfolios add column if not exists shorts jsonb default '{}';
+
+create table if not exists comp_activities (
+  id uuid default gen_random_uuid() primary key,
+  group_id uuid references comp_groups(id) on delete cascade not null,
+  club_id uuid not null,
+  user_id text not null,
+  display_name text not null,
+  type text not null,
+  player_id text not null,
+  qty integer not null,
+  price numeric not null,
+  created_at timestamptz default now()
+);
+alter table comp_activities disable row level security;
+
 -- Shares supply table (run this once):
 create table if not exists shares (
   player_id text primary key,
@@ -2096,6 +2330,14 @@ class Component extends DCLogic {
       pendingPacks: [], showPackReveal: false, packRevealFlipped: [],
       promotionToShow: null, showPromotion: false,
       compTradeOpen: false, compSearch: '', compError: '',
+      compTab: 'table',
+      compShorts: {},
+      compPlayerViewId: null,
+      compTeammateViewId: null,
+      compTeamPortfolios: {},
+      compActivities: [],
+      compActivitiesLoading: false,
+      compTradeModalOpen: false, compTradeModalId: null, compTradeSide: 'buy', compTradeQty: 1,
       shareOpen: false, shareCopied: false, mysteryOpen: false, mysteryPacks: [], recoverOpen: false,
       phoneVal: '', phoneSaving: false, phoneSaved: false,
       loggedIn: false, loginStep: 'email', loginEmail: '', loginError: '', loginSending: false, copyTokenLabel: 'Copy code',
@@ -5066,14 +5308,14 @@ Yan Diomande|RB Leipzig|CM|21|4
   async ensureCompPortfolio(groupId, clubId, userId){
     const dname=this.loadUsername()||'Anonymous';
     try{
-      const existing=await Supa.get('comp_member_portfolios','group_id=eq.'+groupId+'&user_id=eq.'+userId+'&select=cash,holdings');
+      const existing=await Supa.get('comp_member_portfolios','group_id=eq.'+groupId+'&user_id=eq.'+userId+'&select=cash,holdings,shorts');
       if(existing.length){
         const p=existing[0];
-        this.setState({compPortfolio:{cash:parseFloat(p.cash)||10000,holdings:p.holdings||{}}});
+        this.setState({compPortfolio:{cash:parseFloat(p.cash)||10000,holdings:p.holdings||{}},compShorts:p.shorts||{}});
         return;
       }
-      await Supa.post('comp_member_portfolios',{group_id:groupId,club_id:clubId,user_id:userId,display_name:dname,cash:10000,holdings:{}});
-      this.setState({compPortfolio:{cash:10000,holdings:{}}});
+      await Supa.post('comp_member_portfolios',{group_id:groupId,club_id:clubId,user_id:userId,display_name:dname,cash:10000,holdings:{},shorts:{}});
+      this.setState({compPortfolio:{cash:10000,holdings:{}},compShorts:{}});
     }catch(e){
       console.warn('ensureCompPortfolio:',e.message);
       this.setState({compPortfolio:{cash:10000,holdings:{}}});
@@ -5142,6 +5384,10 @@ Yan Diomande|RB Leipzig|CM|21|4
           const p=DB.find(x=>x.id===pid);
           if(p) val+=this.curPrice(p)*(h.qty||0);
         });
+        Object.entries(port.shorts||{}).forEach(([pid,h])=>{
+          const p=DB.find(x=>x.id===pid);
+          if(p) val-=this.curPrice(p)*(h.qty||0);
+        });
         const pct=(val/10000-1)*100;
         if(!clubScores[cid]) clubScores[cid]=[];
         clubScores[cid].push(pct);
@@ -5179,13 +5425,17 @@ Yan Diomande|RB Leipzig|CM|21|4
   }
 
   compNetWorth(){
-    const{compPortfolio}=this.state;
+    const{compPortfolio,compShorts}=this.state;
     if(!compPortfolio) return 10000;
     const DB=this.getDB();
     let val=parseFloat(compPortfolio.cash)||0;
     Object.entries(compPortfolio.holdings||{}).forEach(([id,h])=>{
       const p=DB.find(x=>x.id===id);
       if(p) val+=this.curPrice(p)*(h.qty||0);
+    });
+    Object.entries(compShorts||{}).forEach(([id,h])=>{
+      const p=DB.find(x=>x.id===id);
+      if(p) val-=this.curPrice(p)*(h.qty||0);
     });
     return val;
   }
@@ -5195,41 +5445,154 @@ Yan Diomande|RB Leipzig|CM|21|4
     const uid=this.getUserId();
     try{
       await Supa.patch('comp_member_portfolios','group_id=eq.'+activeCompGroup.id+'&user_id=eq.'+uid,
-        {cash:portfolio.cash,holdings:portfolio.holdings,updated_at:new Date().toISOString()});
+        {cash:portfolio.cash,holdings:portfolio.holdings,shorts:portfolio.shorts||{},updated_at:new Date().toISOString()});
     }catch(e){ console.warn('saveCompPortfolio:',e.message); }
   }
 
-  async buyComp(playerId){
-    const{compPortfolio,activeCompGroup}=this.state;
+  async buyComp(playerId,qty=1){
+    const{compPortfolio,compShorts,activeCompGroup}=this.state;
     if(!activeCompGroup){this.setState({compError:'No active competition.'});return;}
     const DB=this.getDB();
     const p=DB.find(x=>x.id===playerId); if(!p) return;
     const price=parseFloat(this.curPrice(p).toFixed(2));
-    if((compPortfolio.cash||0)<price){this.setState({compError:'Not enough comp cash.'});return;}
+    const total=price*qty;
+    if((compPortfolio.cash||0)<total){this.setState({compError:'Not enough comp cash.'});return;}
     const holdings={...compPortfolio.holdings};
     const ex=holdings[playerId];
-    if(ex){ const nq=ex.qty+1; holdings[playerId]={qty:nq,avg:parseFloat(((ex.avg*ex.qty+price)/nq).toFixed(2))}; }
-    else{ holdings[playerId]={qty:1,avg:price}; }
-    const newPort={cash:parseFloat((compPortfolio.cash-price).toFixed(2)),holdings};
-    this.setState({compPortfolio:newPort,compError:''});
+    if(ex){ const nq=ex.qty+qty; holdings[playerId]={qty:nq,avg:parseFloat(((ex.avg*ex.qty+price*qty)/nq).toFixed(2))}; }
+    else{ holdings[playerId]={qty,avg:price}; }
+    const newPort={cash:parseFloat((compPortfolio.cash-total).toFixed(2)),holdings,shorts:compShorts||{}};
+    this.setState({compPortfolio:{cash:newPort.cash,holdings:newPort.holdings},compError:''});
     await this._saveCompPortfolio(newPort);
+    await this.logCompActivity('buy',playerId,qty,price);
   }
 
-  async sellComp(playerId){
-    const{compPortfolio}=this.state;
+  async sellComp(playerId,qty=1){
+    const{compPortfolio,compShorts}=this.state;
     const DB=this.getDB();
     const p=DB.find(x=>x.id===playerId); if(!p) return;
-    const h=compPortfolio.holdings[playerId]; if(!h||h.qty<1) return;
+    const h=compPortfolio.holdings[playerId]; if(!h||h.qty<qty) return;
     const price=parseFloat(this.curPrice(p).toFixed(2));
+    const total=price*qty;
     const holdings={...compPortfolio.holdings};
-    if(h.qty===1){ delete holdings[playerId]; }else{ holdings[playerId]={...h,qty:h.qty-1}; }
-    const newPort={cash:parseFloat((compPortfolio.cash+price).toFixed(2)),holdings};
-    this.setState({compPortfolio:newPort,compError:''});
+    if(h.qty===qty){ delete holdings[playerId]; }else{ holdings[playerId]={...h,qty:h.qty-qty}; }
+    const newPort={cash:parseFloat((compPortfolio.cash+total).toFixed(2)),holdings,shorts:compShorts||{}};
+    this.setState({compPortfolio:{cash:newPort.cash,holdings:newPort.holdings},compError:''});
     await this._saveCompPortfolio(newPort);
+    await this.logCompActivity('sell',playerId,qty,price);
+  }
+
+  async hatewatchComp(playerId,qty=1){
+    const{compPortfolio,compShorts,activeCompGroup}=this.state;
+    if(!activeCompGroup) return;
+    const DB=this.getDB();
+    const p=DB.find(x=>x.id===playerId); if(!p) return;
+    const price=parseFloat(this.curPrice(p).toFixed(2));
+    const total=price*qty;
+    if((compPortfolio.cash||0)<total){this.setState({compError:'Not enough comp cash for collateral.'});return;}
+    const shorts={...(compShorts||{})};
+    const ex=shorts[playerId];
+    if(ex){ const nq=ex.qty+qty; shorts[playerId]={qty:nq,avg:parseFloat(((ex.avg*ex.qty+price*qty)/nq).toFixed(2))}; }
+    else{ shorts[playerId]={qty,avg:price}; }
+    const newPort={cash:parseFloat((compPortfolio.cash+total).toFixed(2)),holdings:compPortfolio.holdings,shorts};
+    this.setState({compPortfolio:{cash:newPort.cash,holdings:newPort.holdings},compShorts:shorts,compError:''});
+    await this._saveCompPortfolio(newPort);
+    await this.logCompActivity('hatewatch',playerId,qty,price);
+  }
+
+  async coverComp(playerId,qty=1){
+    const{compPortfolio,compShorts}=this.state;
+    const DB=this.getDB();
+    const p=DB.find(x=>x.id===playerId); if(!p) return;
+    const h=(compShorts||{})[playerId]; if(!h||h.qty<qty) return;
+    const price=parseFloat(this.curPrice(p).toFixed(2));
+    const total=price*qty;
+    if((compPortfolio.cash||0)<total){this.setState({compError:'Not enough cash to cover.'});return;}
+    const shorts={...(compShorts||{})};
+    if(h.qty===qty){ delete shorts[playerId]; }else{ shorts[playerId]={...h,qty:h.qty-qty}; }
+    const newPort={cash:parseFloat((compPortfolio.cash-total).toFixed(2)),holdings:compPortfolio.holdings,shorts};
+    this.setState({compPortfolio:{cash:newPort.cash,holdings:newPort.holdings},compShorts:shorts,compError:''});
+    await this._saveCompPortfolio(newPort);
+    await this.logCompActivity('cover',playerId,qty,price);
   }
 
   openCompTrade(){ this.setState({compTradeOpen:true,compSearch:'',compError:''}); }
   closeCompTrade(){ this.setState({compTradeOpen:false}); }
+
+  setCompTab(tab){
+    this.setState({compTab:tab,compPlayerViewId:null,compTeammateViewId:null,compError:''});
+    if(tab==='activity') this.loadCompActivities();
+    if(tab==='teammates') this.loadCompTeamPortfolios();
+  }
+  openCompPlayerView(id){ this.setState({compPlayerViewId:id,compTeammateViewId:null,compTradeModalOpen:false,compTradeQty:1,compError:''}); }
+  closeCompPlayerView(){ this.setState({compPlayerViewId:null,compError:''}); }
+  openCompTeammateView(userId){ this.setState({compTeammateViewId:userId,compPlayerViewId:null,compError:''}); }
+  closeCompTeammateView(){ this.setState({compTeammateViewId:null,compError:''}); }
+  openCompTradeModal(id,side){
+    this.setState({compTradeModalOpen:true,compTradeModalId:id,compTradeSide:side,compTradeQty:1,compError:''});
+  }
+  closeCompTradeModal(){ this.setState({compTradeModalOpen:false,compTradeModalId:null,compError:''}); }
+  setCompTradeQty(qty){
+    const{compTradeModalId,compTradeSide,compPortfolio,compShorts}=this.state;
+    const DB=this.getDB(); const p=DB.find(x=>x.id===compTradeModalId); if(!p) return;
+    const price=this.curPrice(p); const cash=compPortfolio?.cash||0;
+    const maxBuy=Math.floor(cash/price);
+    const held=(compPortfolio?.holdings||{})[compTradeModalId];
+    const shorted=(compShorts||{})[compTradeModalId];
+    let max=1;
+    if(compTradeSide==='buy'||compTradeSide==='hatewatch') max=Math.max(1,maxBuy);
+    else if(compTradeSide==='sell') max=held?held.qty:1;
+    else if(compTradeSide==='cover') max=shorted?shorted.qty:1;
+    this.setState({compTradeQty:Math.max(1,Math.min(qty,max))});
+  }
+  async confirmCompTrade(){
+    const{compTradeModalId,compTradeSide,compTradeQty}=this.state;
+    if(!compTradeModalId) return;
+    const qty=compTradeQty||1;
+    if(compTradeSide==='buy') await this.buyComp(compTradeModalId,qty);
+    else if(compTradeSide==='sell') await this.sellComp(compTradeModalId,qty);
+    else if(compTradeSide==='hatewatch') await this.hatewatchComp(compTradeModalId,qty);
+    else if(compTradeSide==='cover') await this.coverComp(compTradeModalId,qty);
+    if(!this.state.compError) this.setState({compTradeModalOpen:false,compTradeModalId:null});
+  }
+
+  async logCompActivity(type,playerId,qty,price){
+    const{activeCompGroup,myClub}=this.state; if(!activeCompGroup||!myClub) return;
+    const uid=this.getUserId(); const dname=this.loadUsername()||'Anonymous';
+    try{
+      await Supa.post('comp_activities',{group_id:activeCompGroup.id,club_id:myClub.id,user_id:uid,display_name:dname,type,player_id:playerId,qty,price});
+    }catch(e){ console.warn('logCompActivity:',e.message); }
+  }
+
+  async loadCompActivities(){
+    const{activeCompGroup,myClub}=this.state; if(!activeCompGroup||!myClub) return;
+    this.setState({compActivitiesLoading:true});
+    try{
+      const rows=await Supa.get('comp_activities','group_id=eq.'+activeCompGroup.id+'&club_id=eq.'+myClub.id+'&order=created_at.desc&limit=50');
+      this.setState({compActivities:rows||[],compActivitiesLoading:false});
+    }catch(e){ console.warn('loadCompActivities:',e.message); this.setState({compActivitiesLoading:false}); }
+  }
+
+  async loadCompTeamPortfolios(){
+    const{activeCompGroup,myClub}=this.state; if(!activeCompGroup||!myClub) return;
+    try{
+      const rows=await Supa.get('comp_member_portfolios','group_id=eq.'+activeCompGroup.id+'&club_id=eq.'+myClub.id+'&select=user_id,display_name,cash,holdings,shorts');
+      const map={};
+      (rows||[]).forEach(r=>{ map[r.user_id]=r; });
+      this.setState({compTeamPortfolios:map});
+    }catch(e){ console.warn('loadCompTeamPortfolios:',e.message); }
+  }
+
+  _compNW(portfolio,DB){
+    let val=parseFloat(portfolio.cash)||0;
+    Object.entries(portfolio.holdings||{}).forEach(([id,h])=>{
+      const p=DB.find(x=>x.id===id); if(p) val+=this.curPrice(p)*(h.qty||0);
+    });
+    Object.entries(portfolio.shorts||{}).forEach(([id,h])=>{
+      const p=DB.find(x=>x.id===id); if(p) val-=this.curPrice(p)*(h.qty||0);
+    });
+    return val;
+  }
 
   openPackReveal(){
     const packs=this.state.pendingPacks||[];
@@ -6172,6 +6535,165 @@ Yan Diomande|RB Leipzig|CM|21|4
       hasActiveComp:!!(S.activeCompGroup&&S.activeCompGroup.status==='active'),
       noActiveComp:!(S.activeCompGroup)&&!S.compGroupLoading,
       compEndsStr:S.activeCompGroup?new Date(S.activeCompGroup.week_end).toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short'}):'',
+      compTab:S.compTab||'table',
+      isCompPlayerView:!!(S.compPlayerViewId&&S.activeCompGroup),
+      isCompTeammateView:!!(S.compTeammateViewId&&S.activeCompGroup&&!S.compPlayerViewId),
+      isCompMainView:!S.compPlayerViewId&&!S.compTeammateViewId,
+      isCompTableTab:!S.compPlayerViewId&&!S.compTeammateViewId&&(S.compTab||'table')==='table',
+      isCompPortfolioTab:!S.compPlayerViewId&&!S.compTeammateViewId&&S.compTab==='portfolio',
+      isCompTeammatesTab:!S.compPlayerViewId&&!S.compTeammateViewId&&S.compTab==='teammates',
+      isCompActivityTab:!S.compPlayerViewId&&!S.compTeammateViewId&&S.compTab==='activity',
+      compBackBtn:(()=>{
+        if(S.compPlayerViewId) return ()=>this.closeCompPlayerView();
+        if(S.compTeammateViewId) return ()=>this.closeCompTeammateView();
+        return ()=>this.setState({clubView:'home',clubError:'',clubSuccess:''});
+      })(),
+      compPlayerDetail:(()=>{
+        if(!S.compPlayerViewId||!S.activeCompGroup) return null;
+        const p=DB.find(x=>x.id===S.compPlayerViewId); if(!p) return null;
+        const price=parseFloat(this.curPrice(p).toFixed(2));
+        const held=(S.compPortfolio?.holdings||{})[p.id];
+        const shorted=(S.compShorts||{})[p.id];
+        const heldQty=held?held.qty:0; const shortedQty=shorted?shorted.qty:0;
+        const plVal=held?(price-held.avg)*held.qty:0;
+        const shortPnl=shorted?(shorted.avg-price)*shorted.qty:0;
+        const cash=S.compPortfolio?.cash||0;
+        const h=p.hist||[]; const hN=h.length;
+        const change1d=hN>=2?((h[hN-1]-h[hN-2])/h[hN-2]*100):0;
+        return {
+          id:p.id,name:p.name,team:p.team,pos:p.pos,
+          priceStr:'$'+price.toFixed(0),
+          change1dStr:(change1d>=0?'+':'')+change1d.toFixed(1)+'%',
+          change1dColor:change1d>=0?'#16a85f':'#d23b2c',
+          heldQty,shortedQty,
+          holdingStr:heldQty?heldQty+'× @ $'+held.avg.toFixed(0):'None',
+          shortStr:shortedQty?shortedQty+' hatewatched @ $'+shorted.avg.toFixed(0):'None',
+          plStr:heldQty?(plVal>=0?'+$':'-$')+Math.abs(plVal).toFixed(0):'',
+          plColor:plVal>=0?'#16a85f':'#d23b2c',
+          shortPnlStr:shortedQty?(shortPnl>=0?'+$':'-$')+Math.abs(shortPnl).toFixed(0):'',
+          shortPnlColor:shortPnl>=0?'#16a85f':'#d23b2c',
+          hasHolding:heldQty>0, hasShort:shortedQty>0,
+          canBuy:cash>=price, canSell:heldQty>0,
+          canHatewatch:cash>=price, canCover:shortedQty>0,
+          onBuy:()=>this.openCompTradeModal(p.id,'buy'),
+          onSell:()=>this.openCompTradeModal(p.id,'sell'),
+          onHatewatch:()=>this.openCompTradeModal(p.id,'hatewatch'),
+          onCover:()=>this.openCompTradeModal(p.id,'cover'),
+        };
+      })(),
+      compShortRows:(()=>{
+        return Object.entries(S.compShorts||{}).map(([id,h])=>{
+          const p=DB.find(x=>x.id===id); if(!p) return null;
+          const price=parseFloat(this.curPrice(p).toFixed(2));
+          const pnl=(h.avg-price)*h.qty;
+          return {id,name:p.name,team:p.team,qty:h.qty,avg:h.avg.toFixed(0),
+            pnlStr:(pnl>=0?'+$':'-$')+Math.abs(pnl).toFixed(0),pnlColor:pnl>=0?'#16a85f':'#d23b2c',
+            onClick:()=>this.openCompPlayerView(id)};
+        }).filter(Boolean);
+      })(),
+      compHasShorts:Object.keys(S.compShorts||{}).length>0,
+      compTradeModalOpen:S.compTradeModalOpen,
+      compTradeModalId:S.compTradeModalId,
+      compTradeSide:S.compTradeSide||'buy',
+      compTradeQty:S.compTradeQty||1,
+      ctr:(()=>{
+        if(!S.compTradeModalOpen||!S.compTradeModalId) return null;
+        const p=DB.find(x=>x.id===S.compTradeModalId); if(!p) return null;
+        const price=parseFloat(this.curPrice(p).toFixed(2));
+        const qty=S.compTradeQty||1; const total=price*qty;
+        const buy=S.compTradeSide==='buy'; const isHW=S.compTradeSide==='hatewatch';
+        const isCover=S.compTradeSide==='cover'; const isSell=S.compTradeSide==='sell';
+        const held=(S.compPortfolio?.holdings||{})[p.id];
+        const heldQty=held?held.qty:0;
+        const shorted=(S.compShorts||{})[p.id];
+        const shortedQty=shorted?shorted.qty:0;
+        const cash=S.compPortfolio?.cash||0;
+        const maxBuy=Math.floor(cash/price);
+        let error='';
+        if(buy&&total>cash) error='Not enough comp cash.';
+        if(isSell&&qty>heldQty) error='You only hold '+heldQty+' shares.';
+        if(isHW&&total>cash) error='Need collateral equal to position size.';
+        if(isCover&&qty>shortedQty) error='You only have '+shortedQty+' hatewatched.';
+        const ok=!error;
+        const HW_RED='#b91c1c';
+        const sideLabel=buy?'Buy order':isHW?'Hatewatch':isCover?'Cover':'Sell order';
+        const sideColor=isHW||isCover?HW_RED:buy?GREEN:RED;
+        const cashAfter=(buy||isCover)?cash-total:cash+total;
+        const confirmLabel=isHW?('Hatewatch '+qty+' · $'+total.toFixed(0)):isCover?('Cover '+qty+' · $'+total.toFixed(0)):buy?('Buy '+qty+' · $'+total.toFixed(0)):('Sell '+qty+' · $'+total.toFixed(0));
+        const quickQtys=(buy||isHW?[1,5,10,'Max']:isCover?[1,5,'Half','All']:[1,5,'Half','All']).map(label=>{
+          let q;
+          if(label==='Max') q=Math.max(1,maxBuy);
+          else if(label==='All') q=isCover?shortedQty:heldQty;
+          else if(label==='Half') q=Math.max(1,Math.floor((isCover?shortedQty:heldQty)/2));
+          else q=label;
+          return {label:String(label),onClick:()=>this.setCompTradeQty(q)};
+        });
+        return {name:p.name,team:p.team,pos:p.pos,priceStr:'$'+price.toFixed(0),qty,
+          sideLabel,sideColor,
+          total:'$'+total.toFixed(0),cashAfter:'$'+cashAfter.toFixed(0),cashAfterColor:cashAfter<0?'#e04040':'#16201a',
+          inc:()=>this.setCompTradeQty(qty+1),dec:()=>this.setCompTradeQty(qty-1),quickQtys,
+          error,confirm:()=>this.confirmCompTrade(),confirmLabel,
+          confirmBg:ok?(isHW||isCover?HW_RED:buy?GREEN:RED):'#c4ccc3',
+          confirmCursor:ok?'pointer':'not-allowed',confirmOpacity:ok?'1':'0.7'};
+      })(),
+      compTeammateRows:(()=>{
+        const uid=this.getUserId();
+        const portfolios=S.compTeamPortfolios||{};
+        return Object.values(portfolios).sort((a,b)=>this._compNW(b,DB)-this._compNW(a,DB)).map(port=>{
+          const nw=this._compNW(port,DB);
+          const gain=nw-10000; const pct=(nw/10000-1)*100;
+          const isMe=port.user_id===uid;
+          return {
+            userId:port.user_id, displayName:port.display_name||'Anonymous',
+            nwStr:'$'+nw.toFixed(0),
+            gainStr:(gain>=0?'+$':'-$')+Math.abs(gain).toFixed(0),
+            pctStr:(pct>=0?'+':'')+pct.toFixed(1)+'%',
+            color:nw>=10000?'#16a85f':'#d23b2c', isMe,
+            canClick:!isMe,
+            onClick:isMe?null:()=>this.openCompTeammateView(port.user_id),
+          };
+        });
+      })(),
+      compTeammatesLoaded:Object.keys(S.compTeamPortfolios||{}).length>0,
+      compTeammatePortfolio:(()=>{
+        if(!S.compTeammateViewId) return null;
+        const port=(S.compTeamPortfolios||{})[S.compTeammateViewId]; if(!port) return null;
+        const nw=this._compNW(port,DB); const gain=nw-10000; const pct=(nw/10000-1)*100;
+        const holdings=Object.entries(port.holdings||{}).map(([id,h])=>{
+          const p=DB.find(x=>x.id===id); if(!p) return null;
+          const price=parseFloat(this.curPrice(p).toFixed(2));
+          const val=price*h.qty; const plv=(price-h.avg)*h.qty;
+          return {name:p.name,team:p.team,qty:h.qty,avg:h.avg.toFixed(0),
+            valueStr:'$'+val.toFixed(0),plStr:(plv>=0?'+$':'-$')+Math.abs(plv).toFixed(0),plColor:plv>=0?'#16a85f':'#d23b2c'};
+        }).filter(Boolean);
+        const shorts=Object.entries(port.shorts||{}).map(([id,h])=>{
+          const p=DB.find(x=>x.id===id); if(!p) return null;
+          const price=parseFloat(this.curPrice(p).toFixed(2));
+          const pnl=(h.avg-price)*h.qty;
+          return {name:p.name,qty:h.qty,avg:h.avg.toFixed(0),pnlStr:(pnl>=0?'+$':'-$')+Math.abs(pnl).toFixed(0),pnlColor:pnl>=0?'#16a85f':'#d23b2c'};
+        }).filter(Boolean);
+        return {
+          displayName:port.display_name||'Anonymous',
+          nwStr:'$'+nw.toFixed(0),
+          gainStr:(gain>=0?'+$':'-$')+Math.abs(gain).toFixed(0)+' ('+(pct>=0?'+':'')+pct.toFixed(1)+'%)',
+          gainColor:nw>=10000?'#16a85f':'#d23b2c',
+          cashStr:'$'+(port.cash||0).toFixed(0),
+          holdings,hasHoldings:holdings.length>0,
+          shorts,hasShorts:shorts.length>0,
+        };
+      })(),
+      compActivityRows:(()=>{
+        return (S.compActivities||[]).map(a=>{
+          const p=DB.find(x=>x.id===a.player_id);
+          const emoji={buy:'📈',sell:'📉',hatewatch:'🐻',cover:'✅'}[a.type]||'📋';
+          const label={buy:'bought',sell:'sold',hatewatch:'hatewatched',cover:'covered'}[a.type]||a.type;
+          const ts=new Date(a.created_at);
+          const timeStr=ts.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+          return {emoji,displayName:a.display_name||'?',label,playerName:p?p.name:a.player_id,
+            qty:a.qty,priceStr:'$'+parseFloat(a.price||0).toFixed(0),timeStr};
+        });
+      })(),
+      compActivitiesLoading:S.compActivitiesLoading,
       compTableRows:(()=>{
         if(!S.activeCompGroup) return [];
         const entries=[...(S.compGroupClubs||[])];
@@ -6209,13 +6731,13 @@ Yan Diomande|RB Leipzig|CM|21|4
       compCashStr:'$'+((S.compPortfolio?.cash)||10000).toFixed(0),
       compHasHoldings:Object.keys(S.compPortfolio?.holdings||{}).length>0,
       compHoldingRows:(()=>{
-        const DB=S.ready?this.getDB():[];
         return Object.entries(S.compPortfolio?.holdings||{}).map(([id,h])=>{
           const p=DB.find(x=>x.id===id); if(!p) return null;
           const price=parseFloat(this.curPrice(p).toFixed(2));
           const val=price*h.qty; const pl=(price-h.avg)*h.qty;
-          return {id,name:p.name,qty:h.qty,avg:h.avg.toFixed(2),valueStr:'$'+val.toFixed(0),
-            plStr:(pl>=0?'+$':'-$')+Math.abs(pl).toFixed(0),plColor:pl>=0?'#16a85f':'#d23b2c'};
+          return {id,name:p.name,team:p.team,qty:h.qty,avg:h.avg.toFixed(0),valueStr:'$'+val.toFixed(0),
+            plStr:(pl>=0?'+$':'-$')+Math.abs(pl).toFixed(0),plColor:pl>=0?'#16a85f':'#d23b2c',
+            onClick:()=>this.openCompPlayerView(id)};
         }).filter(Boolean);
       })(),
       compReward1:(()=>{
@@ -6275,11 +6797,21 @@ Yan Diomande|RB Leipzig|CM|21|4
       openCompTrade:()=>this.openCompTrade(),
       closeCompTrade:()=>this.closeCompTrade(),
       stopCompTrade:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
+      closeCompTradeModal:()=>this.closeCompTradeModal(),
+      stopCompTradeModal:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
+      setCompTab:(tab)=>this.setCompTab(tab),
+      goCompTableTab:()=>this.setCompTab('table'),
+      goCompPortfolioTab:()=>this.setCompTab('portfolio'),
+      goCompTeammatesTab:()=>this.setCompTab('teammates'),
+      goCompActivityTab:()=>this.setCompTab('activity'),
+      openCompPlayerView:(id)=>this.openCompPlayerView(id),
+      closeCompPlayerView:()=>this.closeCompPlayerView(),
+      openCompTeammateView:(id)=>this.openCompTeammateView(id),
+      closeCompTeammateView:()=>this.closeCompTeammateView(),
       compSearch:S.compSearch||'',
       onCompSearch:(e)=>this.setState({compSearch:e.target.value,compError:''}),
       compError:S.compError||'',
       compSearchResults:(()=>{
-        const DB=S.ready?this.getDB():[];
         const q=(S.compSearch||'').toLowerCase().trim();
         if(!q) return [];
         const port=S.compPortfolio||{cash:10000,holdings:{}};
@@ -6288,7 +6820,7 @@ Yan Diomande|RB Leipzig|CM|21|4
           const h=port.holdings[p.id];
           return {id:p.id,name:p.name,team:p.team,priceStr:price.toFixed(0),
             cantAfford:(port.cash||0)<price,hasHolding:!!h,
-            onBuy:()=>this.buyComp(p.id), onSell:()=>this.sellComp(p.id)};
+            onSelect:()=>{ this.closeCompTrade(); this.openCompPlayerView(p.id); }};
         });
       })(),
       clubMessages:(()=>{
