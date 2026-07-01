@@ -2667,15 +2667,38 @@ class Component extends DCLogic {
   mulberry(seed){ let a=seed>>>0; return function(){ a=a+0x6D2B79F5|0; let t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
 
   // ---------- static config ----------
-  LEAGUE_NAME(){ return {EPL:'Premier League',LAL:'La Liga',SEA:'Serie A',BUN:'Bundesliga',LI1:'Ligue 1',PROS:'Top Prospects',OTH:'Other Leagues'}; }
+  LEAGUE_NAME(){ return {EPL:'Premier League',LAL:'La Liga',SEA:'Serie A',BUN:'Bundesliga',LI1:'Ligue 1',ROW:'Rest of World'}; }
   TEAMS(){ return {
-    'Man City':['MCI','EPL'],'Arsenal':['ARS','EPL'],'Liverpool':['LIV','EPL'],'Chelsea':['CHE','EPL'],'Man Utd':['MUN','EPL'],'Tottenham':['TOT','EPL'],'Newcastle':['NEW','EPL'],'Aston Villa':['AVL','EPL'],'Crystal Palace':['CRY','EPL'],
-    'Real Madrid':['RMA','LAL'],'Barcelona':['BAR','LAL'],'Atlético':['ATM','LAL'],'Athletic':['ATH','LAL'],'Villarreal':['VIL','LAL'],'Real Sociedad':['RSO','LAL'],
-    'Inter':['INT','SEA'],'Milan':['MIL','SEA'],'Juventus':['JUV','SEA'],'Napoli':['NAP','SEA'],'Roma':['ROM','SEA'],'Atalanta':['ATA','SEA'],
-    'Bayern':['BAY','BUN'],'Leverkusen':['B04','BUN'],'Dortmund':['BVB','BUN'],'RB Leipzig':['RBL','BUN'],'Stuttgart':['VFB','BUN'],'Eintracht':['SGE','BUN'],
-    'Paris SG':['PSG','LI1'],'Monaco':['ASM','LI1'],'Marseille':['OM','LI1'],'Lille':['LIL','LI1'],'Lyon':['OL','LI1'],
-    'Ajax':['AJA','PROS'],'PSV':['PSV','PROS'],'Benfica':['SLB','PROS'],'Sporting':['SCP','PROS'],'Porto':['POR','PROS'],
-    'Inter Miami':['MIA','OTH'],'Al-Nassr':['NAS','OTH'],'Brighton':['BHA','EPL'],'Fulham':['FUL','EPL']
+    // Premier League 2025/26 (20 teams)
+    'Man City':['MCI','EPL'],'Arsenal':['ARS','EPL'],'Liverpool':['LIV','EPL'],'Chelsea':['CHE','EPL'],'Man Utd':['MUN','EPL'],
+    'Tottenham':['TOT','EPL'],'Newcastle':['NEW','EPL'],'Aston Villa':['AVL','EPL'],'Crystal Palace':['CRY','EPL'],
+    'Brighton':['BHA','EPL'],'Fulham':['FUL','EPL'],'West Ham':['WHU','EPL'],'Wolves':['WOL','EPL'],
+    'Brentford':['BRE','EPL'],'Bournemouth':['BOU','EPL'],'Everton':['EVE','EPL'],
+    'Nottingham Forest':['NFO','EPL'],'Nottm Forest':['NFO','EPL'],
+    'Leeds':['LEE','EPL'],'Burnley':['BUR','EPL'],'Sunderland':['SUN','EPL'],
+    // La Liga 2025/26 (20 teams)
+    'Real Madrid':['RMA','LAL'],'Barcelona':['BAR','LAL'],'Atlético':['ATM','LAL'],'Athletic':['ATH','LAL'],
+    'Villarreal':['VIL','LAL'],'Real Sociedad':['RSO','LAL'],'Sevilla':['SEV','LAL'],'Real Betis':['BET','LAL'],
+    'Celta Vigo':['CEL','LAL'],'Girona':['GIR','LAL'],'Osasuna':['OSA','LAL'],'Getafe':['GET','LAL'],'Mallorca':['MAL','LAL'],
+    // Serie A 2025/26 (20 teams)
+    'Inter':['INT','SEA'],'Milan':['MIL','SEA'],'AC Milan':['MIL','SEA'],'Juventus':['JUV','SEA'],'Napoli':['NAP','SEA'],
+    'Roma':['ROM','SEA'],'Atalanta':['ATA','SEA'],'Bologna':['BOL','SEA'],'Fiorentina':['FIO','SEA'],
+    'Lazio':['LAZ','SEA'],'Torino':['TOR','SEA'],'Genoa':['GEN','SEA'],'Como':['COM','SEA'],
+    'Udinese':['UDI','SEA'],'Parma':['PAR','SEA'],'Cagliari':['CAG','SEA'],'Verona':['VER','SEA'],'Empoli':['EMP','SEA'],
+    // Bundesliga 2025/26 (18 teams)
+    'Bayern':['BAY','BUN'],'Leverkusen':['B04','BUN'],'Dortmund':['BVB','BUN'],'RB Leipzig':['RBL','BUN'],
+    'Stuttgart':['VFB','BUN'],'Eintracht':['SGE','BUN'],'Eintracht Frankfurt':['SGE','BUN'],
+    'Wolfsburg':['WOB','BUN'],'Freiburg':['SCF','BUN'],'Hoffenheim':['TSG','BUN'],'Mainz':['FSV','BUN'],
+    'Union Berlin':['FCU','BUN'],'Mönchengladbach':['BMG','BUN'],'Borussia Mönchengladbach':['BMG','BUN'],
+    'FC Augsburg':['FCA','BUN'],'HSV':['HSV','BUN'],
+    // Ligue 1 2025/26 (18 teams)
+    'Paris SG':['PSG','LI1'],'Monaco':['ASM','LI1'],'Marseille':['OM','LI1'],'Lille':['LIL','LI1'],
+    'Lyon':['OL','LI1'],'Nice':['NIC','LI1'],'Lens':['RCL','LI1'],
+    'Rennes':['REN','LI1'],'Stade Rennes':['REN','LI1'],'Nantes':['FCN','LI1'],
+    'Toulouse':['TOU','LI1'],'Reims':['SDR','LI1'],'Strasbourg':['SRC','LI1'],
+    'Stade Brestois':['SB2','LI1'],'Angers':['ANG','LI1'],'Auxerre':['AUX','LI1'],
+    // Rest of World (explicit entries for notable non-top-5 clubs)
+    'Ajax':['AJA','ROW'],'PSV':['PSV','ROW'],'Benfica':['SLB','ROW'],'Sporting':['SCP','ROW'],'Porto':['POR','ROW'],
   }; }
   ROSTER(){ return `
 Erling Haaland|Man City|ST|25|1
@@ -3934,7 +3957,7 @@ Yan Diomande|RB Leipzig|CM|21|4
       tier=parseInt(tier); age=parseInt(age);
       const id=this.slug(name+'-'+team);
       if(seen[id]) continue; seen[id]=1;
-      const [abbr,lg]=teams[team]||['—','PROS'];
+      const [abbr,lg]=teams[team]||['—','ROW'];
       const r=this.mulberry(this.hash(id));
       const mv=this.VAL()[name];
       const youth = age<=21 ? 1 : 0;
@@ -5885,7 +5908,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     const dismissRecap=()=>this.setState({recapDismissed:true});
 
     // league chips
-    const LG=[['ALL','All'],['EPL','Premier League'],['LAL','La Liga'],['SEA','Serie A'],['BUN','Bundesliga'],['LI1','Ligue 1'],['PROS','Prospects']];
+    const LG=[['ALL','All'],['EPL','Premier League'],['LAL','La Liga'],['SEA','Serie A'],['BUN','Bundesliga'],['LI1','Ligue 1'],['ROW','Rest of World']];
     const leagueChips=LG.map(([k,name])=>{ const on=S.league===k; return {name,onClick:()=>this.setLeague(k),
       bg:on?'#16201a':'#fff',border:on?'#16201a':'#e3e6e0',color:on?'#fff':'#46504a'}; });
 
