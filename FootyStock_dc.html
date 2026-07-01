@@ -6368,10 +6368,9 @@ Yan Diomande|RB Leipzig|CM|21|4
     const goLbPlayers=()=>this.setState({lbTab:'players'});
     const goLbClubs=()=>{ this.setState({lbTab:'clubs'}); this.loadClubsLeaderboard(); };
     const _divLabel=(cups)=>{
-      if(cups>=30) return{name:'Diamond',emoji:'💎',color:'#60a5fa'};
-      if(cups>=15) return{name:'Platinum',emoji:'🔷',color:'#7fb89a'};
-      if(cups>=8)  return{name:'Gold',emoji:'🥇',color:'#f5c518'};
-      if(cups>=3)  return{name:'Silver',emoji:'🥈',color:'#8a9ba8'};
+      if(cups>=50) return{name:'Platinum',emoji:'🔷',color:'#7fb89a'};
+      if(cups>=25) return{name:'Gold',emoji:'🥇',color:'#f5c518'};
+      if(cups>=10) return{name:'Silver',emoji:'🥈',color:'#8a9ba8'};
       return{name:'Bronze',emoji:'🥉',color:'#c97c3a'};
     };
     const lbMedals={1:'🥇',2:'🥈',3:'🥉'};
