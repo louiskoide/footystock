@@ -1,9 +1,11 @@
 name: Diagnose live worker + price history (one-off)
 
 # Manual-only, read-only diagnostic: reports how much World Cup fixture/event
-# data the live worker has recovered, and how much real (non-flat) price
-# history Supabase holds. Zero API-Football calls, zero writes — safe to run
-# any time. See scripts/diagnose-worker.mjs.
+# data the live worker has recovered, how much real (non-flat) price history
+# Supabase holds, and tails recent Fly logs to see what the poll loop is
+# actually doing. Zero API-Football calls beyond what the worker itself makes
+# on its own schedule, zero writes — safe to run any time.
+# See scripts/diagnose-worker.mjs.
 on:
   workflow_dispatch:
 
@@ -17,3 +19,8 @@ jobs:
           node-version: 20
       - name: Run diagnostic
         run: node scripts/diagnose-worker.mjs
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Tail recent Fly logs (30s)
+        run: timeout 30 flyctl logs --app footystock --no-tail 2>&1 | tail -200 || true
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
