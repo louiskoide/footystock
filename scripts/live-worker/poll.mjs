@@ -22,6 +22,11 @@ const FINISHED_PER_CYCLE = 20;
 // Fixtures outside the tournament window (pre-Jun 2026) are truly dead — no
 // point ever fetching them even during a full rebuild.
 const STALE_FIXTURE_MS = 400 * 24 * 60 * 60_000; // ~13 months
+// Temporary: narrow debug trace for a confirmed-but-unexplained bug where
+// jonathan-david-juventus and zion-suzuki-parma stay stuck at min:0/
+// rating:null on specific fixtures despite raw API-Football data being
+// confirmed correct. Remove once root-caused.
+const DEBUG_WATCH_NAMES = /jonathan david|zion suzuki/i;
 
 function buildFlatIndex(crosswalkPlayers) {
   return crosswalkPlayers.map(p => ({ id: p.id, name: p.name, norm: normName(p.name), nation: p.nation }));
@@ -157,9 +162,12 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
     if (!teamBlock) { ok = false; continue; }
 
     for (const pl of teamBlock.players || []) {
+      const watched = DEBUG_WATCH_NAMES.test(pl.player?.name || '');
       const stats = pl.statistics?.[0];
+      if (watched) log(`match-debug: fid=${fid} me=${me} name="${pl.player?.name}" statsCount=${pl.statistics?.length} hasStats=${!!stats} games=${JSON.stringify(stats?.games)}`);
       if (!stats) continue;
       const id = matchPlayer(flatIndex, pl.player.name, me);
+      if (watched) log(`match-debug: fid=${fid} name="${pl.player.name}" matchedId=${id} nationOfId=${nationOf[id]}`);
       // Matching is global (not nation-scoped), so confirm this roster
       // player was actually discovered in *this* nation's official squad —
       // otherwise a name collision with some other club player on our
@@ -172,10 +180,12 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
       const rawMinutes = stats.games?.minutes;
       const started = stats.games?.substitute !== true;
       const minutes = (rawMinutes > 0) ? rawMinutes : (started ? 90 : 0);
+      if (watched) log(`match-debug: fid=${fid} id=${id} rawMinutes=${rawMinutes} started=${started} minutes=${minutes}`);
 
       state.players[id] = state.players[id] || { events: [] };
       const evs = state.players[id].events;
       const existingEv = evs.find(e => e._fid === fid);
+      if (watched) log(`match-debug: fid=${fid} id=${id} existingEvFound=${!!existingEv} existingEvBefore=${JSON.stringify(existingEv)}`);
 
       if (minutes <= 0) {
         // Named in the matchday squad but never came on — a genuine bench
@@ -184,11 +194,13 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
         // teamBlock.players entirely).
         const ev = { d: date, opp, rating: null, g: 0, a: 0, yellow: false, red: false, min: 0, note: null, marks: [], live: matchInfo.live, elapsed: matchInfo.elapsed, _fid: fid };
         if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
+        if (watched) log(`match-debug: fid=${fid} id=${id} took BENCH branch, wrote min:0`);
         continue;
       }
 
       const ownGoals = (marksByPlayer[id] || []).filter(m => m.kind === 'owngoal').length;
       const rating = computeRating(stats, { minutes, knockout, result, cleanSheet: oppGoals === 0, ownGoals, goalsConceded: oppGoals });
+      if (watched) log(`match-debug: fid=${fid} id=${id} computeRating -> ${rating}`);
       if (rating == null) continue;
 
       const goals = stats.goals?.total || 0;
