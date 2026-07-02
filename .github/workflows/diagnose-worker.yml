@@ -33,6 +33,10 @@ on:
         description: 'Run scripts/repair-stale-events.mjs (re-fetch only fixtures stuck with a stale bench marker after exhausting grace-polls)'
         type: boolean
         default: false
+      repair_full:
+        description: 'If repairing, use --full (reprocess every finished tracked-nation fixture, not just flagged ones — catches wrong-but-nonzero matchPlayer-collision outcomes the narrow mode cannot detect)'
+        type: boolean
+        default: false
       repair_watch_ids:
         description: 'Space-separated player ids to highlight in the repair details response (blank = print everything)'
         type: string
@@ -82,7 +86,7 @@ jobs:
         run: node scripts/debug-rawstats.mjs ${{ inputs.rawstats_player_ids }}
       - name: Repair stale bench-marker events (optional)
         if: ${{ inputs.repair_stale_events }}
-        run: node scripts/repair-stale-events.mjs ${{ inputs.repair_watch_ids }}
+        run: node scripts/repair-stale-events.mjs ${{ inputs.repair_full && '--full' || '' }} ${{ inputs.repair_watch_ids }}
       - name: Dump write-audit trail (optional)
         if: ${{ inputs.dump_writelog }}
         run: node scripts/debug-writelog.mjs ${{ inputs.writelog_player_id }}

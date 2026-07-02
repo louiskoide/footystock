@@ -234,9 +234,13 @@ const server = createServer((req, res) => {
   // One-off repair pass (POST, mutates state + saves it): re-fetches only
   // the fixtures stuck with a stale bench marker after exhausting their
   // normal grace-polls — see repairStaleFixtures() in poll.mjs. Safe to run
-  // any time; a no-op if nothing is stuck.
+  // any time; a no-op if nothing is stuck. ?full=1 widens this to every
+  // finished tracked-nation fixture (not just flagged ones), to also catch
+  // the matchPlayer-collision outcome that lands on a wrong-but-nonzero
+  // value instead of a detectable 0/null bench marker.
   if (url.pathname === '/admin/repair-stale-events' && req.method === 'POST') {
-    repairStaleFixtures(client, crosswalk, state).then(result => {
+    const full = url.searchParams.get('full') === '1';
+    repairStaleFixtures(client, crosswalk, state, undefined, { full }).then(result => {
       saveState(state);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));

@@ -45,28 +45,52 @@ function buildFlatIndex(crosswalkPlayers) {
   return crosswalkPlayers.map(p => ({ id: p.id, name: p.name, norm: normName(p.name), nation: p.nation }));
 }
 
-// nationHint (optional): the nation this name is being resolved for — e.g.
-// the squad list or fixture team currently being processed. Only used as a
-// last-resort tiebreaker, never to override an unambiguous match.
-function matchPlayer(flatIndex, apiName, nationHint = null) {
+// Split into "exact" (steps 1-2: normalized full-name match, either order)
+// and "fallback" (steps 3-5: surname/initial heuristics) tiers so callers
+// that process a whole fixture's player list at once can run all exact
+// matches first and only THEN fall back to the heuristic ones — see the
+// two-phase resolution in processFixture() below. The heuristics' "unique"
+// checks only look at OUR crosswalk, never at who else is actually on the
+// real matchday roster, so a real player who shares a surname (or surname +
+// initial) with a tracked one but isn't themselves in our crosswalk can
+// still fallback-match onto the tracked player's id. Running exact matches
+// first, and rejecting any fallback match whose id was already claimed this
+// pass, is what actually prevents that collision from corrupting data —
+// splitting the tiers is just what makes that ordering possible.
+function matchPlayerExact(flatIndex, apiName) {
   const norm = normName(apiName);
   // 1. Exact normalized match
   let hit = flatIndex.find(c => c.norm === norm);
   if (hit) return hit.id;
 
-  const words = norm.split(' ');
-  const surname = words[words.length - 1];
-
   // 2. Reversed name order — API-Football uses "Last First" for many
   //    Asian players (e.g. "Suzuki Zion" for our "Zion Suzuki").
+  const words = norm.split(' ');
   if (words.length >= 2) {
     const reversed = words.slice(1).join(' ') + ' ' + words[0];
     hit = flatIndex.find(c => c.norm === reversed);
     if (hit) return hit.id;
   }
 
+  return null;
+}
+
+// nationHint (optional): the nation this name is being resolved for — e.g.
+// the squad list or fixture team currently being processed. Only used as a
+// last-resort tiebreaker, never to override an unambiguous match.
+function matchPlayerFallback(flatIndex, apiName, nationHint = null) {
+  const norm = normName(apiName);
+  const words = norm.split(' ');
+  const surname = words[words.length - 1];
+
   // 3. Surname-only match (API returns display short name like "Mbappé").
   //    Only use if the surname is unique in the index to avoid false matches.
+  //    NOTE: "unique in the index" only rules out OUR OWN roster having two
+  //    same-surname players (e.g. Bellingham brothers) — it can't detect a
+  //    real teammate who shares this surname but isn't in our crosswalk at
+  //    all (e.g. Ismaïla Sarr vs. tracked Pape Matar Sarr, both Senegal).
+  //    Callers processing a full fixture roster must additionally reject a
+  //    match whose id another raw entry in the same pass already claimed.
   const surnameMatches = flatIndex.filter(c => c.norm.split(' ').pop() === surname);
   if (surnameMatches.length === 1) return surnameMatches[0].id;
 
@@ -95,6 +119,10 @@ function matchPlayer(flatIndex, apiName, nationHint = null) {
   }
 
   return null;
+}
+
+function matchPlayer(flatIndex, apiName, nationHint = null) {
+  return matchPlayerExact(flatIndex, apiName) ?? matchPlayerFallback(flatIndex, apiName, nationHint);
 }
 
 function isKnockout(round) {
@@ -175,12 +203,40 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
     const teamBlock = (playersResp || []).find(tb => canonNation(tb.team.name) === me);
     if (!teamBlock) { ok = false; continue; }
 
-    for (const pl of teamBlock.players || []) {
+    const teamPlayers = teamBlock.players || [];
+    // Two-phase id resolution: run every entry's exact/reversed-name match
+    // first, THEN the surname/initial fallback only for entries still
+    // unresolved — and reject any fallback match whose id another entry in
+    // THIS SAME fixture pass already claimed. This is what stops two
+    // different real players (one tracked, one not in our crosswalk at all)
+    // who happen to share a surname from both resolving to the same
+    // canonical id and silently overwriting each other via Object.assign
+    // below — root cause of the Sarr/David/Suzuki stuck-stale bug.
+    const claimedIds = new Set();
+    const resolvedIds = new Array(teamPlayers.length).fill(null);
+    for (let i = 0; i < teamPlayers.length; i++) {
+      const id = matchPlayerExact(flatIndex, teamPlayers[i].player?.name || '');
+      if (id) { resolvedIds[i] = id; claimedIds.add(id); }
+    }
+    for (let i = 0; i < teamPlayers.length; i++) {
+      if (resolvedIds[i]) continue;
+      const id = matchPlayerFallback(flatIndex, teamPlayers[i].player?.name || '', me);
+      if (!id) continue;
+      if (claimedIds.has(id)) {
+        log(`match-collision: fid=${fid} nation=${me} name="${teamPlayers[i].player?.name}" fallback-matched id=${id} but another raw entry already claimed it this pass — treating as unmatched.`);
+        continue;
+      }
+      resolvedIds[i] = id;
+      claimedIds.add(id);
+    }
+
+    for (let i = 0; i < teamPlayers.length; i++) {
+      const pl = teamPlayers[i];
       const watched = DEBUG_WATCH_NAMES.test(pl.player?.name || '');
       const stats = pl.statistics?.[0];
       if (watched) log(`match-debug: fid=${fid} me=${me} name="${pl.player?.name}" statsCount=${pl.statistics?.length} hasStats=${!!stats} games=${JSON.stringify(stats?.games)}`);
       if (!stats) continue;
-      const id = matchPlayer(flatIndex, pl.player.name, me);
+      const id = resolvedIds[i];
       if (watched) log(`match-debug: fid=${fid} name="${pl.player.name}" matchedId=${id} nationOfId=${nationOf[id]}`);
       // Matching is global (not nation-scoped), so confirm this roster
       // player was actually discovered in *this* nation's official squad —
@@ -405,27 +461,49 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
 // substitute stays true, nothing changes) or picks up the now-complete
 // data. Never touches fixtures still within their normal grace-poll window
 // or that never showed the stale marker, so it can't corrupt good data.
-export async function repairStaleFixtures(client, crosswalk, state, log = console.log) {
+//
+// `full` (optional): the min:0/rating:null heuristic above can only ever
+// catch the "landed on someone else's bench appearance" outcome of the
+// matchPlayer name-collision bug fixed in processFixture() above — it can't
+// detect the "landed on someone else's nonzero minutes/rating" outcome,
+// since that looks like an ordinary played event from stored state alone.
+// `full: true` reprocesses every finished, tracked-nation fixture
+// unconditionally (not just the flagged ones) so those silently-wrong
+// events get corrected too, exactly once. Bounded by the tournament's total
+// fixture count either way — safe to run any time, just costs more API
+// calls than the narrow mode.
+export async function repairStaleFixtures(client, crosswalk, state, log = console.log, { full = false } = {}) {
   const flatIndex = buildFlatIndex(crosswalk);
   const nationOf = state._nationOf || {};
   const trackedNations = state._trackedNations || new Set();
 
+  const fixtures = await client.fixtures({ league: WC_LEAGUE_ID, season: state.season });
+
   const suspectFids = new Set();
-  const suspectPlayers = new Map(); // fid -> [ids], used to build the per-player `details` below
-  for (const [id, p] of Object.entries(state.players)) {
-    for (const ev of p.events || []) {
-      if (ev._fid && ev.min === 0 && ev.rating === null && (state._finalPolls.get(ev._fid) || 0) >= FINAL_GRACE_POLLS) {
-        suspectFids.add(ev._fid);
-        if (!suspectPlayers.has(ev._fid)) suspectPlayers.set(ev._fid, []);
-        suspectPlayers.get(ev._fid).push(id);
+  const suspectPlayers = new Map(); // fid -> [ids], used to build the per-player `details` below (empty in full mode)
+  if (full) {
+    for (const fixture of fixtures) {
+      const status = fixture.fixture.status.short;
+      if (status !== 'FT' && status !== 'AET' && status !== 'PEN') continue;
+      const home = canonNation(fixture.teams.home.name);
+      const away = canonNation(fixture.teams.away.name);
+      if (trackedNations.has(home) || trackedNations.has(away)) suspectFids.add(fixture.fixture.id);
+    }
+  } else {
+    for (const [id, p] of Object.entries(state.players)) {
+      for (const ev of p.events || []) {
+        if (ev._fid && ev.min === 0 && ev.rating === null && (state._finalPolls.get(ev._fid) || 0) >= FINAL_GRACE_POLLS) {
+          suspectFids.add(ev._fid);
+          if (!suspectPlayers.has(ev._fid)) suspectPlayers.set(ev._fid, []);
+          suspectPlayers.get(ev._fid).push(id);
+        }
       }
     }
   }
 
-  if (!suspectFids.size) { log('repair: no stuck-stale fixtures found.'); return { checked: 0, repaired: 0, details: [] }; }
+  if (!suspectFids.size) { log(`repair: no ${full ? 'finished tracked-nation' : 'stuck-stale'} fixtures found.`); return { checked: 0, repaired: 0, details: [] }; }
 
-  log(`repair: found ${suspectFids.size} exhausted fixture(s) with stale bench markers, re-fetching...`);
-  const fixtures = await client.fixtures({ league: WC_LEAGUE_ID, season: state.season });
+  log(`repair: found ${suspectFids.size} ${full ? 'finished tracked-nation' : 'exhausted'} fixture(s)${full ? '' : ' with stale bench markers'}, re-fetching...`);
   const byId = new Map(fixtures.map(f => [f.fixture.id, f]));
 
   // Returned directly in the HTTP response (not just logged) — Fly's log
