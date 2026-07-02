@@ -27,6 +27,19 @@ const STALE_FIXTURE_MS = 400 * 24 * 60 * 60_000; // ~13 months
 // rating:null on specific fixtures despite raw API-Football data being
 // confirmed correct. Remove once root-caused.
 const DEBUG_WATCH_NAMES = /jonathan david|zion suzuki/i;
+// Temporary: global write-audit trail (source/id/fid/min/rating/ts) for
+// every write to a player's event, across BOTH the normal poll loop and
+// manual repairs — a single function's own before/after check can't see a
+// LATER, separate call (e.g. a concurrent poll cycle) overwriting the same
+// event after it returns. Capped ring buffer, exposed via /debug/writelog.
+// Remove once root-caused.
+const WRITE_LOG_CAP = 2000;
+const writeLog = [];
+function logWrite(entry) {
+  writeLog.push({ ts: new Date().toISOString(), ...entry });
+  if (writeLog.length > WRITE_LOG_CAP) writeLog.shift();
+}
+export function getWriteLog() { return writeLog; }
 
 function buildFlatIndex(crosswalkPlayers) {
   return crosswalkPlayers.map(p => ({ id: p.id, name: p.name, norm: normName(p.name), nation: p.nation }));
@@ -98,7 +111,7 @@ function roundLabel(round) {
   return (round || '').replace(/^Group Stage - /i, 'Group ').trim() || 'World Cup';
 }
 
-async function processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, matchInfo = { live: false, elapsed: null }) {
+async function processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, matchInfo = { live: false, elapsed: null }, source = 'unknown') {
   const fid = fixture.fixture.id;
   const home = canonNation(fixture.teams.home.name);
   const away = canonNation(fixture.teams.away.name);
@@ -196,6 +209,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
         const ev = { d: date, opp, rating: null, g: 0, a: 0, yellow: false, red: false, min: 0, note: null, marks: [], live: matchInfo.live, elapsed: matchInfo.elapsed, _fid: fid };
         if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
         writes.push({ id, fid, min: 0, rating: null });
+        logWrite({ source, id, fid, nation: me, min: 0, rating: null, branch: 'bench' });
         if (watched) log(`match-debug: fid=${fid} id=${id} took BENCH branch, wrote min:0`);
         continue;
       }
@@ -222,6 +236,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
       const ev = { d: date, opp, rating, g: goals, a: assists, yellow: !!yellow, red: !!red, min: minutes, note, marks: marksByPlayer[id] || [], live: matchInfo.live, elapsed: matchInfo.elapsed, _fid: fid };
       if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
       writes.push({ id, fid, min: minutes, rating });
+      logWrite({ source, id, fid, nation: me, min: minutes, rating, branch: 'rated' });
       if (watched) {
         const verify = state.players[id].events.find(e => e._fid === fid);
         log(`match-debug: fid=${fid} id=${id} immediately-after-assign min=${verify?.min} rating=${verify?.rating} sameRef=${verify === existingEv} evsLength=${evs.length}`);
@@ -361,14 +376,14 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
       // triggers. After a _finalPolls wipe (STATE_VERSION migration) it spreads
       // the rebuild across many cycles instead of hitting 50+ fixtures at once.
       if (finishedThisCycle >= FINISHED_PER_CYCLE) continue;
-      const { ok } = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
+      const { ok } = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed }, 'poll-finished');
       // Only spend a grace poll on a fetch that actually succeeded — a
       // transient API error (rate limit, timeout) must not permanently give
       // up on a fixture's data after 3 unlucky failures in a row.
       if (ok) { state._finalPolls.set(fid, polls + 1); finishedThisCycle++; }
       finishedNew++;
     } else if (LIVE_STATUSES.has(status)) {
-      await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: true, elapsed: fixture.fixture.status.elapsed });
+      await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: true, elapsed: fixture.fixture.status.elapsed }, 'poll-live');
       liveCount++;
     }
   }
@@ -427,7 +442,7 @@ export async function repairStaleFixtures(client, crosswalk, state, log = consol
       for (const id of ids) details.push({ fid, id, foundInFixturesList: false });
       continue;
     }
-    const { ok, writes } = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
+    const { ok, writes } = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed }, 'repair');
     if (ok) repaired++;
     for (const id of ids) {
       const immediate = writes.find(w => w.id === id); // value right after this call's own Object.assign

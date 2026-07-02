@@ -37,6 +37,14 @@ on:
         description: 'Space-separated player ids to highlight in the repair details response (blank = print everything)'
         type: string
         default: ''
+      dump_writelog:
+        description: 'Dump the global write-audit trail via scripts/debug-writelog.mjs (every write to any player, tagged by source: poll-finished/poll-live/repair)'
+        type: boolean
+        default: false
+      writelog_player_id:
+        description: 'If dumping the write log, filter to this one player id (blank = full log)'
+        type: string
+        default: ''
 
 jobs:
   diagnose:
@@ -75,3 +83,6 @@ jobs:
       - name: Repair stale bench-marker events (optional)
         if: ${{ inputs.repair_stale_events }}
         run: node scripts/repair-stale-events.mjs ${{ inputs.repair_watch_ids }}
+      - name: Dump write-audit trail (optional)
+        if: ${{ inputs.dump_writelog }}
+        run: node scripts/debug-writelog.mjs ${{ inputs.writelog_player_id }}

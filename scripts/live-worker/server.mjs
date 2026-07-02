@@ -9,7 +9,7 @@ import path from 'path';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { loadCrosswalk, canonNation } from '../lib/crosswalk.mjs';
 import { makeClient } from './api-football.mjs';
-import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses, repairStaleFixtures } from './poll.mjs';
+import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses, repairStaleFixtures, getWriteLog } from './poll.mjs';
 import { refreshHype } from './hype.mjs';
 import { tickDemand, recordTrade, recordHatewatch } from './demand.mjs';
 import { submitScore, getLeaderboard } from './leaderboard.mjs';
@@ -213,6 +213,21 @@ const server = createServer((req, res) => {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
     });
+    return;
+  }
+
+  // Temporary: dumps the global write-audit trail (every write to any
+  // player's event, from both the normal poll loop and manual repairs,
+  // tagged by source + timestamp) — lets us see whether a concurrent poll
+  // cycle overwrites a repair's write for the same fid/player right after
+  // it lands. ?id=<playerId> filters to just that player. Remove once the
+  // write-then-revert bug is root-caused.
+  if (url.pathname === '/debug/writelog') {
+    const id = url.searchParams.get('id');
+    const log = getWriteLog();
+    const filtered = id ? log.filter(w => w.id === id) : log;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ count: filtered.length, entries: filtered }, null, 2));
     return;
   }
 
