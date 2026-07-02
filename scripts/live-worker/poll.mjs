@@ -9,10 +9,16 @@ const WC_LEAGUE_ID = 1;
 const LIVE_STATUSES = new Set(['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE', 'INT']);
 const FINAL_GRACE_POLLS = 5;  // re-check a finished fixture up to 5 times (~25min at 5-min idle) for late API stat corrections
 // After a _finalPolls wipe (STATE_VERSION migration), all historical fixtures
-// have polls=0 and need rebuilding. Process at most this many per cycle so the
-// rebuild spreads over hours/days rather than hitting 50+ fixtures at once and
-// exhausting the daily API budget. Live fixtures are always processed regardless.
-const FINISHED_PER_CYCLE = 5;
+// have polls=0 and need rebuilding. Process at most this many per cycle so a
+// single cycle doesn't burst-hit 50+ fixtures at once. Note this only affects
+// wall-clock speed, not total API cost — total calls for a full rebuild are
+// fixed at (finished fixtures × FINAL_GRACE_POLLS × ~2 calls) regardless of
+// how many are done per cycle, since each fixture needs FINAL_GRACE_POLLS
+// successful re-polls either way. Raised from 5 → 20 (≈79 fixtures × 5 grace
+// polls ≈ 790 calls total either way — well under the 7,500/day budget — but
+// at 5/cycle a full rebuild took ~6.7h; at 20/cycle it's ~1.7h). Live fixtures
+// are always processed regardless of this cap.
+const FINISHED_PER_CYCLE = 20;
 // Fixtures outside the tournament window (pre-Jun 2026) are truly dead — no
 // point ever fetching them even during a full rebuild.
 const STALE_FIXTURE_MS = 400 * 24 * 60 * 60_000; // ~13 months
