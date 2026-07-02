@@ -389,7 +389,7 @@ export async function repairStaleFixtures(client, crosswalk, state, log = consol
   const trackedNations = state._trackedNations || new Set();
 
   const suspectFids = new Set();
-  const suspectPlayers = new Map(); // fid -> [ids] — temporary debug aid, see log lines below
+  const suspectPlayers = new Map(); // fid -> [ids], used to build the per-player `details` below
   for (const [id, p] of Object.entries(state.players)) {
     for (const ev of p.events || []) {
       if (ev._fid && ev.min === 0 && ev.rating === null && (state._finalPolls.get(ev._fid) || 0) >= FINAL_GRACE_POLLS) {
@@ -400,26 +400,35 @@ export async function repairStaleFixtures(client, crosswalk, state, log = consol
     }
   }
 
-  if (!suspectFids.size) { log('repair: no stuck-stale fixtures found.'); return { checked: 0, repaired: 0 }; }
+  if (!suspectFids.size) { log('repair: no stuck-stale fixtures found.'); return { checked: 0, repaired: 0, details: [] }; }
 
   log(`repair: found ${suspectFids.size} exhausted fixture(s) with stale bench markers, re-fetching...`);
-  for (const [fid, ids] of suspectPlayers) log(`repair-debug: fid=${fid} flagged players=${ids.join(',')}`);
   const fixtures = await client.fixtures({ league: WC_LEAGUE_ID, season: state.season });
   const byId = new Map(fixtures.map(f => [f.fixture.id, f]));
 
+  // Returned directly in the HTTP response (not just logged) — Fly's log
+  // tail only keeps a limited recent window, which silently drops early
+  // entries once a run touches many fixtures, making the log an unreliable
+  // way to verify any one specific player's outcome.
+  const details = [];
   let repaired = 0;
   for (const fid of suspectFids) {
     const fixture = byId.get(fid);
-    if (!fixture) { log(`repair: fixture ${fid} not found in current fixtures list, skipping.`); continue; }
+    const ids = suspectPlayers.get(fid) || [];
+    if (!fixture) {
+      log(`repair: fixture ${fid} not found in current fixtures list, skipping.`);
+      for (const id of ids) details.push({ fid, id, foundInFixturesList: false });
+      continue;
+    }
     const ok = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
     if (ok) repaired++;
-    for (const id of suspectPlayers.get(fid) || []) {
+    for (const id of ids) {
       const ev = (state.players[id]?.events || []).find(e => e._fid === fid);
-      log(`repair-debug: after processFixture fid=${fid} id=${id} ok=${ok} -> min=${ev?.min} rating=${ev?.rating}`);
+      details.push({ fid, id, foundInFixturesList: true, ok, min: ev?.min, rating: ev?.rating });
     }
   }
   log(`repair: re-fetched ${repaired}/${suspectFids.size} exhausted fixtures.`);
-  return { checked: suspectFids.size, repaired };
+  return { checked: suspectFids.size, repaired, details };
 }
 
 export function makeInitialState(season) {
