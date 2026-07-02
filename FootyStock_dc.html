@@ -1234,6 +1234,20 @@
         </sc-if>
       </div>
 
+      <!-- portfolio privacy -->
+      <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:20px 22px;margin-bottom:16px">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap">
+          <div style="flex:1;min-width:180px">
+            <div style="font:700 13px 'Hanken Grotesk'">Portfolio privacy</div>
+            <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:3px">{{ holdingsPrivacyDesc }}</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px">
+            <span style="font:700 12px 'Hanken Grotesk';color: {{ holdingsPrivacyColor }}">{{ holdingsPrivacyStatus }}</span>
+            <button onClick="{{ toggleHoldingsPrivacy }}" style="font:600 12px 'Hanken Grotesk';background:none;border:1px solid #d4d8d1;border-radius:8px;padding:5px 12px;cursor:pointer;color:#16201a">{{ holdingsPrivacyBtn }}</button>
+          </div>
+        </div>
+      </div>
+
       <!-- referral code entry -->
       <sc-if value="{{ profileNoRefClaimed }}" hint-placeholder-val="{{ false }}">
         <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:20px 22px;margin-bottom:16px">
@@ -1640,7 +1654,7 @@ class Component extends DCLogic {
       profileResetPwOpen: false, profileResetPwError: '', profileResetPwOk: '',
       profileLinkEmailOpen: false, profileLinkEmailError: '', profileLinkEmailOk: '',
       profileEmail: '', profileRefClaimed: false, profileRefError: '', profileRefOk: '',
-      myRefCode: '', copyRefCodeLabel: 'Copy code', lbSortBy: 'netWorth',
+      myRefCode: '', copyRefCodeLabel: 'Copy code', lbSortBy: 'netWorth', holdingsPublic: true,
     };
   }
   componentDidMount(){
@@ -1787,6 +1801,8 @@ class Component extends DCLogic {
       const rc=lbRow.ref_code||(token.replace(/-/g,'').slice(0,6).toUpperCase());
       if(!lbRow.ref_code) fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({ref_code:rc})}).catch(()=>{});
       this.setState({loggedIn:true,username:lbRow.name||'',profileEmail:lbRow.email||'',profileRefClaimed:refClaimed,myRefCode:rc});
+      // Privacy flag fetched separately so a missing column can never break login
+      try{ const hp=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(token)+'&select=holdings_public'); if(hp&&hp.length) this.setState({holdingsPublic:hp[0].holdings_public!==false}); }catch(e){}
       // Now load portfolio
       const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(token));
       if(!rows||!rows.length){
@@ -3927,6 +3943,13 @@ Yan Diomande|RB Leipzig|CM|21|4
     }catch(e){ this.setState({profileRefError:'Something went wrong. Try again.',profileRefOk:''}); }
   }
 
+  toggleHoldingsPrivacy(){
+    const next=!(this.state.holdingsPublic!==false);
+    this.setState({holdingsPublic:next},()=>{ this.submitScore(); });
+    const token=this.loadToken(); if(!token||token==='anon'||!this._sbUrl) return;
+    fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({holdings_public:next})}).catch(()=>{});
+  }
+
   doLogout(){
     this._delCookie('fs_token');
     try{ localStorage.removeItem('fs_token'); }catch(e){}
@@ -3951,7 +3974,7 @@ Yan Diomande|RB Leipzig|CM|21|4
     const name=this.loadUsername(); if(!name||!this._sbUrl) return;
     const trading_pnl=Math.round(this.tradingPnl());
     const net_worth=Math.round(this.netWorth()-(this.state.bonusCash||0)-10000);
-    const topH=Object.entries(this.state.holdings||{})
+    const topH=this.state.holdingsPublic===false?[]:Object.entries(this.state.holdings||{})
       .sort((a,b)=>(b[1].qty||0)-(a[1].qty||0)).slice(0,10)
       .map(([id,h])=>({id,qty:h.qty||0}));
     fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
@@ -5042,6 +5065,11 @@ Yan Diomande|RB Leipzig|CM|21|4
       toggleLinkEmail:()=>this.setState({profileLinkEmailOpen:!S.profileLinkEmailOpen,profileLinkEmailError:'',profileLinkEmailOk:''}),
       doLinkEmail:()=>this.doLinkEmail(),
       doLogout:()=>this.doLogout(),
+      holdingsPrivacyStatus: S.holdingsPublic!==false?'Public':'Private',
+      holdingsPrivacyColor: S.holdingsPublic!==false?'#16a85f':'#8a938c',
+      holdingsPrivacyBtn: S.holdingsPublic!==false?'Make private':'Make public',
+      holdingsPrivacyDesc: S.holdingsPublic!==false?'Your top holdings are visible to other players.':'Your holdings are hidden from other players.',
+      toggleHoldingsPrivacy:()=>this.toggleHoldingsPrivacy(),
       doClaimRef:()=>this.doClaimRef(),
       profileNoRefClaimed: !S.profileRefClaimed,
       profileRefError: S.profileRefError||'',
