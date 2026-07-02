@@ -17,6 +17,10 @@ on:
         description: 'If running the backfill, dry-run it (log counts, write nothing)'
         type: boolean
         default: false
+      test_supabase_write:
+        description: 'Run scripts/debug-supabase-write.mjs (single write+read-back debug)'
+        type: boolean
+        default: false
 
 jobs:
   diagnose:
@@ -43,3 +47,6 @@ jobs:
       - name: Run backfill (optional)
         if: ${{ inputs.run_backfill }}
         run: node scripts/backfill-price-history.mjs ${{ inputs.backfill_dry_run && '--dry-run' || '' }}
+      - name: Test Supabase write (optional debug)
+        if: ${{ inputs.test_supabase_write }}
+        run: node scripts/debug-supabase-write.mjs
