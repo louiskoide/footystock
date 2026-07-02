@@ -377,10 +377,13 @@ export async function repairStaleFixtures(client, crosswalk, state, log = consol
   const trackedNations = state._trackedNations || new Set();
 
   const suspectFids = new Set();
-  for (const p of Object.values(state.players)) {
+  const suspectPlayers = new Map(); // fid -> [ids] — temporary debug aid, see log lines below
+  for (const [id, p] of Object.entries(state.players)) {
     for (const ev of p.events || []) {
       if (ev._fid && ev.min === 0 && ev.rating === null && (state._finalPolls.get(ev._fid) || 0) >= FINAL_GRACE_POLLS) {
         suspectFids.add(ev._fid);
+        if (!suspectPlayers.has(ev._fid)) suspectPlayers.set(ev._fid, []);
+        suspectPlayers.get(ev._fid).push(id);
       }
     }
   }
@@ -388,6 +391,7 @@ export async function repairStaleFixtures(client, crosswalk, state, log = consol
   if (!suspectFids.size) { log('repair: no stuck-stale fixtures found.'); return { checked: 0, repaired: 0 }; }
 
   log(`repair: found ${suspectFids.size} exhausted fixture(s) with stale bench markers, re-fetching...`);
+  for (const [fid, ids] of suspectPlayers) log(`repair-debug: fid=${fid} flagged players=${ids.join(',')}`);
   const fixtures = await client.fixtures({ league: WC_LEAGUE_ID, season: state.season });
   const byId = new Map(fixtures.map(f => [f.fixture.id, f]));
 
@@ -397,6 +401,10 @@ export async function repairStaleFixtures(client, crosswalk, state, log = consol
     if (!fixture) { log(`repair: fixture ${fid} not found in current fixtures list, skipping.`); continue; }
     const ok = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
     if (ok) repaired++;
+    for (const id of suspectPlayers.get(fid) || []) {
+      const ev = (state.players[id]?.events || []).find(e => e._fid === fid);
+      log(`repair-debug: after processFixture fid=${fid} id=${id} ok=${ok} -> min=${ev?.min} rating=${ev?.rating}`);
+    }
   }
   log(`repair: re-fetched ${repaired}/${suspectFids.size} exhausted fixtures.`);
   return { checked: suspectFids.size, repaired };
