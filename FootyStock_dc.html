@@ -5082,7 +5082,18 @@ Afonso Moreira|Leverkusen|LW|21|4
       // multi-match hot run (e.g. 6G+2A across 4 starts) needs this term to read
       // as more than barely "In Form". 4 straight ≥7.4 games now adds +28, enough
       // to clear the "On Fire" threshold on its own.
-      const formSig=atWC?Math.max(6,Math.min(99,46+formDelta*formDeltaMult+streakLen*7)):8;
+      // Elite kicker: streakLen only counts GAMES, not how good they were — a
+      // string of bare 7.4s and a string of 9.3-rated braces both max out the
+      // same. That left a player who's been legitimately dominant every match
+      // (recency-weighted rating ~9.0, e.g. Mbappé's 8.4-9.31 run) capped at
+      // "On Fire" instead of "Unstoppable", since formDelta is ~0 when recent
+      // form simply matches an already-elite baseline. This rewards how far
+      // ABOVE the streak bar (7.4) the recent EWMA itself sits — zero below
+      // 7.4 (same qualifying bar as the streak), scaling up for genuinely
+      // legendary form. Needs a real streak behind it too: on its own it
+      // can't reach Unstoppable, only combined with formDelta+streakLen can.
+      const eliteKicker = Math.max(0, ewmaR-7.4)*12; // ewmaR is 0 with no rated matches, so this is naturally 0 then too
+      const formSig=atWC?Math.max(6,Math.min(99,46+formDelta*formDeltaMult+streakLen*7+eliteKicker)):8;
       // Real hype (Google Trends search-interest delta, see scripts/live-worker/hype.mjs)
       // — independent of performance by construction, since it never reads
       // change7d/change30d/events. 0 = no live signal yet (cold-start neutral,
