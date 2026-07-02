@@ -24,10 +24,13 @@ const FINISHED_PER_CYCLE = 20;
 const STALE_FIXTURE_MS = 400 * 24 * 60 * 60_000; // ~13 months
 
 function buildFlatIndex(crosswalkPlayers) {
-  return crosswalkPlayers.map(p => ({ id: p.id, name: p.name, norm: normName(p.name) }));
+  return crosswalkPlayers.map(p => ({ id: p.id, name: p.name, norm: normName(p.name), nation: p.nation }));
 }
 
-function matchPlayer(flatIndex, apiName) {
+// nationHint (optional): the nation this name is being resolved for — e.g.
+// the squad list or fixture team currently being processed. Only used as a
+// last-resort tiebreaker, never to override an unambiguous match.
+function matchPlayer(flatIndex, apiName, nationHint = null) {
   const norm = normName(apiName);
   // 1. Exact normalized match
   let hit = flatIndex.find(c => c.norm === norm);
@@ -60,6 +63,17 @@ function matchPlayer(flatIndex, apiName) {
     const initial = words[0];
     const narrowed = surnameMatches.filter(c => c.norm[0] === initial);
     if (narrowed.length === 1) return narrowed[0].id;
+    // 5. Same surname AND same leading initial — e.g. brothers Jude and Jobe
+    // Bellingham both resolve to "J. Bellingham". The hand-typed NATION table
+    // (crosswalk `nation` field) is a real signal here even though the live
+    // worker otherwise ignores it for WC-squad discovery: it only tags a
+    // player for a nation when someone has actually confirmed they're a full
+    // international for that side, so it reliably picks out the real squad
+    // member from a same-initial relative who isn't (yet) tracked as one.
+    if (narrowed.length > 1 && nationHint) {
+      const byNation = narrowed.filter(c => c.nation === nationHint);
+      if (byNation.length === 1) return byNation[0].id;
+    }
   }
 
   return null;
@@ -103,13 +117,14 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
     for (const re of rawEvents || []) {
       const minute = re.time?.elapsed;
       if (minute == null) continue;
+      const eventNation = re.team?.name ? canonNation(re.team.name) : null;
       if (re.type === 'Goal') {
-        const scorerId = matchPlayer(flatIndex, re.player?.name || '');
+        const scorerId = matchPlayer(flatIndex, re.player?.name || '', eventNation);
         if (scorerId) (marksByPlayer[scorerId] ||= []).push({ minute, kind: /own/i.test(re.detail || '') ? 'owngoal' : 'goal' });
-        const assistId = re.assist?.name ? matchPlayer(flatIndex, re.assist.name) : null;
+        const assistId = re.assist?.name ? matchPlayer(flatIndex, re.assist.name, eventNation) : null;
         if (assistId) (marksByPlayer[assistId] ||= []).push({ minute, kind: 'assist' });
       } else if (re.type === 'Card') {
-        const cardId = matchPlayer(flatIndex, re.player?.name || '');
+        const cardId = matchPlayer(flatIndex, re.player?.name || '', eventNation);
         if (cardId) (marksByPlayer[cardId] ||= []).push({ minute, kind: /red/i.test(re.detail || '') ? 'red' : 'yellow' });
       }
     }
@@ -144,7 +159,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
     for (const pl of teamBlock.players || []) {
       const stats = pl.statistics?.[0];
       if (!stats) continue;
-      const id = matchPlayer(flatIndex, pl.player.name);
+      const id = matchPlayer(flatIndex, pl.player.name, me);
       // Matching is global (not nation-scoped), so confirm this roster
       // player was actually discovered in *this* nation's official squad —
       // otherwise a name collision with some other club player on our
@@ -225,7 +240,7 @@ async function discoverNations(client, fixtures, flatIndex, state, log) {
       let matched = 0;
       state._unmatchedSquadNames = state._unmatchedSquadNames || {};
       for (const squadName of squad) {
-        const id = matchPlayer(flatIndex, squadName);
+        const id = matchPlayer(flatIndex, squadName, nation);
         if (!id) {
           state._unmatchedSquadNames[squadName] = nation;
           continue;
