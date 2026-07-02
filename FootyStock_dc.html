@@ -4966,6 +4966,15 @@ Afonso Moreira|Leverkusen|LW|21|4
       // tier-based estimate for players with no listed value). Real signals
       // below push price away from this; it is not randomized on its own.
       const anchor = (mv!=null) ? mv : tierBase[tier]*(0.9+0.5*r())*(youth?1.15:1);
+      // Underdog multiplier: an unknown cheap player surpassing expectations
+      // generates outsized hype vs a known star doing what's expected. We
+      // derive notoriety [0,1] from anchor (20=unknown → 0, 200=superstar → 1)
+      // and use it to asymmetrically scale perf/form — unknowns get amplified
+      // upside and softened downside; expensive stars get the reverse. Defined
+      // here (not down near perf/form) so the per-match delta loop below can
+      // also use it — a $792 stock having a mediocre or benched game should
+      // sting more than the same happening to a bench player.
+      const notoriety = Math.max(0, Math.min(1, (anchor - 20) / 180)); // 0=unknown, 1=superstar
       const D=this.DATA();
       const stars=D.STARS[id]||null;
       const news=D.NEWS[id]||null;
@@ -5028,10 +5037,26 @@ Afonso Moreira|Leverkusen|LW|21|4
           // goals are conceded, even when they personally made 8 clearances. Using
           // the same 6.0 baseline as attackers made a CB in a 1-0 loss look terrible
           // even with a solid individual game.
+          // These base numbers must NOT change for an unknown player (notoriety=0)
+          // — they're tied to rating.mjs's own "truly anonymous, did-nothing"
+          // neutral point (6.0, see rating.mjs's `let rating = 6.0`). Shifting the
+          // flat baseline for everyone was tried and is exactly what caused "the
+          // great depression" bug (see comment above `g`/`a`) — a mismatch there
+          // makes every ordinary game compound negatively for every player, not
+          // just stars. Instead, expectations scale up WITH notoriety: an unknown
+          // player's neutral point stays exactly 6.0/6.5, but a maxed-notoriety
+          // superstar needs up to 1.5 points more to be considered "living up to
+          // the price" — so a merely-average 6.5 from a $792 stock (Yamal-tier)
+          // now reads as a real letdown instead of a shrug.
           const isDefPos = /^(CB|LB|RB|WB|GK|DEF|SW)$/i.test(pos);
-          const ratingBase = isDefPos ? 6.5 : 6.0;
+          const ratingBase = (isDefPos ? 6.5 : 6.0) + notoriety*1.5;
           const ratingPart = (s.rating-ratingBase)*1.3 + Math.pow(ratingExcess,1.8)*1.5;
-          const delta=bench?0:parseFloat((ratingPart+goalPart+assistPart).toFixed(2));
+          // A cheap/fringe player being an unused sub is a non-event (0 for
+          // notoriety=0, matching prior behavior exactly). An expensive stock
+          // being left out is real information a market would react to (fitness
+          // doubt, tactical benching, squad-rotation risk) — mild on purpose
+          // since it's often just rest/rotation, not bad news, but not nothing.
+          const delta=bench?parseFloat((-0.6*notoriety).toFixed(2)):parseFloat((ratingPart+goalPart+assistPart).toFixed(2));
           const st=[]; if(g)st.push(g+'G'); if(a)st.push(a+'A'); if(!g&&!a)st.push('—');
           events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,goals:g,assists:a,yellow:!!s.yellow,red:!!s.red,min:(s.min==null?null:s.min),bench,delta,statLine:st.join(' '),note:s.note,marks:s.marks||[],live:!!s.live,elapsed:(s.elapsed==null?null:s.elapsed)}); } }
       else if(inSquad){
@@ -5138,12 +5163,8 @@ Afonso Moreira|Leverkusen|LW|21|4
       // and the 1D change exploded. Gate on avgR>0 (an actual rated match) so
       // no-minutes-yet is a real neutral and a debut is a normal-sized move.
       const hasMatchData = atWC && avgR>0;
-      // Underdog multiplier: an unknown cheap player surpassing expectations
-      // generates outsized hype vs a known star doing what's expected. We
-      // derive notoriety [0,1] from anchor (20=unknown → 0, 200=superstar → 1)
-      // and use it to asymmetrically scale perf/form — unknowns get amplified
-      // upside and softened downside; expensive stars get the reverse.
-      const notoriety = clamp((anchor - 20) / 180, 0, 1); // 0=unknown, 1=superstar
+      // notoriety is defined up near `anchor`, before the per-match delta
+      // loop, so both that loop and perf/form below can use it.
       // Neutral stays at fotmob=46 (rating 6.0 = no price effect). Divisor
       // tightened 30→18 so 7.0 avg → rawPerf≈0.75 and 7.5 → max, without
       // making 6.0 look positive.
@@ -5228,15 +5249,19 @@ Afonso Moreira|Leverkusen|LW|21|4
       const BUMP_CAP=0.25;
       const bumpTotal=new Array(N).fill(0);
       for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N){ e._impactPct=0; continue; }
-        // More expensive players face slightly larger downside on bad games
-        // (notoriety already in scope): notoriety∈[0,1], adds up to 25% extra
-        // penalty on negative delta only — subtle, not dramatic.
+        // More expensive players face real extra downside on bad games —
+        // bumped 25%->50% max extra penalty. This stacks with (not duplicates)
+        // the ratingBase notoriety premium above: that premium controls WHETHER
+        // a game reads as negative at all for a star (a "meh" 6.5 now genuinely
+        // is one for a maxed-notoriety player), this controls HOW HARD a
+        // negative delta actually hits once it exists. Without both, an
+        // expensive stock's bad games barely register and it just compounds
+        // upward on every decent-but-unremarkable performance.
         // Bump is the primary per-match price driver — fairValue's avgR-based approach
         // dilutes incremental match impact (2nd good game barely moves avgR), so the
         // bump must carry the visible match-day spike. 1.0 multiplier → delta≈4 (goal
         // + good rating) creates ~4% chart move on match day, decaying naturally.
-        // Expensive players get up to 25% more downside only.
-        const downScale = e.delta < 0 ? 1.0 * (1 + notoriety * 0.25) : 1.0;
+        const downScale = e.delta < 0 ? 1.0 * (1 + notoriety * 0.5) : 1.0;
         const bump=(e.delta/100)*price*downScale, ramp=1, halfLife=3;
         // The "what's driving the price" list must show what this match did
         // to price AT THE TIME — its own peak, day-of contribution (eased=
