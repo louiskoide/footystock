@@ -25,7 +25,8 @@ async function main() {
     const resp = await fetch(`${WORKER_URL}/debug/rawstats?${qs}`);
     const data = await resp.json();
     if (!resp.ok) { console.log('ERROR:', JSON.stringify(data)); continue; }
-    console.log('fixture id:', data.fid, '| nation:', data.nation, '| team block found:', data.teamBlockFound);
+    console.log('fixture id:', data.fid, '| nation:', data.nation, '| team block found:', data.teamBlockFound, '| finalPolls:', data.finalPolls);
+    console.log('stored event:', JSON.stringify(data.storedEvent));
     for (const pl of data.players || []) {
       console.log(`  ${pl.name.padEnd(28)} substitute=${String(pl.games?.substitute).padEnd(6)} minutes=${String(pl.games?.minutes).padEnd(5)} rating=${pl.games?.rating}`);
     }

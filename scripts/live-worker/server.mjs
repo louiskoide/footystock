@@ -204,6 +204,8 @@ const server = createServer((req, res) => {
       res.end(JSON.stringify({
         fid: ev._fid,
         nation,
+        finalPolls: state._finalPolls.get(ev._fid),
+        storedEvent: ev,
         teamBlockFound: !!teamBlock,
         players: (teamBlock?.players || []).map(pl => ({ name: pl.player.name, games: pl.statistics?.[0]?.games })),
       }, null, 2));
