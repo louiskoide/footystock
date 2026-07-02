@@ -39,6 +39,14 @@ async function main() {
     console.log(`  sample ${id}: ${p.events.length} events, nation=${p.nation}`);
   }
 
+  const unmatched = await fetch(`${WORKER_URL}/debug/unmatched`).then(r => r.json()).catch(e => ({ error: e.message }));
+  const unmatchedCount = Object.keys(unmatched).length;
+  console.log(`\nunmatched squad names: ${unmatchedCount}`);
+  const byNation = {};
+  for (const [name, nation] of Object.entries(unmatched)) (byNation[nation] ||= []).push(name);
+  const nationsShown = Object.keys(byNation).slice(0, 8);
+  for (const n of nationsShown) console.log(`  ${n}: ${byNation[n].slice(0, 5).join(', ')}${byNation[n].length > 5 ? ` (+${byNation[n].length - 5} more)` : ''}`);
+
   console.log('\nSupabase price_history:');
   const rows = await fetch(
     `${SUPABASE_URL}/rest/v1/price_history?select=player_id,day_key,price&order=day_key.asc&limit=100000`,
