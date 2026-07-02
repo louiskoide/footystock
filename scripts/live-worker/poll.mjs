@@ -219,6 +219,10 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
 
       const ev = { d: date, opp, rating, g: goals, a: assists, yellow: !!yellow, red: !!red, min: minutes, note, marks: marksByPlayer[id] || [], live: matchInfo.live, elapsed: matchInfo.elapsed, _fid: fid };
       if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
+      if (watched) {
+        const verify = state.players[id].events.find(e => e._fid === fid);
+        log(`match-debug: fid=${fid} id=${id} immediately-after-assign min=${verify?.min} rating=${verify?.rating} sameRef=${verify === existingEv} evsLength=${evs.length}`);
+      }
     }
   }
   return ok;
