@@ -8,6 +8,15 @@ name: Diagnose live worker + price history (one-off)
 # See scripts/diagnose-worker.mjs.
 on:
   workflow_dispatch:
+    inputs:
+      run_backfill:
+        description: 'Also run scripts/backfill-price-history.mjs after the diagnostic'
+        type: boolean
+        default: false
+      backfill_dry_run:
+        description: 'If running the backfill, dry-run it (log counts, write nothing)'
+        type: boolean
+        default: false
 
 jobs:
   diagnose:
@@ -24,3 +33,13 @@ jobs:
         run: timeout 30 flyctl logs --app footystock --no-tail 2>&1 | tail -200 || true
         env:
           FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      # backfill-price-history.yml (dedicated workflow, same script) isn't
+      # dispatchable by name until it exists on the default branch — GitHub's
+      # workflow_dispatch API only lists/looks-up workflows registered on
+      # main, even though it executes whichever version exists on the ref
+      # you pass. Since this file IS already on main, running the backfill
+      # as an optional step here (still executing THIS branch's script
+      # content, per the ref used to dispatch) works without merging.
+      - name: Run backfill (optional)
+        if: ${{ inputs.run_backfill == 'true' }}
+        run: node scripts/backfill-price-history.mjs ${{ inputs.backfill_dry_run == 'true' && '--dry-run' || '' }}
