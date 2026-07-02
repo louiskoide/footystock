@@ -127,6 +127,9 @@ function computeSyntheticHist(id, name, pos, age, tier) {
   const mv = VAL[name];
   const youth = age <= 21 ? 1 : 0;
   const anchor = (mv != null) ? mv : tierBase[tier] * (0.9 + 0.5 * r()) * (youth ? 1.15 : 1);
+  // Moved up from below (matches buildDB()) so the per-match delta loop can
+  // use it: 0=unknown, 1=superstar.
+  const notoriety = clamp((anchor - 20) / 180, 0, 1);
 
   // Real polled events (from the live worker) take priority over the
   // hand-typed STARS fallback for any player the worker has actually
@@ -139,16 +142,35 @@ function computeSyntheticHist(id, name, pos, age, tier) {
   const eliminated = !!(wc && /^Eliminated/.test(wc.status));
   const atWC = !!starsEff;
 
+  // Kept in sync with buildDB() in FootyStock_dc.html — this is a separate,
+  // duplicated copy of the pricing math (not shared code), so every fix made
+  // there this session (asymmetric/notoriety-scaled ratingBase, bench
+  // penalty, decay/cap, form recalibration) has to be mirrored here by hand
+  // or the backfilled World Cup history silently drifts from what the live
+  // app actually shows. Only affects days that HAVE a real match event —
+  // pre-tournament days with no events are untouched by any of this.
   let events = [];
   if (starsEff) {
     for (const s of starsEff) {
-      if (s.rating == null) continue; // bench
+      if (s.rating == null) {
+        // Bench: a cheap/fringe player sitting out is a non-event (0 at
+        // notoriety=0). An expensive stock being left out is real
+        // information a market would react to — mild on purpose since it's
+        // often just rest/rotation, not bad news.
+        events.push({ offset: offOf(s.d), delta: parseFloat((-0.6 * notoriety).toFixed(2)) });
+        continue;
+      }
       const g = s.g || 0, a = s.a || 0;
       const goalPart = g * 1.0 + (g >= 2 ? Math.pow(g - 1, 1.6) * 0.9 : 0);
       const assistPart = a * 0.6 + (a >= 2 ? Math.pow(a - 1, 1.4) * 0.4 : 0);
       const ratingExcess = Math.max(0, s.rating - 8.0);
       const isDefPos = /^(CB|LB|RB|WB|GK|DEF|SW)$/i.test(pos);
-      const ratingBase = isDefPos ? 6.5 : 6.0;
+      // Base stays exactly 6.0/6.5 at notoriety=0 (unknown player) — matches
+      // rating.mjs's own neutral "did nothing" point, avoiding the flat-shift
+      // regression ("the great depression" bug) a global change would cause.
+      // Expectations scale up with notoriety: a maxed-notoriety star needs up
+      // to 1.5 points more to be considered "living up to the price".
+      const ratingBase = (isDefPos ? 6.5 : 6.0) + notoriety * 1.5;
       const ratingPart = (s.rating - ratingBase) * 1.3 + Math.pow(ratingExcess, 1.8) * 1.5;
       const delta = parseFloat((ratingPart + goalPart + assistPart).toFixed(2));
       events.push({ offset: offOf(s.d), delta });
@@ -174,14 +196,24 @@ function computeSyntheticHist(id, name, pos, age, tier) {
   for (const rt of ratingsByRecency.slice(0, 6)) { ewmaR += rt * wgt; ewmaW += wgt; wgt *= 0.75; }
   ewmaR = ewmaW ? ewmaR / ewmaW : 0;
   const formDelta = (ewmaW && avgR) ? (ewmaR - avgR) : 0;
-  const formSig = atWC ? Math.max(6, Math.min(99, 46 + formDelta * 22 + streakLen * 4)) : 8;
+  // Asymmetric like the price-side upMult/downMult below: a slump reads as
+  // more damning than a hot run reads as impressive.
+  const formDeltaMult = formDelta >= 0 ? 22 : 34;
+  // Elite kicker: rewards how far above the streak bar (7.4) the recency-
+  // weighted EWMA itself sits, so a genuinely legendary run (not just a bare
+  // streak of 7.4s) can reach the top band. Coefficient calibrated against a
+  // real reference point: Kane's 8.14 was the best FULL-SEASON average in
+  // Europe's top 5 leagues last year (FotMob) — matching that across 4
+  // straight matches lands just under the top threshold, not over it.
+  const eliteKicker = Math.max(0, ewmaR - 7.4) * 18;
+  const formSig = atWC ? Math.max(6, Math.min(99, 46 + formDelta * formDeltaMult + streakLen * 7 + eliteKicker)) : 8;
 
   const moodSig = Math.max(6, Math.min(99, (46 + (starsEff ? 14 : 0)) - (eliminated ? 30 : 0)));
   const transferSig = news ? (news.bias >= 0 ? Math.min(99, 72 + news.bias * 2) : Math.max(20, 52 + news.bias * 3)) : Math.max(8, Math.min(90, 46));
 
   const wPerf = 0.06, wForm = 0.10, wHype = 0.35;
   const hasMatchData = atWC && avgR > 0;
-  const notoriety = clamp((anchor - 20) / 180, 0, 1);
+  // notoriety is defined up near `anchor`, before the per-match delta loop.
   const rawPerf = hasMatchData ? clamp((fotmob - 46) / 18, -1, 1) : 0;
   const rawForm = hasMatchData ? clamp((formSig - 46) / 18, -1, 1) : 0;
   const upMult = 1.55 - 0.8 * notoriety;
@@ -220,20 +252,29 @@ function computeSyntheticHist(id, name, pos, age, tier) {
   // match card), so there's no UI reason to fold it into `events`; this is
   // exactly the "price jump the performance gives you" shape requested for
   // transfers, just sourced from NEWS instead of a match rating.
+  // halfLife 6->3 and BUMP_CAP: halfLife=6 was slower than the ~3-4 day gap
+  // between WC matches, so a bump barely faded before the next one stacked
+  // fully on top with no ceiling — a near-guaranteed staircase instead of
+  // genuine "spike then settle". downScale bumped 25%->50% max extra penalty
+  // on negative deltas, stacking with (not duplicating) the ratingBase
+  // notoriety premium above.
+  const BUMP_CAP = 0.25;
+  const bumpTotal = new Array(N).fill(0);
   const bumpEvents = news ? [...events, { offset: offOf(news.d), delta: news.bias }] : events;
   for (const e of bumpEvents) {
     const idx = N - 1 - e.offset;
     if (idx < 0 || idx >= N) continue;
-    const downScale = e.delta < 0 ? 1.0 * (1 + notoriety * 0.25) : 1.0;
-    const bump = (e.delta / 100) * price * downScale, ramp = 1, halfLife = 6;
+    const downScale = e.delta < 0 ? 1.0 * (1 + notoriety * 0.5) : 1.0;
+    const bump = (e.delta / 100) * price * downScale, ramp = 1, halfLife = 3;
     for (let j = idx; j < N; j++) {
       const daysIn = j - idx + 1;
       const riseK = Math.min(1, daysIn / ramp);
       const eased = riseK * riseK * (3 - 2 * riseK);
       const decay = Math.pow(0.5, Math.max(0, daysIn - ramp) / halfLife);
-      hist[j] += bump * eased * decay;
+      bumpTotal[j] += bump * eased * decay;
     }
   }
+  for (let j = 0; j < N; j++) hist[j] += clamp(bumpTotal[j], -BUMP_CAP * price, BUMP_CAP * price);
 
   if (eliminated && wc && wc.fixtures && wc.fixtures.length) {
     const lastFixture = wc.fixtures[wc.fixtures.length - 1];
