@@ -25,6 +25,10 @@ on:
         description: 'Space-separated player ids to inspect via scripts/debug-player-events.mjs (blank = skip)'
         type: string
         default: ''
+      rawstats_player_ids:
+        description: 'Space-separated player ids to inspect via scripts/debug-rawstats.mjs (raw API-Football games.substitute/minutes/rating for their whole team; blank = skip)'
+        type: string
+        default: ''
 
 jobs:
   diagnose:
@@ -57,3 +61,6 @@ jobs:
       - name: Inspect specific players (optional debug)
         if: ${{ inputs.player_ids != '' }}
         run: node scripts/debug-player-events.mjs ${{ inputs.player_ids }}
+      - name: Inspect raw API-Football stats (optional debug)
+        if: ${{ inputs.rawstats_player_ids != '' }}
+        run: node scripts/debug-rawstats.mjs ${{ inputs.rawstats_player_ids }}
