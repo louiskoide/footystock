@@ -1,12 +1,21 @@
 // Polling loop: pulls WC2026 fixtures from API-Football, computes our own
 // player ratings from raw events (CLAUDE.md rule 4), and keeps an in-memory
 // prices.json-shaped state object up to date. server.mjs just serves it.
+// Crosswalk rebuilt: Amad Diallo (Man Utd/Ivory Coast) added to roster 2026-07-01.
 import { canonNation, normName } from '../lib/crosswalk.mjs';
 import { computeRating } from './rating.mjs';
 
 const WC_LEAGUE_ID = 1;
 const LIVE_STATUSES = new Set(['1H', '2H', 'HT', 'ET', 'P', 'BT', 'LIVE', 'INT']);
-const FINAL_GRACE_POLLS = 3; // re-check a finished fixture this many extra times for late stat corrections
+const FINAL_GRACE_POLLS = 5;  // re-check a finished fixture up to 5 times (~25min at 5-min idle) for late API stat corrections
+// After a _finalPolls wipe (STATE_VERSION migration), all historical fixtures
+// have polls=0 and need rebuilding. Process at most this many per cycle so the
+// rebuild spreads over hours/days rather than hitting 50+ fixtures at once and
+// exhausting the daily API budget. Live fixtures are always processed regardless.
+const FINISHED_PER_CYCLE = 5;
+// Fixtures outside the tournament window (pre-Jun 2026) are truly dead — no
+// point ever fetching them even during a full rebuild.
+const STALE_FIXTURE_MS = 400 * 24 * 60 * 60_000; // ~13 months
 
 function buildFlatIndex(crosswalkPlayers) {
   return crosswalkPlayers.map(p => ({ id: p.id, name: p.name, norm: normName(p.name) }));
@@ -14,13 +23,27 @@ function buildFlatIndex(crosswalkPlayers) {
 
 function matchPlayer(flatIndex, apiName) {
   const norm = normName(apiName);
+  // 1. Exact normalized match
   let hit = flatIndex.find(c => c.norm === norm);
   if (hit) return hit.id;
-  // Fall back to surname match (API-Football sometimes returns a short
-  // display name like "Mbappé" where our roster has "Kylian Mbappé").
-  const surname = norm.split(' ').pop();
-  hit = flatIndex.find(c => c.norm.split(' ').pop() === surname);
-  return hit ? hit.id : null;
+
+  const words = norm.split(' ');
+  const surname = words[words.length - 1];
+
+  // 2. Reversed name order — API-Football uses "Last First" for many
+  //    Asian players (e.g. "Suzuki Zion" for our "Zion Suzuki").
+  if (words.length >= 2) {
+    const reversed = words.slice(1).join(' ') + ' ' + words[0];
+    hit = flatIndex.find(c => c.norm === reversed);
+    if (hit) return hit.id;
+  }
+
+  // 3. Surname-only match (API returns display short name like "Mbappé").
+  //    Only use if the surname is unique in the index to avoid false matches.
+  const surnameMatches = flatIndex.filter(c => c.norm.split(' ').pop() === surname);
+  if (surnameMatches.length === 1) return surnameMatches[0].id;
+
+  return null;
 }
 
 function isKnockout(round) {
@@ -109,7 +132,13 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
       // roster could get falsely credited with another country's match.
       if (!id || nationOf[id] !== me) continue;
 
-      const minutes = stats.games?.minutes || 0;
+      // API-Football sometimes omits minutes for starters (common for GKs).
+      // Use substitute !== true (not strict === false) so null/undefined also
+      // counts as "started"; treat null/0 minutes as 90 for starters.
+      const rawMinutes = stats.games?.minutes;
+      const started = stats.games?.substitute !== true;
+      const minutes = (rawMinutes > 0) ? rawMinutes : (started ? 90 : 0);
+
       state.players[id] = state.players[id] || { events: [] };
       const evs = state.players[id].events;
       const existingEv = evs.find(e => e._fid === fid);
@@ -125,7 +154,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
       }
 
       const ownGoals = (marksByPlayer[id] || []).filter(m => m.kind === 'owngoal').length;
-      const rating = computeRating(stats, { knockout, result, cleanSheet: oppGoals === 0, ownGoals, goalsConceded: oppGoals });
+      const rating = computeRating(stats, { minutes, knockout, result, cleanSheet: oppGoals === 0, ownGoals, goalsConceded: oppGoals });
       if (rating == null) continue;
 
       const goals = stats.goals?.total || 0;
@@ -175,14 +204,19 @@ async function discoverNations(client, fixtures, flatIndex, state, log) {
       state.teams[nation] = state.teams[nation] || { fixtures: [] };
       state.teams[nation].squad = squad;
       let matched = 0;
+      state._unmatchedSquadNames = state._unmatchedSquadNames || {};
       for (const squadName of squad) {
         const id = matchPlayer(flatIndex, squadName);
-        if (!id) continue;
+        if (!id) {
+          state._unmatchedSquadNames[squadName] = nation;
+          continue;
+        }
+        delete state._unmatchedSquadNames[squadName];
         state._nationOf[id] = nation;
         matched++;
       }
       if (matched > 0) state._trackedNations.add(nation);
-      log(`squad: ${nation} -> ${squad.length} players (${matched} on our roster)`);
+      log(`squad: ${nation} -> ${squad.length} players (${matched} matched, ${squad.length - matched} unmatched)`);
       // Only mark this team as fetched once the call actually succeeded —
       // a transient failure (rate limit, timeout) must retry next poll
       // rather than permanently losing that nation's roster mapping.
@@ -253,7 +287,7 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
   await applyGroupStandings(client, state.season, state, log);
   const trackedNations = state._trackedNations;
   const nationOf = state._nationOf;
-  let liveCount = 0, finishedNew = 0;
+  let liveCount = 0, finishedNew = 0, finishedThisCycle = 0;
 
   for (const fixture of fixtures) {
     const status = fixture.fixture.status.short;
@@ -261,17 +295,24 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
     if (status === 'NS' || status === 'TBD' || status === 'PST') continue;
 
     if (status === 'FT' || status === 'AET' || status === 'PEN') {
-      // API-Football's official player stats (assists, late-corrected goal
-      // tallies) can lag the final whistle by a few minutes, so don't lock
-      // a fixture as done after a single FT-status poll — keep re-checking
-      // it for a few more cycles before treating it as truly final.
       const polls = state._finalPolls.get(fid) || 0;
       if (polls >= FINAL_GRACE_POLLS) continue;
+      // Skip fixtures that predate the tournament entirely (no real data to fetch).
+      const fixtureDateMs = new Date(fixture.fixture.date).getTime();
+      if (polls === 0 && Date.now() - fixtureDateMs > STALE_FIXTURE_MS) {
+        state._finalPolls.set(fid, FINAL_GRACE_POLLS);
+        continue;
+      }
+      // Rate-limit finished-fixture fetches per cycle. In normal steady-state
+      // all finished fixtures are already at FINAL_GRACE_POLLS and this never
+      // triggers. After a _finalPolls wipe (STATE_VERSION migration) it spreads
+      // the rebuild across many cycles instead of hitting 50+ fixtures at once.
+      if (finishedThisCycle >= FINISHED_PER_CYCLE) continue;
       const ok = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
       // Only spend a grace poll on a fetch that actually succeeded — a
       // transient API error (rate limit, timeout) must not permanently give
       // up on a fixture's data after 3 unlucky failures in a row.
-      if (ok) state._finalPolls.set(fid, polls + 1);
+      if (ok) { state._finalPolls.set(fid, polls + 1); finishedThisCycle++; }
       finishedNew++;
     } else if (LIVE_STATUSES.has(status)) {
       await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: true, elapsed: fixture.fixture.status.elapsed });
@@ -319,5 +360,5 @@ export function publicSnapshot(state) {
   for (const [id, p] of Object.entries(state.players)) {
     players[id] = { nation: (state._nationOf && state._nationOf[id]) || null, events: p.events.map(({ _fid, ...rest }) => rest) };
   }
-  return { generatedAt: state.generatedAt, season: state.season, teams, players, hype: state.hype || {}, demand: state.demand || {}, priceHist: state.priceHist || {} };
+  return { generatedAt: state.generatedAt, season: state.season, teams, players, hype: state.hype || {}, demand: state.demand || {}, priceHist: state.priceHist || {}, tradeTotals: state.tradeTotals || { buy: {}, sell: {} }, tradeTotalsYday: state.tradeTotalsYday || { buy: {}, sell: {} }, shares: state.shares || {}, hateCount: state.hateCount || {} };
 }

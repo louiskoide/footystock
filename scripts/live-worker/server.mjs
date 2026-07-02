@@ -6,12 +6,14 @@
 import { createServer } from 'http';
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { loadCrosswalk } from '../lib/crosswalk.mjs';
 import { makeClient } from './api-football.mjs';
 import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses } from './poll.mjs';
 import { refreshHype } from './hype.mjs';
-import { tickDemand, recordTrade } from './demand.mjs';
+import { tickDemand, recordTrade, recordHatewatch } from './demand.mjs';
 import { submitScore, getLeaderboard } from './leaderboard.mjs';
+import { loadShares, decrementShares, incrementShares, expandAndDecrementShares, reconcileShares, repairShareTotals } from './shares.mjs';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..', '..');
@@ -29,11 +31,76 @@ if (!API_KEY) {
   process.exit(1);
 }
 
+const STATE_PATH = '/data/state-cache.json';
+// Bump this whenever a deploy needs a clean rebuild of player events / nationOf.
+// Any cached state without this version gets its player data wiped and rebuilt.
+// IMPORTANT: migrations preserve _finalPolls (grace-poll counters) so that
+// fixtures already fully polled (counter >= FINAL_GRACE_POLLS) are NOT
+// re-fetched after a player-data wipe. Only wipe _finalPolls if you need to
+// force a complete re-fetch of all fixture stats (e.g. after a rating formula
+// change) — and expect a rebuild burst to consume ~400 API calls.
+const STATE_VERSION = 4;
+
+function saveState(s) {
+  try {
+    const serialisable = Object.assign({}, s, {
+      _stateVersion: STATE_VERSION,
+      _finalPolls: Array.from(s._finalPolls.entries()),
+      _trackedNations: s._trackedNations ? Array.from(s._trackedNations) : undefined,
+      _squadFetched: s._squadFetched instanceof Set ? Array.from(s._squadFetched) : [],
+    });
+    writeFileSync(STATE_PATH, JSON.stringify(serialisable));
+  } catch (e) {
+    console.error('state save failed:', e.message);
+  }
+}
+
+function loadState(season) {
+  try {
+    if (!existsSync(STATE_PATH)) return null;
+    const raw = JSON.parse(readFileSync(STATE_PATH, 'utf8'));
+    if (raw.season !== season) { console.log('state cache is from a different season — ignoring.'); return null; }
+    if (raw._stateVersion !== STATE_VERSION) {
+      // Schema migration: wipe player events and nationOf so they get rebuilt
+      // from the API. Preserves _finalPolls so fixtures already grace-polled
+      // to exhaustion are NOT re-fetched — this is the key budget guard.
+      // Preserves teams, demand, and priceHist (expensive/slow to regenerate).
+      console.log(`State schema v${raw._stateVersion || 0} → v${STATE_VERSION}: clearing player/nation data for clean rebuild.`);
+      raw._nationOf = {};
+      raw.players = {};
+      raw._squadFetched = undefined;
+      // _finalPolls preserved intentionally — keeps grace-poll counters so
+      // already-finalised fixtures aren't re-fetched en masse.
+    }
+    raw._finalPolls = new Map(raw._finalPolls || []);
+    if (raw._trackedNations) raw._trackedNations = new Set(raw._trackedNations);
+    raw._squadFetched = new Set(Array.isArray(raw._squadFetched) ? raw._squadFetched : []);
+    const ageMs = raw.generatedAt ? Date.now() - new Date(raw.generatedAt).getTime() : Infinity;
+    console.log(`Loaded cached state v${raw._stateVersion || 0} (age: ${Math.round(ageMs / 60000)}m, players: ${Object.keys(raw.players || {}).length}).`);
+    return raw;
+  } catch (e) {
+    console.error('state load failed:', e.message);
+    return null;
+  }
+}
+
 const client = makeClient(API_KEY);
 const crosswalk = loadCrosswalk(HTML_PATH);
 console.log(`Loaded crosswalk: ${crosswalk.length} players across ${new Set(crosswalk.map(p => p.nation)).size} nations.`);
 
-const state = makeInitialState(SEASON);
+const state = loadState(SEASON) || makeInitialState(SEASON);
+
+// Reconcile share rows against existing portfolio holdings, then pre-load into state.
+reconcileShares()
+  .then(() => loadShares())
+  .then(rows => {
+    state.shares = state.shares || {};
+    for (const [id, s] of Object.entries(rows)) state.shares[id] = { remaining: s.remaining, total: s.total };
+  })
+  .catch(e => console.error('shares init failed:', e.message));
+
+// Repair stale share totals once on first /price-closes call (has full price map).
+let _sharesRepaired = false;
 
 let nextDelay = IDLE_POLL_MS;
 let lastTickAt = Date.now();
@@ -45,6 +112,7 @@ async function tick() {
     const { liveCount } = await pollOnce(client, crosswalk, state);
     tickDemand(state, crosswalk, elapsed);
     nextDelay = liveCount > 0 ? LIVE_POLL_MS : IDLE_POLL_MS;
+    saveState(state);
   } catch (e) {
     console.error('poll failed:', e.message);
     nextDelay = IDLE_POLL_MS;
@@ -83,10 +151,24 @@ hypeTick();
 const server = createServer((req, res) => {
   const url = new URL(req.url, 'http://localhost');
   res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.writeHead(204);
+    res.end();
+    return;
+  }
 
   if (url.pathname === '/health') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify({ ok: true, generatedAt: state.generatedAt }));
+    return;
+  }
+
+  if (url.pathname === '/debug/unmatched') {
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify(state._unmatchedSquadNames || {}));
     return;
   }
 
@@ -99,19 +181,54 @@ const server = createServer((req, res) => {
   if (url.pathname === '/trade' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
-    req.on('end', () => {
+    req.on('end', async () => {
       try {
-        const { id, side } = JSON.parse(body);
-        if (typeof id !== 'string' || !['buy', 'sell'].includes(side)) {
+        const { id, side, qty, price, referral } = JSON.parse(body);
+        const q = typeof qty === 'number' && qty > 0 ? qty : 1;
+        if (typeof id !== 'string' || !['buy', 'sell', 'hatewatch', 'cover'].includes(side)) {
           res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request'); return;
         }
-        recordTrade(state, id, side);
+        if (side === 'buy') {
+          if (referral) {
+            // Referral awards are new issuance — bypass supply check, expand total if sold out.
+            await expandAndDecrementShares(id, q, price || 100);
+          } else {
+            const result = await decrementShares(id, q, price || 100);
+            if (!result.ok) {
+              res.writeHead(409, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ ok: false, reason: 'no_shares', remaining: result.remaining }));
+              return;
+            }
+          }
+          const sh = await loadShares();
+          state.shares = state.shares || {};
+          if (sh[id]) state.shares[id] = { remaining: sh[id].remaining, total: sh[id].total };
+          recordTrade(state, id, 'buy', q);
+        } else if (side === 'sell') {
+          await incrementShares(id, q, price || 100);
+          state.shares = state.shares || {};
+          const sh = await loadShares();
+          if (sh[id]) state.shares[id] = { remaining: sh[id].remaining, total: sh[id].total };
+          recordTrade(state, id, 'sell', q);
+        } else if (side === 'hatewatch') {
+          recordHatewatch(state, id, q);
+        } else if (side === 'cover') {
+          recordHatewatch(state, id, -q);
+        }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (e) {
         res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request');
       }
     });
+    return;
+  }
+
+  if (url.pathname === '/shares.json') {
+    loadShares().then(shares => {
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(shares));
+    }).catch(() => { res.writeHead(500); res.end('error'); });
     return;
   }
 
@@ -125,6 +242,11 @@ const server = createServer((req, res) => {
           res.writeHead(400, { 'Content-Type': 'text/plain' }); res.end('bad request'); return;
         }
         recordPriceCloses(state, closes, dayKey);
+        // Repair stale share totals using the frontend-computed prices.
+        if (!_sharesRepaired) {
+          _sharesRepaired = true;
+          repairShareTotals(id => closes[id] || 0).catch(() => {});
+        }
         res.writeHead(200, { 'Content-Type': 'application/json' });
         res.end(JSON.stringify({ ok: true }));
       } catch (e) {

@@ -42,6 +42,13 @@ function recentMomentum(playerState) {
 // to compute the correct exponential decay regardless of poll cadence.
 export function tickDemand(state, crosswalk, elapsedMs) {
   if (!state.demand) state.demand = {};
+  // Roll trade totals over at midnight regardless of whether any trades happened.
+  const today = new Date().toISOString().slice(0, 10);
+  if (state._tradeDay && state._tradeDay !== today) {
+    state.tradeTotalsYday = state.tradeTotals || { buy: {}, sell: {} };
+    state.tradeTotals = { buy: {}, sell: {} };
+  }
+  state._tradeDay = today;
   state._demandTick = (state._demandTick || 0) + 1;
   const tick = state._demandTick;
   const decayFactor = Math.pow(0.5, elapsedMs / DECAY_HALF_LIFE_MS);
@@ -63,8 +70,32 @@ export function tickDemand(state, crosswalk, elapsedMs) {
 // the shared price. Sized so a handful of real trades ≈ sustained agent
 // momentum for one poll cycle — enough to be meaningful without letting
 // one user dominate a deep market.
-export function recordTrade(state, id, side) {
+// Also accumulates global trade volume counters so the frontend can show
+// the most-bought / most-sold players across all users.
+export function recordTrade(state, id, side, qty = 1) {
   if (!state.demand) state.demand = {};
   const impulse = side === 'buy' ? 0.12 : -0.12;
   state.demand[id] = Math.max(-1, Math.min(1, (state.demand[id] || 0) + impulse));
+
+  if (!state.tradeTotals) state.tradeTotals = { buy: {}, sell: {} };
+  if (side === 'buy') {
+    state.tradeTotals.buy[id] = (state.tradeTotals.buy[id] || 0) + qty;
+  } else if (side === 'sell') {
+    state.tradeTotals.sell[id] = (state.tradeTotals.sell[id] || 0) + qty;
+  }
+}
+
+// Hatewatch: counts open short positions globally per player.
+// Each open hatewatch position drags the hype multiplier down by a small
+// amount — if enough users are hatewatching, it meaningfully suppresses
+// hype-driven price inflation, creating organic downward pressure without
+// requiring real short-selling mechanics.
+export function recordHatewatch(state, id, delta) {
+  if (!state.hateCount) state.hateCount = {};
+  state.hateCount[id] = Math.max(0, (state.hateCount[id] || 0) + delta);
+  // Also push demand slightly negative — same as a sell impulse.
+  if (!state.demand) state.demand = {};
+  if (delta > 0) {
+    state.demand[id] = Math.max(-1, (state.demand[id] || 0) - 0.08);
+  }
 }

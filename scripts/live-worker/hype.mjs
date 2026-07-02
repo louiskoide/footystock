@@ -66,7 +66,9 @@ export async function refreshHype(crosswalk, state, log = console.log) {
   state.hype = state.hype || {};
   const raw = []; // { id, vol, tone }
   let ok = 0, failed = 0;
-  for (const p of crosswalk) {
+  // Shuffle so GDELT 429 throttling doesn't always starve the same tail players
+  const shuffled = [...crosswalk].sort(() => Math.random() - 0.5);
+  for (const p of shuffled) {
     try {
       const { vol, tone } = await fetchOnePlayerHype(p.name);
       raw.push({ id: p.id, vol, tone });

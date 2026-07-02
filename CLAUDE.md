@@ -101,6 +101,24 @@ Entertainment only — **no real money is involved**.
   CI does this on push, see above). `fly logs --app footystock` to tail it.
 - `fly secrets set API_FOOTBALL_KEY=... --app footystock` — set/rotate the key.
 
+## Deployment discipline — IMPORTANT
+
+Vercel (the static frontend host) has a **100 deployments/day** limit on the
+free plan. With multiple Claude sessions each pushing after every small change,
+this limit can be exhausted in under 2 hours.
+
+**Rule: batch all commits, push once at the end of a session.**
+
+- Make as many local commits as needed during a session.
+- Only `git push origin main` **once**, as the very last step, after all
+  changes for the session are committed.
+- Never push after every individual fix or commit — stage and commit locally,
+  but hold the push until the session is done.
+- Exception: worker-only changes (`scripts/live-worker/`, `scripts/lib/`,
+  `fly.toml`, `Dockerfile`) that need CI to redeploy Fly.io can be pushed
+  earlier since they don't count toward the Vercel limit meaningfully, but
+  even then batch where possible.
+
 ## Status / non-goals (for now)
 
 - **No longer free-tier-only.** The project now pays for API-Football
