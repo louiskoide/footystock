@@ -48,30 +48,33 @@ async function main() {
   for (const n of nationsShown) console.log(`  ${n}: ${byNation[n].slice(0, 5).join(', ')}${byNation[n].length > 5 ? ` (+${byNation[n].length - 5} more)` : ''}`);
 
   console.log('\nSupabase price_history:');
-  const rows = await fetch(
-    `${SUPABASE_URL}/rest/v1/price_history?select=player_id,day_key,price&order=day_key.asc&limit=100000`,
-    { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
-  ).then(r => r.json());
-  console.log(`total rows: ${rows.length}`);
-  const dayKeys = new Set(rows.map(r => r.day_key));
-  const playerIds = new Set(rows.map(r => r.player_id));
-  console.log(`distinct day_keys: ${dayKeys.size} (${[...dayKeys].sort().slice(0, 3).join(', ')} ... ${[...dayKeys].sort().slice(-3).join(', ')})`);
-  console.log(`distinct players: ${playerIds.size}`);
+  // Supabase/PostgREST caps every response at db-max-rows (commonly 1000)
+  // REGARDLESS of a client-supplied ?limit — a plain GET with limit=100000
+  // silently truncates instead of erroring, which previously made this
+  // script report "total rows: 1000" even when the table held 77k+ rows.
+  // Use a HEAD request with Prefer: count=exact to get the real total
+  // cheaply (no row cap applies to the count, only to returned rows).
+  const countResp = await fetch(`${SUPABASE_URL}/rest/v1/price_history?select=player_id`, {
+    method: 'HEAD',
+    headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: 'count=exact' },
+  });
+  const totalRows = parseInt((countResp.headers.get('content-range') || '').split('/')[1] || '0', 10);
+  console.log(`total rows: ${totalRows}`);
 
-  // Flatness check: for a sample of players with WC events, how many distinct
-  // prices do they have across their stored days?
-  const byPlayer = {};
-  for (const r of rows) (byPlayer[r.player_id] ||= []).push(r);
-  let flatCount = 0, checked = 0;
-  for (const [id, p] of players.slice(0, 200)) {
-    if (!(p.events || []).length) continue;
-    const hist = byPlayer[id];
-    if (!hist || hist.length < 3) continue;
-    checked++;
-    const uniquePrices = new Set(hist.map(h => Math.round(parseFloat(h.price))));
-    if (uniquePrices.size <= 1) flatCount++;
+  // Distinct-day/flatness check: query specific known players directly
+  // (small, well under the row cap) rather than trying to page through the
+  // whole table. Mix of a transfer-window player and a couple of others.
+  const sampleIds = ['anthony-gordon-barcelona', 'ismael-saibari-bayern', 'elliot-anderson-man-city']
+    .concat(players.filter(([, p]) => (p.events || []).length > 0).slice(0, 5).map(([id]) => id));
+  for (const id of sampleIds) {
+    const hist = await fetch(
+      `${SUPABASE_URL}/rest/v1/price_history?player_id=eq.${encodeURIComponent(id)}&select=day_key,price&order=day_key.asc`,
+      { headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+    ).then(r => r.json()).catch(() => []);
+    if (!Array.isArray(hist) || !hist.length) { console.log(`  ${id}: no rows`); continue; }
+    const uniquePrices = new Set(hist.map(h => Math.round(parseFloat(h.price) * 100)));
+    console.log(`  ${id}: ${hist.length} days (${hist[0].day_key} .. ${hist[hist.length - 1].day_key}), ${uniquePrices.size} distinct prices, last 5: ${hist.slice(-5).map(h => h.price).join(', ')}`);
   }
-  console.log(`WC players checked for flat history: ${checked}, completely flat: ${flatCount}`);
 }
 
 main().catch(e => { console.error(e); process.exit(1); });

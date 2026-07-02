@@ -41,6 +41,13 @@ async function main() {
     headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}`, Prefer: 'count=exact' },
   });
   console.log('content-range:', r3.headers.get('content-range'));
+
+  console.log('\n--- CLEANUP (delete test row) ---');
+  const r4 = await fetch(
+    `${SUPABASE_URL}/rest/v1/price_history?player_id=eq.__debug_write_test__`,
+    { method: 'DELETE', headers: { apikey: SUPABASE_KEY, Authorization: `Bearer ${SUPABASE_KEY}` } }
+  );
+  console.log('status:', r4.status, r4.statusText);
 }
 
 main().catch(e => { console.error('FATAL', e); process.exit(1); });
