@@ -158,6 +158,10 @@ function computeSyntheticHist(id, name, pos, age, tier) {
   const sum = arr => arr.reduce((a, b) => a + b, 0);
   const newsDelta = news ? news.bias : 0;
   let change30d = parseFloat((sum(events.map(e => e.delta)) + newsDelta).toFixed(1));
+  // A player with no match data at all (not at the WC) can still have a
+  // real signal — a transfer, an award, a saga — via NEWS alone. Gate the
+  // historical trend/noise on that too, matching buildDB()'s hasSignal.
+  const hasSignal = atWC || !!news;
 
   const ratingVals = starsEff ? starsEff.map(s => s.rating).filter(x => x > 0) : [];
   const avgR = ratingVals.length ? sum(ratingVals) / ratingVals.length : 0;
@@ -195,21 +199,29 @@ function computeSyntheticHist(id, name, pos, age, tier) {
 
   const N = 90;
   const hist = [];
-  const trend = atWC ? clamp(change30d / 100, -0.4, 0.4) : (r() - 0.5) * 0.04;
+  const trend = hasSignal ? clamp(change30d / 100, -0.4, 0.4) : (r() - 0.5) * 0.04;
   const start = price / (1 + trend * 1.05);
   const steps = []; let acc = 0;
   for (let i = 0; i < N; i++) { acc += (r() - 0.5); steps.push(acc); }
   const s0 = steps[0], s1 = steps[N - 1];
   const bridge = steps.map((v, i) => v - (s0 + (s1 - s0) * i / (N - 1)));
   const bridgeMax = Math.max(...bridge.map(Math.abs)) || 1;
-  const noiseAmp = price * (atWC ? 0.012 : 0.006);
+  const noiseAmp = price * (hasSignal ? 0.012 : 0.006);
   for (let i = 0; i < N; i++) {
     const t = i / (N - 1);
     const baseV = start + (price - start) * Math.pow(t, 1.15);
     hist.push(Math.max(2, baseV + (bridge[i] / bridgeMax) * noiseAmp));
   }
 
-  for (const e of events) {
+  // Match-performance bumps, plus — unlike buildDB(), which only bumps off
+  // real match events since news also feeds the match-by-match UI panel
+  // there — a discrete bump for the transfer/news event itself. The backfill
+  // only ever writes past closes to Supabase (nothing here is rendered as a
+  // match card), so there's no UI reason to fold it into `events`; this is
+  // exactly the "price jump the performance gives you" shape requested for
+  // transfers, just sourced from NEWS instead of a match rating.
+  const bumpEvents = news ? [...events, { offset: offOf(news.d), delta: news.bias }] : events;
+  for (const e of bumpEvents) {
     const idx = N - 1 - e.offset;
     if (idx < 0 || idx >= N) continue;
     const downScale = e.delta < 0 ? 1.0 * (1 + notoriety * 0.25) : 1.0;

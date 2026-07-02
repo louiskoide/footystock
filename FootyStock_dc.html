@@ -2796,13 +2796,14 @@ class Component extends DCLogic {
     'Stade Brestois':['SB2','LI1'],'Angers':['ANG','LI1'],'Auxerre':['AUX','LI1'],'Le Havre':['HAV','LI1'],
     // Rest of World (explicit entries for notable non-top-5 clubs)
     'Ajax':['AJA','ROW'],'PSV':['PSV','ROW'],'Benfica':['SLB','ROW'],'Sporting':['SCP','ROW'],'Porto':['POR','ROW'],
+    'Orlando City':['ORL','ROW'],
   }; }
   ROSTER(){ return `
 Erling Haaland|Man City|ST|25|1
 Phil Foden|Man City|AM|26|2
 Rodri|Man City|CM|30|2
 Savinho|Man City|RW|22|3
-Bernardo Silva|Man City|CM|31|3
+Bernardo Silva|Real Madrid|CM|31|3
 Jérémy Doku|Man City|LW|25|3
 Joško Gvardiol|Man City|CB|24|4
 Omar Marmoush|Man City|ST|27|3
@@ -2845,8 +2846,8 @@ Mohammed Kudus|Tottenham|RW|25|3
 Micky van de Ven|Tottenham|CB|25|4
 Mathys Tel|Tottenham|ST|21|5
 Bruno Guimarães|Newcastle|CM|28|3
-Anthony Gordon|Newcastle|LW|24|3
-Sandro Tonali|Newcastle|CM|26|4
+Anthony Gordon|Barcelona|LW|24|2
+Sandro Tonali|Tottenham|CM|26|3
 Nick Woltemade|Newcastle|ST|23|4
 Ollie Watkins|Aston Villa|ST|30|3
 Morgan Rogers|Aston Villa|AM|23|4
@@ -2874,7 +2875,7 @@ Marcus Rashford|Barcelona|LW|28|3
 Gavi|Barcelona|CM|21|4
 Alejandro Balde|Barcelona|LB|22|4
 Julián Álvarez|Atlético|ST|26|2
-Antoine Griezmann|Atlético|ST|35|4
+Antoine Griezmann|Orlando City|ST|35|5
 Alexander Sørloth|Atlético|ST|30|5
 Giuliano Simeone|Atlético|RW|23|5
 Nico Williams|Athletic|LW|24|3
@@ -2947,7 +2948,7 @@ João Neves|Paris SG|CM|21|3
 Désiré Doué|Paris SG|AM|20|3
 Achraf Hakimi|Paris SG|RB|27|3
 Bradley Barcola|Paris SG|LW|23|4
-Gonçalo Ramos|Paris SG|ST|25|5
+Gonçalo Ramos|AC Milan|ST|25|4
 Nuno Mendes|Paris SG|LB|24|4
 Warren Zaïre-Emery|Paris SG|CM|20|4
 Maghnes Akliouche|Monaco|AM|23|4
@@ -2972,13 +2973,13 @@ Sergiño Dest|PSV|RB|25|6
 Vangelis Pavlidis|Benfica|ST|27|5
 Kerem Aktürkoğlu|Fenerbahçe|LW|27|5
 Gianluca Prestianni|Benfica|AM|19|6
-Geovany Quenda|Sporting|RW|18|5
+Geovany Quenda|Chelsea|RW|18|4
 Francisco Trincão|Sporting|RW|26|5
 Morten Hjulmand|Sporting|CM|27|5
 Rodrigo Mora|Porto|AM|18|5
 Samu Aghehowa|Porto|ST|21|5
 Theo Hernández|Milan|LB|28|4
-Ibrahima Konaté|Liverpool|CB|26|3
+Ibrahima Konaté|Real Madrid|CB|27|3
 Christopher Nkunku|Chelsea|AM|28|4
 Youssouf Fofana|Milan|CM|27|5
 John Stones|Man City|CB|32|4
@@ -3014,7 +3015,7 @@ Yassine Bounou|Sevilla|GK|34|5
 Sofyan Amrabat|Fenerbahçe|CM|28|5
 Hakim Ziyech|Wydad AC|RW|32|5
 Noussair Mazraoui|Man Utd|RB|27|4
-Andy Robertson|Liverpool|LB|31|4
+Andy Robertson|Tottenham|LB|31|4
 Billy Gilmour|Napoli|CM|24|5
 Kaoru Mitoma|Brighton|LW|28|4
 Wataru Endo|Liverpool|CM|31|5
@@ -3100,7 +3101,7 @@ Conor Gallagher|Tottenham|CM|26|5
 Jarrod Bowen|West Ham|RW|29|4
 Morgan Gibbs-White|Nottingham Forest|AM|26|4
 Ivan Toney|Al-Ahli|ST|30|5
-Kieran Trippier|Newcastle|RB|35|5
+Kieran Trippier|Wolves|RB|35|5
 Ederson|Man City|GK|32|4
 Marquinhos|Paris SG|CB|31|4
 Danilo|Flamengo|RB|34|5
@@ -3113,7 +3114,7 @@ Wesley|Flamengo|ST|24|6
 David Raya|Arsenal|GK|30|4
 Robin Le Normand|Atlético|CB|29|4
 Aymeric Laporte|Al-Nassr|CB|32|5
-Marc Cucurella|Chelsea|LB|27|4
+Marc Cucurella|Real Madrid|LB|27|3
 Fabián Ruiz|Paris SG|CM|29|4
 Ferran Torres|Barcelona|RW|26|4
 Yeremy Pino|Villarreal|RW|22|5
@@ -3340,7 +3341,7 @@ Dani Carvajal|Real Madrid|RB|33|4
 Pedro Porro|Tottenham|RB|26|4
 Eric García|Barcelona|CB|24|5
 Valentín Carboni|Inter|AM|21|5
-Marcos Senesi|Bournemouth|CB|28|5
+Marcos Senesi|Tottenham|CB|28|5
 Gio Lo Celso|Villarreal|CM|28|5
 Nélson Semedo|Fenerbahçe|RB|32|5
 Rúben Neves|Al-Hilal|CM|28|4
@@ -3449,19 +3450,19 @@ Grant Kekana|Mamelodi Sundowns|CB|30|6
 Maxence Lacroix|Crystal Palace|CB|25|5
 Lucas Digne|Aston Villa|LB|33|5
 Nico O'Reilly|Man City|CM|20|5
-Elliot Anderson|Nottm Forest|CM|22|5
+Elliot Anderson|Man City|CM|23|3
 Jarell Quansah|Leverkusen|CB|22|5
 Douglas Santos|Zenit|LB|29|6
 Marcos Llorente|Atlético|CM|32|5
 Felix Nmecha|Dortmund|CM|25|5
 Gonzalo Montiel|Sevilla|RB|28|5
-Facundo Medina|Lens|CB|25|5
+Facundo Medina|Marseille|CB|25|5
 Nicolás Tagliafico|Lyon|LB|32|5
 Nico Paz|Como|AM|21|5
 Gonçalo Inácio|Sporting|CB|24|4
 Renato Veiga|Villarreal|CB|22|5
 João Félix|Chelsea|AM|26|4
-Jan Paul van Hecke|Brighton|CB|25|5
+Jan Paul van Hecke|Tottenham|CB|26|4
 Crysencio Summerville|West Ham|LW|23|4
 Johan Mojica|Mallorca|LB|31|5
 Gustavo Puerta|Racing Santander|CM|21|5
@@ -3481,7 +3482,7 @@ Petar Sučić|Inter|CM|22|5
 Ivan Perišić|PSV|LW|36|5
 Chadi Riad|Crystal Palace|CB|22|5
 Neil El Aynaoui|Roma|CM|22|5
-Ismael Saibari|PSV|AM|24|5
+Ismael Saibari|Bayern|AM|24|4
 Ayoub El Kaabi|Olympiacos|ST|31|5
 Raúl Rangel|Guadalajara|GK|28|6
 Israel Reyes|Club América|CB|23|6
@@ -3535,6 +3536,19 @@ Oscar Bobb|Fulham|AM|22|4
 Jørgen Strand Larsen|Crystal Palace|ST|25|4
 Gustav Schjelderup|Benfica|LW|21|5
 Yan Diomande|RB Leipzig|LW|22|4
+Mateus Fernandes|Tottenham|CM|21|3
+Jérémy Jacquet|Liverpool|CB|20|3
+Marco Palestra|Chelsea|RB|21|3
+Éderson Silva|Man Utd|CM|26|4
+Emmanuel Emegha|Chelsea|ST|23|4
+Bazoumana Touré|Newcastle|LW|20|3
+Luka Vuskovic|Brighton|CB|19|3
+Jeff Ekhator|Juventus|ST|19|5
+Hayden Hackney|Everton|CM|24|5
+Alejandro Grimaldo|Atlético|LB|30|4
+Pascal Struijk|Brighton|CB|26|5
+Nathaniel Brown|Bayern|LB|23|3
+Afonso Moreira|Leverkusen|LW|21|4
 `; }
 
   OPPONENTS_BY_LEAGUE(){
@@ -3719,6 +3733,8 @@ Yan Diomande|RB Leipzig|LW|22|4
     A('Mohamed El-Shenawy 2,Mahmoud Trezeguet 4,Mostafa Mohamed 8,Mohamed Elneny 2,Nasser Maher 2');
     // Canadian players
     A('Jonathan Osorio 4,Stephen Eustáquio 12,Jacob Shaffelburg 3,Cyle Larin 5,Kamal Miller 4');
+    // Summer 2026 transfer window arrivals (anchored near reported fee)
+    A('Mateus Fernandes 85,Jérémy Jacquet 70,Marco Palestra 55,Éderson Silva 42,Emmanuel Emegha 25,Bazoumana Touré 50,Luka Vuskovic 48,Jeff Ekhator 16,Hayden Hackney 20,Alejandro Grimaldo 21,Pascal Struijk 19,Nathaniel Brown 55,Afonso Moreira 32');
     this._val=v; return v;
   }
 
@@ -3829,14 +3845,14 @@ Yan Diomande|RB Leipzig|LW|22|4
       // because our underdog multiplier amplifies unknown players more.
       'vozinha-famalicao':NW('WORLD CUP BUZZ','The 40-year-old Cape Verde keeper pulled off 7 saves in a stunning 0-0 draw with Spain. He has gone viral with 16M+ Instagram followers overnight and is being called the tournament\'s feel-good story. Cape Verde became the smallest nation by population to ever reach the knockouts.',9.0,'06-25'),
       'ayyoub-bouaddi-lille':NW('WORLD CUP BUZZ','The 18-year-old maths student bossed Brazil\'s midfield — 87 touches, multiple completed dribbles, MOTM rating from every major outlet. Comparisons to Zidane at the same age are everywhere.',9.0,'06-21'),
-      'ismael-saibari-psv':NW('WORLD CUP BUZZ','Three goals in three group games for Morocco, each at a decisive moment. He\'s become the heartbeat of Morocco\'s run and is being linked with every top-six Premier League club.',8.5,'06-26'),
+      'ismael-saibari-bayern':NW('TRANSFER','Three goals in three group games for Morocco turned into a €50m+ move to Bayern Munich, officially completed July 1 — one of the World Cup\'s biggest transfer stories.',9.0,'07-01'),
       'keito-nakamura-reims':NW('WORLD CUP BUZZ','Nakamura has been Japan\'s standout creative force — two goals and two assists in the group stage, routinely outclassing opponents worth 10x his transfer fee. J-League fans are calling him the best Japanese player since Kagawa.',8.5,'06-25'),
       'deniz-undav-stuttgart':NW('WORLD CUP BUZZ','Three goals in Germany\'s first two games coming off the bench. His super-sub impact has matched Roger Milla\'s legendary World Cup substitute record for goal contributions — Germany\'s secret weapon.',8.0,'06-22'),
       'yasin-ayari-brighton':NW('WORLD CUP BUZZ','Two goals against Tunisia in a poignant performance — the Sweden midfielder of Tunisian heritage playing against his ancestral nation. His composed sujoud celebration went global. Multiple European giants have already made inquiries.',7.5,'06-20'),
       'folarin-balogun-monaco':NW('WORLD CUP BUZZ','Balogun opened his tournament with a brace against Paraguay, announced himself as the USMNT\'s main man with authority. USA fans are already saying this is his tournament to own.',7.5,'06-16'),
       'pau-cubarsi-barcelona':NW('WORLD CUP BUZZ','19 years old and playing every single minute of Spain\'s group stage without looking out of place once. Analysts calling him the most composed teenager at a World Cup since Pirlo in 1998.',7.5,'06-26'),
       'nico-o-reilly-man-city':NW('WORLD CUP BUZZ','O\'Reilly earned a place in England\'s group stage squad and hit the crossbar as a substitute against Ghana. At 20, playing on the biggest stage for a tournament host — scouts from across Europe are watching his every move.',6.5,'06-24'),
-      'nico-paz-como':NW('WORLD CUP BUZZ','Got his first World Cup start in Argentina\'s final group game at 21 and impressed — calm on the ball, intelligent movement off it. Zero goals or assists but already being talked about as a future Argentina regular by coaches who watched.',6.0,'06-25'),
+      'nico-paz-como':NW('TRANSFER','Got his first World Cup start in Argentina\'s final group game at 21 and impressed — and Real Madrid just confirmed Como paid €60m to fully remove Madrid\'s cut-price buyback option, a strong signal of how highly his value is now rated.',7.5,'06-26'),
       'william-pacho-paris-sg':NW('WORLD CUP BUZZ','Ecuador shocked Germany in the group stage and Pacho was the anchor at the back for one of the tournament\'s biggest upsets. The PSG centre-back is proving his big-money transfer fee at the biggest stage.',7.5,'06-26'),
       'weston-mckennie-juventus':NW('WORLD CUP BUZZ','The only USA player to start all three group games — captained the side against Turkey and created three chances in the 4-1 win over Paraguay. McKennie\'s engine and leadership are the spine of this USMNT in front of a home crowd.',7.0,'06-27'),
       'felix-nmecha-dortmund':NW('WORLD CUP BUZZ','Nmecha has been Germany\'s unsung hero in midfield — breaking up play, driving forward, and scoring the only goal in a tight win. Pundits calling him one of the tournament\'s most underrated performers.',6.5,'06-19'),
@@ -3844,7 +3860,38 @@ Yan Diomande|RB Leipzig|LW|22|4
       'bruno-guimaraes-newcastle':NW('WORLD CUP BUZZ','Joint-leading assist maker of the group stage with three. Guimarães has become the fulcrum of a rampant Brazil side and is being called the best midfielder at the tournament by several analysts.',7.5,'06-26'),
       'kai-havertz-arsenal':NW('WORLD CUP BUZZ','A brace in Germany\'s 7-1 demolition of Curaçao — penalty and a deft chip — earned him Player of the Match and finally quieted the critics. He has been Germany\'s most complete forward throughout the group stage.',7.0,'06-14'),
       'ousmane-dembele-paris-sg':NW('MATCH RECAP','Hat-trick against Norway inside the opening 20 minutes — the first player since Ronaldo to score three so quickly in a WC group game. France\'s attack looks unstoppable with Mbappé and Dembélé in this form.',8.5,'06-20'),
-      'vinicius-junior-real-madrid':NW('MATCH RECAP','Four goals in all three group games — Brazil\'s primary offensive reference back to his very best after a difficult club season. ESPN ranking him joint-top with Messi in the Golden Boot race.',8.5,'06-26')
+      'vinicius-junior-real-madrid':NW('MATCH RECAP','Four goals in all three group games — Brazil\'s primary offensive reference back to his very best after a difficult club season. ESPN ranking him joint-top with Messi in the Golden Boot race.',8.5,'06-26'),
+
+      // ── Summer 2026 transfer window ─────────────────────────────────────
+      'goncalo-ramos-ac-milan':NW('TRANSFER','AC Milan smashed their transfer record to sign him from PSG for a fee north of €74m — Milan\'s first major statement signing of the summer.',6.0,'06-29'),
+      'anthony-gordon-barcelona':NW('TRANSFER','Barcelona\'s biggest signing of the summer — an €80m move from Newcastle confirmed July 1, a huge step up for a 24-year-old.',8.5,'07-01'),
+      'marc-cucurella-real-madrid':NW('TRANSFER','Completed a move to Real Madrid from Chelsea for an initial €55m, beating Barcelona and Atlético to his signature.',6.5,'07-01'),
+      'elliot-anderson-man-city':NW('TRANSFER','Man City agreed a club-record £116m fee for the Nottingham Forest midfielder — the most expensive British player in history at 23.',9.0,'07-01'),
+      'sandro-tonali-tottenham':NW('TRANSFER','Tottenham smashed their transfer record to sign him from Newcastle in a deal worth up to £100m.',6.5,'07-01'),
+      'bernardo-silva-real-madrid':NW('TRANSFER','Joined Real Madrid as a free agent after leaving Manchester City — a Bosman move for one of the most tactically versatile midfielders in the game.',3.0,'07-01'),
+      'ibrahima-konate-real-madrid':NW('TRANSFER','Left Liverpool as a free agent to join Real Madrid on a four-year deal reported worth around €21m a year.',4.5,'07-01'),
+      'jan-paul-van-hecke-tottenham':NW('TRANSFER','Tottenham\'s third summer signing — a £52m move from Brighton as Spurs rebuild their back line.',4.5,'06-29'),
+      'geovany-quenda-chelsea':NW('TRANSFER','Chelsea completed the €51m signing of the 18-year-old from Sporting — a huge fee that confirms him as one of Europe\'s hottest wing prospects.',8.0,'07-01'),
+      'facundo-medina-marseille':NW('TRANSFER','Joined Marseille from Lens for an €18m fee.',2.0,'07-01'),
+      'marcos-senesi-tottenham':NW('TRANSFER','Signed for Tottenham as a free agent after four years at Bournemouth, De Zerbi\'s second signing of the summer.',3.0,'07-01'),
+      'andy-robertson-tottenham':NW('TRANSFER','The Liverpool legend joined Tottenham on a free transfer after his contract expired — a boyhood-favourite exit softened by staying in the Premier League.',0.5,'07-01'),
+      'kieran-trippier-wolves':NW('TRANSFER','Left Newcastle for Wolves on a free transfer at 35 — a step down the table late in his career.',-3.0,'06-30'),
+      'antoine-griezmann-orlando-city':NW('TRANSFER','Officially confirmed leaving Atlético Madrid — and La Liga — for Orlando City in MLS at 35, ending a decade at the club.',-5.0,'07-01'),
+      'mateus-fernandes-tottenham':NW('TRANSFER','Tottenham beat Manchester United to a club-record £85m deal, all guaranteed with no add-ons, for the 21-year-old West Ham midfielder — medical underway.',8.0,'07-01'),
+      'jeremy-jacquet-liverpool':NW('TRANSFER','Liverpool completed a €70m move from Rennes for the 20-year-old French centre-back — a huge fee for a player yet to win a senior cap.',8.5,'07-01'),
+      'marco-palestra-chelsea':NW('TRANSFER','Chelsea signed the Serie A Defender of the Season from Atalanta for up to £47m at just 21.',6.5,'07-01'),
+      'ederson-silva-man-utd':NW('TRANSFER','Manchester United agreed a fee near €45m with Atalanta for the Brazilian midfielder, replacing the departing Casemiro.',4.5,'06-28'),
+      'emmanuel-emegha-chelsea':NW('TRANSFER','Chelsea\'s pre-agreed €25m deal for the Strasbourg striker officially completes this summer.',4.0,'07-01'),
+      'bazoumana-toure-newcastle':NW('TRANSFER','Newcastle\'s replacement for Anthony Gordon — a rapid rise for the 20-year-old winger, arriving from Hoffenheim for around €50m barely a year after his last move.',7.0,'07-01'),
+      'luka-vuskovic-brighton':NW('TRANSFER','Brighton beat competition to sign the 19-year-old from Tottenham for up to £50m — roughly four times what Spurs paid for him.',5.0,'06-30'),
+      'jeff-ekhator-juventus':NW('TRANSFER','Juventus signed the 19-year-old, capped by Italy for the first time this summer, from Genoa for €16m.',4.0,'06-28'),
+      'hayden-hackney-everton':NW('TRANSFER','Everton close in on a Championship Player of the Season, agreeing an initial £16.5m fee with Middlesbrough that could rise to £25m.',4.5,'06-30'),
+      'alejandro-grimaldo-atletico':NW('TRANSFER','Returned to Spain to join Atlético Madrid from Bayer Leverkusen for around €21m — a Euro 2024 winner strengthening the left side.',3.5,'06-27'),
+      'pascal-struijk-brighton':NW('TRANSFER','A surprise £20m move to Brighton after eight years and the captaincy at Leeds.',2.5,'06-30'),
+      'nathaniel-brown-bayern':NW('TRANSFER','Bayern Munich completed a €55m deal for the Germany international left-back from Eintracht Frankfurt.',7.5,'06-28'),
+      'afonso-moreira-leverkusen':NW('TRANSFER','Bayer Leverkusen signed the Portuguese winger from Lyon for €32m on a five-year deal.',4.0,'06-17'),
+      'rafael-leao-milan':NW('TRANSFER SAGA','Has publicly said he wants to leave AC Milan this summer, with Manchester United and Galatasaray both linked — no destination agreed yet.',-1.5,'06-29'),
+      'denzel-dumfries-inter':NW('TRANSFER RUMOR','A move to Real Madrid is reportedly expected to be finalised imminently, following Bernardo Silva and Konaté through the door on frees.',2.0,'07-01')
     };
     const MOOD={
       'kylian-mbappe-real-madrid':'\u201cMr World Cup\u201d trending after the Iraq brace',
@@ -3860,7 +3907,7 @@ Yan Diomande|RB Leipzig|LW|22|4
       'bruno-fernandes-man-utd':'Premier League Player of the Season talk all over his timeline',
       'vozinha-famalicao':'"Mr Cape Verde" — 16M Instagram followers in 48h, memes and tributes from every corner of the internet',
       'ayyoub-bouaddi-lille':'"The maths genius who solved Brazil" — viral profile piece breaking everywhere',
-      'ismael-saibari-psv':'"Morocco\'s new Ziyech" trending in Arab football circles and beyond',
+      'ismael-saibari-bayern':'"Morocco\'s new Ziyech" trending in Arab football circles and beyond',
       'keito-nakamura-reims':'"Samurai Messi" trending in Japan; clubs reportedly queuing up',
       'deniz-undav-stuttgart':'"Super-sub Undav" highlight reels have 12M views across social media',
       'yasin-ayari-brighton':'Sujoud celebration clip hit 8M views, story resonating globally',
