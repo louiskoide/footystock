@@ -5192,6 +5192,24 @@ Afonso Moreira|Leverkusen|LW|21|4
       // matching what the live 90-minute ticker already shows by full time
       // (same 0.6 multiplier) instead of quietly burying ~75% of it in a
       // multi-day ease-in the live chart never reflected.
+      // Two changes vs. the original single-event version, both aimed at the
+      // same exploit: halfLife=6 was slower than the ~3-4 day gap between WC
+      // matches, so a bump barely faded before the next one stacked fully on
+      // top — additively, with no ceiling. For any consistently-decent
+      // starter that produced a near-guaranteed, low-risk staircase (buy,
+      // hold through each match, repeat) instead of genuine "spike then
+      // settle" — the exact "ratchets upward forever" pattern
+      // pricing-model.md's decay rule exists to prevent.
+      // 1. halfLife 6->3: a single match's spike now mostly fades before the
+      //    next typical match, so consecutive good games don't just compound.
+      // 2. BUMP_CAP: the *combined* still-live bump from all recent matches is
+      //    capped at ±25% of price. A hot streak of overlapping bumps (common
+      //    in a tight knockout schedule) can no longer stack past a ceiling —
+      //    one huge match can still nearly hit the cap alone, but repeated
+      //    good games can't ratchet the price indefinitely.
+      const BUMP_CAP=0.25;
+      const bumpTotal=new Array(N).fill(0);
+      const todayByEvent=[]; // {e, raw} — today's uncapped contribution per event, for proportional impactPct if the cap binds
       for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N){ e._impactPct=0; continue; }
         // More expensive players face slightly larger downside on bad games
         // (notoriety already in scope): notoriety∈[0,1], adds up to 25% extra
@@ -5202,19 +5220,28 @@ Afonso Moreira|Leverkusen|LW|21|4
         // + good rating) creates ~4% chart move on match day, decaying naturally.
         // Expensive players get up to 25% more downside only.
         const downScale = e.delta < 0 ? 1.0 * (1 + notoriety * 0.25) : 1.0;
-        const bump=(e.delta/100)*price*downScale, ramp=1, halfLife=6;
+        const bump=(e.delta/100)*price*downScale, ramp=1, halfLife=3;
+        let todayRaw=0;
         for(let j=idx;j<N;j++){ const daysIn=j-idx+1; // +1: the match day itself is already day 1, not day 0 — otherwise a same-day event (idx===N-1) eases in at 0 and never visibly moves today's price.
           const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
           const decay=Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);
           const contribution=bump*eased*decay;
-          hist[j]+=contribution;
-          // The "what's driving the price" list must show what this match
-          // actually did to the price *today*, not the raw rating-based
-          // formula score (e.delta) — those are two different numbers and
-          // showing the raw one reads as a broken promise ("should've gone
-          // up 5.66%") when the model only ever applies a damped fraction.
-          if(j===N-1) e._impactPct=(contribution/price)*100;
-        } }
+          bumpTotal[j]+=contribution;
+          if(j===N-1) todayRaw=contribution;
+        }
+        todayByEvent.push({e,todayRaw});
+      }
+      // The "what's driving the price" list must show what this match
+      // actually did to the price *today*, not the raw rating-based formula
+      // score (e.delta) — those are two different numbers and showing the
+      // raw one reads as a broken promise ("should've gone up 5.66%") when
+      // the model only ever applies a damped (and now possibly capped)
+      // fraction. If the cap bound today, scale every event's share down
+      // proportionally so the displayed reasons still sum to the real move.
+      const rawToday=bumpTotal[N-1], cappedToday=clamp(rawToday,-BUMP_CAP*price,BUMP_CAP*price);
+      const todayCapScale = rawToday!==0 ? cappedToday/rawToday : 1;
+      for(const {e,todayRaw} of todayByEvent){ e._impactPct=(todayRaw*todayCapScale/price)*100; }
+      for(let j=0;j<N;j++){ hist[j]+=clamp(bumpTotal[j],-BUMP_CAP*price,BUMP_CAP*price); }
       // Getting knocked out is its own one-time shock to the chart — distinct
       // from the moodSig floor above (which lowers where the price *settles*
       // going forward), this is the visible "plummet" on the day it happens.
