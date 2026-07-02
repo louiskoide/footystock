@@ -7,7 +7,7 @@ import { createServer } from 'http';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { loadCrosswalk } from '../lib/crosswalk.mjs';
+import { loadCrosswalk, canonNation } from '../lib/crosswalk.mjs';
 import { makeClient } from './api-football.mjs';
 import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses } from './poll.mjs';
 import { refreshHype } from './hype.mjs';
@@ -177,6 +177,38 @@ const server = createServer((req, res) => {
   if (url.pathname === '/debug/unmatched') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(state._unmatchedSquadNames || {}));
+    return;
+  }
+
+  // One-off diagnostic (1 extra API-Football call, no state mutation):
+  // re-fetches the raw fixturePlayers stats for every player on a nation's
+  // side in a given player's most recent fixture, so we can see exactly what
+  // API-Football itself reports (games.substitute/minutes/rating) rather than
+  // guessing from our own derived min:0 events — used to debug cases where a
+  // known starter (e.g. a national-team goalkeeper) shows up as benched.
+  if (url.pathname === '/debug/rawstats') {
+    const id = url.searchParams.get('id');
+    const p = id && state.players[id];
+    const ev = p && p.events && p.events[p.events.length - 1];
+    if (!ev || !ev._fid) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'no event with a fixture id found for that player' }));
+      return;
+    }
+    const nation = (state._nationOf || {})[id];
+    client.fixturePlayers(ev._fid).then(playersResp => {
+      const teamBlock = (playersResp || []).find(tb => canonNation(tb.team.name) === nation);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        fid: ev._fid,
+        nation,
+        teamBlockFound: !!teamBlock,
+        players: (teamBlock?.players || []).map(pl => ({ name: pl.player.name, games: pl.statistics?.[0]?.games })),
+      }, null, 2));
+    }).catch(e => {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    });
     return;
   }
 
