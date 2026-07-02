@@ -104,7 +104,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
   const away = canonNation(fixture.teams.away.name);
   const homeTracked = trackedNations.has(home);
   const awayTracked = trackedNations.has(away);
-  if (!homeTracked && !awayTracked) return true;
+  if (!homeTracked && !awayTracked) return { ok: true, writes: [] };
 
   const gf = fixture.goals.home;
   const ga = fixture.goals.away;
@@ -136,6 +136,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
   } catch (e) { log(`fixtureEvents ${fid} failed: ${e.message}`); }
 
   let ok = true;
+  const writes = []; // { id, fid, min, rating } for every player actually written this call — lets callers verify no later step in the same batch reverts an earlier write
   for (const [nation, tracked, me, opp, myGoals, oppGoals] of [
     [home, homeTracked, home, away, gf, ga],
     [away, awayTracked, away, home, ga, gf],
@@ -194,6 +195,7 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
         // teamBlock.players entirely).
         const ev = { d: date, opp, rating: null, g: 0, a: 0, yellow: false, red: false, min: 0, note: null, marks: [], live: matchInfo.live, elapsed: matchInfo.elapsed, _fid: fid };
         if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
+        writes.push({ id, fid, min: 0, rating: null });
         if (watched) log(`match-debug: fid=${fid} id=${id} took BENCH branch, wrote min:0`);
         continue;
       }
@@ -219,13 +221,14 @@ async function processFixture(client, fixture, flatIndex, trackedNations, nation
 
       const ev = { d: date, opp, rating, g: goals, a: assists, yellow: !!yellow, red: !!red, min: minutes, note, marks: marksByPlayer[id] || [], live: matchInfo.live, elapsed: matchInfo.elapsed, _fid: fid };
       if (existingEv) Object.assign(existingEv, ev); else evs.push(ev);
+      writes.push({ id, fid, min: minutes, rating });
       if (watched) {
         const verify = state.players[id].events.find(e => e._fid === fid);
         log(`match-debug: fid=${fid} id=${id} immediately-after-assign min=${verify?.min} rating=${verify?.rating} sameRef=${verify === existingEv} evsLength=${evs.length}`);
       }
     }
   }
-  return ok;
+  return { ok, writes };
 }
 
 // Nation/squad membership is discovered entirely from API-Football, never
@@ -358,7 +361,7 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
       // triggers. After a _finalPolls wipe (STATE_VERSION migration) it spreads
       // the rebuild across many cycles instead of hitting 50+ fixtures at once.
       if (finishedThisCycle >= FINISHED_PER_CYCLE) continue;
-      const ok = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
+      const { ok } = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
       // Only spend a grace poll on a fetch that actually succeeded — a
       // transient API error (rate limit, timeout) must not permanently give
       // up on a fixture's data after 3 unlucky failures in a row.
@@ -424,11 +427,19 @@ export async function repairStaleFixtures(client, crosswalk, state, log = consol
       for (const id of ids) details.push({ fid, id, foundInFixturesList: false });
       continue;
     }
-    const ok = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
+    const { ok, writes } = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
     if (ok) repaired++;
     for (const id of ids) {
-      const ev = (state.players[id]?.events || []).find(e => e._fid === fid);
-      details.push({ fid, id, foundInFixturesList: true, ok, min: ev?.min, rating: ev?.rating });
+      const immediate = writes.find(w => w.id === id); // value right after this call's own Object.assign
+      const ev = (state.players[id]?.events || []).find(e => e._fid === fid); // value read fresh, right now
+      const reverted = !!immediate && (immediate.min !== ev?.min || immediate.rating !== ev?.rating);
+      details.push({
+        fid, id, foundInFixturesList: true, ok,
+        writtenThisCall: !!immediate,
+        immediateMin: immediate?.min, immediateRating: immediate?.rating,
+        min: ev?.min, rating: ev?.rating,
+        reverted,
+      });
     }
   }
   log(`repair: re-fetched ${repaired}/${suspectFids.size} exhausted fixtures.`);

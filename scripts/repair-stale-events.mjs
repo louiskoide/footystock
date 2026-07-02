@@ -18,14 +18,24 @@ async function main() {
   const resp = await fetch(`${WORKER_URL}/admin/repair-stale-events`, { method: 'POST' });
   const data = await resp.json();
   if (!resp.ok) { console.error('ERROR:', JSON.stringify(data)); process.exit(1); }
-  console.log(JSON.stringify({ checked: data.checked, repaired: data.repaired, detailsCount: data.details?.length }, null, 2));
+  const details = data.details || [];
+  const written = details.filter(d => d.writtenThisCall);
+  const reverted = details.filter(d => d.reverted);
+  console.log(JSON.stringify({
+    checked: data.checked,
+    repaired: data.repaired,
+    detailsCount: details.length,
+    writtenThisCall: written.length,
+    revertedCount: reverted.length,
+  }, null, 2));
+  if (reverted.length) {
+    console.log(`\n--- REVERTED (${reverted.length} of ${written.length} written) — immediate write differs from final read ---`);
+    console.log(JSON.stringify(reverted, null, 2));
+  }
   if (watchIds.size) {
-    const matches = (data.details || []).filter(d => watchIds.has(d.id));
+    const matches = details.filter(d => watchIds.has(d.id));
     console.log(`\n--- watched ids (${matches.length} match(es)) ---`);
     console.log(JSON.stringify(matches, null, 2));
-  } else {
-    console.log('\n--- full details ---');
-    console.log(JSON.stringify(data.details, null, 2));
   }
 }
 
