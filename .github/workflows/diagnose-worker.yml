@@ -29,6 +29,10 @@ on:
         description: 'Space-separated player ids to inspect via scripts/debug-rawstats.mjs (raw API-Football games.substitute/minutes/rating for their whole team; blank = skip)'
         type: string
         default: ''
+      repair_stale_events:
+        description: 'Run scripts/repair-stale-events.mjs (re-fetch only fixtures stuck with a stale bench marker after exhausting grace-polls)'
+        type: boolean
+        default: false
 
 jobs:
   diagnose:
@@ -64,3 +68,6 @@ jobs:
       - name: Inspect raw API-Football stats (optional debug)
         if: ${{ inputs.rawstats_player_ids != '' }}
         run: node scripts/debug-rawstats.mjs ${{ inputs.rawstats_player_ids }}
+      - name: Repair stale bench-marker events (optional)
+        if: ${{ inputs.repair_stale_events }}
+        run: node scripts/repair-stale-events.mjs

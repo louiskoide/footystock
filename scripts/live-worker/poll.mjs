@@ -359,6 +359,49 @@ export async function pollOnce(client, crosswalk, state, log = console.log) {
   return { liveCount, finishedNew };
 }
 
+// One-off repair pass, triggered manually (see /admin/repair-stale-events in
+// server.mjs) — not part of the normal poll cadence. A "stale" event (our
+// min:0/rating:null bench marker) on a fixture that has already exhausted
+// its FINAL_GRACE_POLLS re-polls is stuck for good under pollOnce(): the
+// `if (polls >= FINAL_GRACE_POLLS) continue` gate skips it forever, even if
+// API-Football has since finished writing that fixture's final box score
+// (which it sometimes hasn't yet during a burst rebuild, e.g. right after a
+// STATE_VERSION wipe — see CLAUDE.md). Re-fetching just these fixtures once,
+// unconditionally, either confirms a genuine bench appearance (idempotent —
+// substitute stays true, nothing changes) or picks up the now-complete
+// data. Never touches fixtures still within their normal grace-poll window
+// or that never showed the stale marker, so it can't corrupt good data.
+export async function repairStaleFixtures(client, crosswalk, state, log = console.log) {
+  const flatIndex = buildFlatIndex(crosswalk);
+  const nationOf = state._nationOf || {};
+  const trackedNations = state._trackedNations || new Set();
+
+  const suspectFids = new Set();
+  for (const p of Object.values(state.players)) {
+    for (const ev of p.events || []) {
+      if (ev._fid && ev.min === 0 && ev.rating === null && (state._finalPolls.get(ev._fid) || 0) >= FINAL_GRACE_POLLS) {
+        suspectFids.add(ev._fid);
+      }
+    }
+  }
+
+  if (!suspectFids.size) { log('repair: no stuck-stale fixtures found.'); return { checked: 0, repaired: 0 }; }
+
+  log(`repair: found ${suspectFids.size} exhausted fixture(s) with stale bench markers, re-fetching...`);
+  const fixtures = await client.fixtures({ league: WC_LEAGUE_ID, season: state.season });
+  const byId = new Map(fixtures.map(f => [f.fixture.id, f]));
+
+  let repaired = 0;
+  for (const fid of suspectFids) {
+    const fixture = byId.get(fid);
+    if (!fixture) { log(`repair: fixture ${fid} not found in current fixtures list, skipping.`); continue; }
+    const ok = await processFixture(client, fixture, flatIndex, trackedNations, nationOf, state, log, { live: false, elapsed: fixture.fixture.status.elapsed });
+    if (ok) repaired++;
+  }
+  log(`repair: re-fetched ${repaired}/${suspectFids.size} exhausted fixtures.`);
+  return { checked: suspectFids.size, repaired };
+}
+
 export function makeInitialState(season) {
   return { generatedAt: null, season, teams: {}, players: {}, demand: {}, priceHist: {}, _finalPolls: new Map() };
 }

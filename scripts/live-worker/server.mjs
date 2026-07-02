@@ -9,7 +9,7 @@ import path from 'path';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
 import { loadCrosswalk, canonNation } from '../lib/crosswalk.mjs';
 import { makeClient } from './api-football.mjs';
-import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses } from './poll.mjs';
+import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses, repairStaleFixtures } from './poll.mjs';
 import { refreshHype } from './hype.mjs';
 import { tickDemand, recordTrade, recordHatewatch } from './demand.mjs';
 import { submitScore, getLeaderboard } from './leaderboard.mjs';
@@ -205,6 +205,22 @@ const server = createServer((req, res) => {
         teamBlockFound: !!teamBlock,
         players: (teamBlock?.players || []).map(pl => ({ name: pl.player.name, games: pl.statistics?.[0]?.games })),
       }, null, 2));
+    }).catch(e => {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    });
+    return;
+  }
+
+  // One-off repair pass (POST, mutates state + saves it): re-fetches only
+  // the fixtures stuck with a stale bench marker after exhausting their
+  // normal grace-polls — see repairStaleFixtures() in poll.mjs. Safe to run
+  // any time; a no-op if nothing is stuck.
+  if (url.pathname === '/admin/repair-stale-events' && req.method === 'POST') {
+    repairStaleFixtures(client, crosswalk, state).then(result => {
+      saveState(state);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
     }).catch(e => {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: e.message }));
