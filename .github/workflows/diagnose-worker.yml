@@ -1,0 +1,19 @@
+name: Diagnose live worker + price history (one-off)
+
+# Manual-only, read-only diagnostic: reports how much World Cup fixture/event
+# data the live worker has recovered, and how much real (non-flat) price
+# history Supabase holds. Zero API-Football calls, zero writes — safe to run
+# any time. See scripts/diagnose-worker.mjs.
+on:
+  workflow_dispatch:
+
+jobs:
+  diagnose:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run diagnostic
+        run: node scripts/diagnose-worker.mjs
