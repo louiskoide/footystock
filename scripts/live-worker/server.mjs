@@ -182,14 +182,16 @@ const server = createServer((req, res) => {
 
   // One-off diagnostic (1 extra API-Football call, no state mutation):
   // re-fetches the raw fixturePlayers stats for every player on a nation's
-  // side in a given player's most recent fixture, so we can see exactly what
-  // API-Football itself reports (games.substitute/minutes/rating) rather than
-  // guessing from our own derived min:0 events — used to debug cases where a
-  // known starter (e.g. a national-team goalkeeper) shows up as benched.
+  // side in a given player's fixture (most recent by default, or a specific
+  // one via ?date=MM-DD — a player can have several events, and the stale
+  // one under investigation isn't always the latest), so we can see exactly
+  // what API-Football itself reports (games.substitute/minutes/rating)
+  // rather than guessing from our own derived min:0 events.
   if (url.pathname === '/debug/rawstats') {
     const id = url.searchParams.get('id');
+    const date = url.searchParams.get('date');
     const p = id && state.players[id];
-    const ev = p && p.events && p.events[p.events.length - 1];
+    const ev = p && p.events && (date ? p.events.find(e => e.d === date) : p.events[p.events.length - 1]);
     if (!ev || !ev._fid) {
       res.writeHead(404, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify({ error: 'no event with a fixture id found for that player' }));
