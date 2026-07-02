@@ -5070,11 +5070,13 @@ Afonso Moreira|Leverkusen|LW|21|4
       for(const rt of ratingsByRecency.slice(0,6)){ ewmaR+=rt*wgt; ewmaW+=wgt; wgt*=0.75; }
       ewmaR = ewmaW ? ewmaR/ewmaW : 0;
       const formDelta = (ewmaW && avgR) ? (ewmaR-avgR) : 0;
-      // Streak kicker bumped 2->4: a player who's elite every match (not just
-      // improving on their own baseline) should still earn some extra credit
-      // for sustained excellence, capped well below formDelta's own swing so
-      // it stays the "small bonus" the spec calls for, not the main term.
-      const formSig=atWC?Math.max(6,Math.min(99,46+formDelta*22+streakLen*4)):8;
+      // Streak kicker bumped 4->7: a player who's elite every match (not just
+      // improving on their own baseline) — formDelta alone stays ~0 for someone
+      // whose recent games match their own already-high average, so a genuine
+      // multi-match hot run (e.g. 6G+2A across 4 starts) needs this term to read
+      // as more than barely "In Form". 4 straight ≥7.4 games now adds +28, enough
+      // to clear the "On Fire" threshold on its own.
+      const formSig=atWC?Math.max(6,Math.min(99,46+formDelta*22+streakLen*7)):8;
       // Real hype (Google Trends search-interest delta, see scripts/live-worker/hype.mjs)
       // — independent of performance by construction, since it never reads
       // change7d/change30d/events. 0 = no live signal yet (cold-start neutral,
@@ -5086,10 +5088,13 @@ Afonso Moreira|Leverkusen|LW|21|4
       // matches means no more spotlight. This is a hype-axis effect, not a
       // performance one, so it's applied here rather than to fotmob/formSig.
       const eliminated = atWC && !!wcEff && /^Eliminated/.test(wcEff.status);
-      const moodSig=Math.max(6,Math.min(99,(46+hypeRaw*1.4+(stars?14:0)) - (eliminated?30:0)));
+      // hypeRaw multiplier nudged 1.4->1.55: makes the top hype bands (Trending/
+      // Viral/Phenomenon) very slightly easier to reach without changing what a
+      // neutral/negative signal looks like (0 stays 0).
+      const moodSig=Math.max(6,Math.min(99,(46+hypeRaw*1.55+(stars?14:0)) - (eliminated?30:0)));
       const tmVal=(mv!=null)?mv:Math.round((tierBase[tier]*(0.9+0.5*r())) * (youth?1.18:1) /10)*5;
       const tmTrendUp = change30d>=0;
-      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*1.4));
+      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*1.55));
 
       // ---- price = anchor + performance + form + hype, in log space (see
       // pricing-model.md). A player with no real signal trades flat at
