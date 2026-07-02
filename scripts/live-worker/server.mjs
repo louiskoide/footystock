@@ -39,7 +39,7 @@ const STATE_PATH = '/data/state-cache.json';
 // re-fetched after a player-data wipe. Only wipe _finalPolls if you need to
 // force a complete re-fetch of all fixture stats (e.g. after a rating formula
 // change) — and expect a rebuild burst to consume ~400 API calls.
-const STATE_VERSION = 5;
+const STATE_VERSION = 6;
 
 function saveState(s) {
   try {
@@ -69,13 +69,16 @@ function loadState(season) {
       raw._nationOf = {};
       raw.players = {};
       raw._squadFetched = undefined;
-      // _finalPolls normally preserved (see comment above) — but v5 fixes a
-      // matchPlayer() bug (initial-disambiguated surname match, e.g. "J.
-      // Sánchez" for an ambiguous "Sánchez" surname) that was silently
-      // dropping most squad names, so already-grace-exhausted fixtures need
-      // a genuine re-fetch to pick up the players it previously missed.
-      // One-time cost: ~2 calls per already-finished fixture.
-      if ((raw._stateVersion || 0) < 5) raw._finalPolls = [];
+      // _finalPolls normally preserved (see comment above) — but v5 and v6
+      // each fix a matchPlayer() bug (v5: initial-disambiguated surname
+      // match, e.g. "J. Sánchez" for an ambiguous "Sánchez" surname; v6:
+      // same-surname-AND-same-initial relatives, e.g. brothers Jude/Jobe
+      // Bellingham both reducing to "J. Bellingham", resolved via a
+      // nation-tag tiebreaker) that were silently dropping matches, so
+      // already-grace-exhausted fixtures need a genuine re-fetch to pick up
+      // the players they previously missed. One-time cost: ~2 calls per
+      // already-finished fixture.
+      if ((raw._stateVersion || 0) < 6) raw._finalPolls = [];
     }
     raw._finalPolls = new Map(raw._finalPolls || []);
     if (raw._trackedNations) raw._trackedNations = new Set(raw._trackedNations);
