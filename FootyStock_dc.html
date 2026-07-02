@@ -5092,7 +5092,14 @@ Afonso Moreira|Leverkusen|LW|21|4
       // 7.4 (same qualifying bar as the streak), scaling up for genuinely
       // legendary form. Needs a real streak behind it too: on its own it
       // can't reach Unstoppable, only combined with formDelta+streakLen can.
-      const eliteKicker = Math.max(0, ewmaR-7.4)*12; // ewmaR is 0 with no rated matches, so this is naturally 0 then too
+      // Coefficient calibrated to a real reference point, not a guess: the
+      // single best FULL-SEASON average rating across Europe's top 5 leagues
+      // last year (FotMob) was Kane's 8.14 — so even matching that across 4
+      // straight matches (a small, high-variance sample) is at the real-world
+      // ceiling, not routine. At 18, replicating Kane's record over 4 games
+      // lands right at Unstoppable's doorstep (~87, just short) — only truly
+      // exceeding it (8.5+, essentially unheard of) clears the bar outright.
+      const eliteKicker = Math.max(0, ewmaR-7.4)*18; // ewmaR is 0 with no rated matches, so this is naturally 0 then too
       const formSig=atWC?Math.max(6,Math.min(99,46+formDelta*formDeltaMult+streakLen*7+eliteKicker)):8;
       // Real hype (Google Trends search-interest delta, see scripts/live-worker/hype.mjs)
       // — independent of performance by construction, since it never reads
