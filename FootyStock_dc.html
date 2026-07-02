@@ -5209,7 +5209,6 @@ Afonso Moreira|Leverkusen|LW|21|4
       //    good games can't ratchet the price indefinitely.
       const BUMP_CAP=0.25;
       const bumpTotal=new Array(N).fill(0);
-      const todayByEvent=[]; // {e, raw} — today's uncapped contribution per event, for proportional impactPct if the cap binds
       for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N){ e._impactPct=0; continue; }
         // More expensive players face slightly larger downside on bad games
         // (notoriety already in scope): notoriety∈[0,1], adds up to 25% extra
@@ -5221,26 +5220,26 @@ Afonso Moreira|Leverkusen|LW|21|4
         // Expensive players get up to 25% more downside only.
         const downScale = e.delta < 0 ? 1.0 * (1 + notoriety * 0.25) : 1.0;
         const bump=(e.delta/100)*price*downScale, ramp=1, halfLife=3;
-        let todayRaw=0;
+        // The "what's driving the price" list must show what this match did
+        // to price AT THE TIME — its own peak, day-of contribution (eased=
+        // decay=1 on day 1, so this is just `bump` itself), capped the same
+        // way the price move itself is capped. That's a fixed historical
+        // fact matching the visible jump on the chart that date. Previously
+        // this showed the event's TODAY-decayed residual instead, which
+        // fades to near-zero within a couple weeks (halfLife=3) — every
+        // group-stage performance read as a trivial ~0% "reason" once the
+        // tournament moved on, even though the chart still shows the real
+        // jump that happened that day.
+        e._impactPct = clamp(bump,-BUMP_CAP*price,BUMP_CAP*price)/price*100;
         for(let j=idx;j<N;j++){ const daysIn=j-idx+1; // +1: the match day itself is already day 1, not day 0 — otherwise a same-day event (idx===N-1) eases in at 0 and never visibly moves today's price.
           const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
           const decay=Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);
-          const contribution=bump*eased*decay;
-          bumpTotal[j]+=contribution;
-          if(j===N-1) todayRaw=contribution;
+          bumpTotal[j]+=bump*eased*decay;
         }
-        todayByEvent.push({e,todayRaw});
       }
-      // The "what's driving the price" list must show what this match
-      // actually did to the price *today*, not the raw rating-based formula
-      // score (e.delta) — those are two different numbers and showing the
-      // raw one reads as a broken promise ("should've gone up 5.66%") when
-      // the model only ever applies a damped (and now possibly capped)
-      // fraction. If the cap bound today, scale every event's share down
-      // proportionally so the displayed reasons still sum to the real move.
-      const rawToday=bumpTotal[N-1], cappedToday=clamp(rawToday,-BUMP_CAP*price,BUMP_CAP*price);
-      const todayCapScale = rawToday!==0 ? cappedToday/rawToday : 1;
-      for(const {e,todayRaw} of todayByEvent){ e._impactPct=(todayRaw*todayCapScale/price)*100; }
+      // Still needed below: the live-bump-uncertainty wobble boost reads
+      // how much of TODAY's price rides on a currently-decaying bump.
+      const cappedToday=clamp(bumpTotal[N-1],-BUMP_CAP*price,BUMP_CAP*price);
       for(let j=0;j<N;j++){ hist[j]+=clamp(bumpTotal[j],-BUMP_CAP*price,BUMP_CAP*price); }
       // Getting knocked out is its own one-time shock to the chart — distinct
       // from the moodSig floor above (which lowers where the price *settles*
@@ -7370,9 +7369,10 @@ Afonso Moreira|Leverkusen|LW|21|4
             card: e.red?'🟥':(e.yellow?'🟨':''),
             isBench, notBench:!isBench, minsLabel: isBench?'':(e.min!=null?(e.min+"'"):''),
             ratingLabel: (e.rating!=null && e.rating>0) ? e.rating.toFixed(1) : '—',
-            // What this match actually did to the stock price (today's
-            // damped/decayed contribution to hist), not the raw per-match
-            // performance formula score — see the bump loop above.
+            // What this match actually did to the stock price at the time
+            // (its own peak, day-of bump — matches the chart's jump on that
+            // date), not the raw per-match performance formula score, and
+            // not today's since-decayed residual — see the bump loop above.
             delta:Math.abs(impact).toFixed(2)+'%', deltaArrow:up?'▲':'▼', deltaColor:up?GREEN:RED }; });
 
         const {volPct:dVolPct,hiAll:dHiAll,loAll:dLoAll}=riskStats(p);
