@@ -29,14 +29,24 @@ Entertainment only — **no real money is involved**.
   `.github/workflows/deploy-worker.yml` redeploys this worker to Fly on every
   push to `main` touching `scripts/live-worker/`, `scripts/lib/`, `fly.toml`,
   or `Dockerfile`. **It deliberately does NOT trigger on `FootyStock_dc.html`**
-  anymore — the worker's `state` (teams/players/fixture history) lives only
-  in memory with zero persistence (`makeInitialState()` in `poll.mjs`), so a
-  redeploy mid-tournament wipes everything accumulated so far and forces a
-  cold re-fetch from API-Football. A frontend-only chart/styling tweak must
-  never restart the live worker. (The crosswalk baked from `FootyStock_dc.html`
-  into the Docker image does go stale until the next *worker-code* deploy —
-  acceptable, since the roster rarely changes mid-tournament; trigger
-  `workflow_dispatch` manually if it ever needs a forced refresh.)
+  anymore. The worker's `state` (teams/players/fixture history) is persisted
+  to a mounted Fly volume (`footystock_data` at `/data/state-cache.json`,
+  see `saveState`/`loadState` in `server.mjs`) and reloaded on boot, so an
+  **ordinary redeploy does NOT wipe accumulated data or force a cold
+  re-fetch** — verified 2026-07-02: a redeploy loaded "cached state v5 (age:
+  2m, players: 379)" instead of starting from zero. Data is only cleared
+  deliberately, by bumping `STATE_VERSION` in `server.mjs` for a schema
+  migration (e.g. a matching-logic or rating-formula fix that needs a clean
+  rebuild) — see the comment above `STATE_VERSION` for what that preserves
+  vs. wipes. A frontend-only chart/styling tweak still shouldn't restart the
+  live worker (no reason to, and it does cost a brief re-squad-discovery +
+  whatever fixtures/grace-polls the STATE_VERSION migration wiped), but an
+  ordinary worker-code redeploy on an unchanged STATE_VERSION is safe and
+  keeps all prior polling progress. (The crosswalk baked from
+  `FootyStock_dc.html` into the Docker image does go stale until the next
+  *worker-code* deploy — acceptable, since the roster rarely changes
+  mid-tournament; trigger `workflow_dispatch` manually if it ever needs a
+  forced refresh.)
 - **The static frontend has no confirmed automatic deploy right now.**
   `.github/workflows/pages.yml` fails on every run (`Get Pages site failed` —
   GitHub Pages was never enabled in repo settings for `louiskoide/footystock`),

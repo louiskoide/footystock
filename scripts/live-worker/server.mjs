@@ -7,9 +7,9 @@ import { createServer } from 'http';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { readFileSync, writeFileSync, existsSync } from 'fs';
-import { loadCrosswalk } from '../lib/crosswalk.mjs';
+import { loadCrosswalk, canonNation } from '../lib/crosswalk.mjs';
 import { makeClient } from './api-football.mjs';
-import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses } from './poll.mjs';
+import { pollOnce, makeInitialState, publicSnapshot, recordPriceCloses, repairStaleFixtures, getWriteLog } from './poll.mjs';
 import { refreshHype } from './hype.mjs';
 import { tickDemand, recordTrade, recordHatewatch } from './demand.mjs';
 import { submitScore, getLeaderboard } from './leaderboard.mjs';
@@ -39,7 +39,7 @@ const STATE_PATH = '/data/state-cache.json';
 // re-fetched after a player-data wipe. Only wipe _finalPolls if you need to
 // force a complete re-fetch of all fixture stats (e.g. after a rating formula
 // change) — and expect a rebuild burst to consume ~400 API calls.
-const STATE_VERSION = 4;
+const STATE_VERSION = 6;
 
 function saveState(s) {
   try {
@@ -69,8 +69,16 @@ function loadState(season) {
       raw._nationOf = {};
       raw.players = {};
       raw._squadFetched = undefined;
-      // _finalPolls preserved intentionally — keeps grace-poll counters so
-      // already-finalised fixtures aren't re-fetched en masse.
+      // _finalPolls normally preserved (see comment above) — but v5 and v6
+      // each fix a matchPlayer() bug (v5: initial-disambiguated surname
+      // match, e.g. "J. Sánchez" for an ambiguous "Sánchez" surname; v6:
+      // same-surname-AND-same-initial relatives, e.g. brothers Jude/Jobe
+      // Bellingham both reducing to "J. Bellingham", resolved via a
+      // nation-tag tiebreaker) that were silently dropping matches, so
+      // already-grace-exhausted fixtures need a genuine re-fetch to pick up
+      // the players they previously missed. One-time cost: ~2 calls per
+      // already-finished fixture.
+      if ((raw._stateVersion || 0) < 6) raw._finalPolls = [];
     }
     raw._finalPolls = new Map(raw._finalPolls || []);
     if (raw._trackedNations) raw._trackedNations = new Set(raw._trackedNations);
@@ -169,6 +177,77 @@ const server = createServer((req, res) => {
   if (url.pathname === '/debug/unmatched') {
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(state._unmatchedSquadNames || {}));
+    return;
+  }
+
+  // One-off diagnostic (1 extra API-Football call, no state mutation):
+  // re-fetches the raw fixturePlayers stats for every player on a nation's
+  // side in a given player's fixture (most recent by default, or a specific
+  // one via ?date=MM-DD — a player can have several events, and the stale
+  // one under investigation isn't always the latest), so we can see exactly
+  // what API-Football itself reports (games.substitute/minutes/rating)
+  // rather than guessing from our own derived min:0 events.
+  if (url.pathname === '/debug/rawstats') {
+    const id = url.searchParams.get('id');
+    const date = url.searchParams.get('date');
+    const p = id && state.players[id];
+    const ev = p && p.events && (date ? p.events.find(e => e.d === date) : p.events[p.events.length - 1]);
+    if (!ev || !ev._fid) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'no event with a fixture id found for that player' }));
+      return;
+    }
+    const nation = (state._nationOf || {})[id];
+    client.fixturePlayers(ev._fid).then(playersResp => {
+      const teamBlock = (playersResp || []).find(tb => canonNation(tb.team.name) === nation);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({
+        fid: ev._fid,
+        nation,
+        finalPolls: state._finalPolls.get(ev._fid),
+        storedEvent: ev,
+        teamBlockFound: !!teamBlock,
+        players: (teamBlock?.players || []).map(pl => ({ name: pl.player.name, games: pl.statistics?.[0]?.games })),
+      }, null, 2));
+    }).catch(e => {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    });
+    return;
+  }
+
+  // Temporary: dumps the global write-audit trail (every write to any
+  // player's event, from both the normal poll loop and manual repairs,
+  // tagged by source + timestamp) — lets us see whether a concurrent poll
+  // cycle overwrites a repair's write for the same fid/player right after
+  // it lands. ?id=<playerId> filters to just that player. Remove once the
+  // write-then-revert bug is root-caused.
+  if (url.pathname === '/debug/writelog') {
+    const id = url.searchParams.get('id');
+    const log = getWriteLog();
+    const filtered = id ? log.filter(w => w.id === id) : log;
+    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.end(JSON.stringify({ count: filtered.length, entries: filtered }, null, 2));
+    return;
+  }
+
+  // One-off repair pass (POST, mutates state + saves it): re-fetches only
+  // the fixtures stuck with a stale bench marker after exhausting their
+  // normal grace-polls — see repairStaleFixtures() in poll.mjs. Safe to run
+  // any time; a no-op if nothing is stuck. ?full=1 widens this to every
+  // finished tracked-nation fixture (not just flagged ones), to also catch
+  // the matchPlayer-collision outcome that lands on a wrong-but-nonzero
+  // value instead of a detectable 0/null bench marker.
+  if (url.pathname === '/admin/repair-stale-events' && req.method === 'POST') {
+    const full = url.searchParams.get('full') === '1';
+    repairStaleFixtures(client, crosswalk, state, undefined, { full }).then(result => {
+      saveState(state);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+    }).catch(e => {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    });
     return;
   }
 
