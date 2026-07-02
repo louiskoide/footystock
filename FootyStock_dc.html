@@ -5070,13 +5070,19 @@ Afonso Moreira|Leverkusen|LW|21|4
       for(const rt of ratingsByRecency.slice(0,6)){ ewmaR+=rt*wgt; ewmaW+=wgt; wgt*=0.75; }
       ewmaR = ewmaW ? ewmaR/ewmaW : 0;
       const formDelta = (ewmaW && avgR) ? (ewmaR-avgR) : 0;
+      // Asymmetric like the price-side upMult/downMult below: a slump should
+      // read as more damning than a hot run reads as impressive. Negative
+      // formDelta (genuinely below the player's own baseline) gets a heavier
+      // multiplier than positive, so a real bad patch drops clearly into
+      // Cold/Out of Form/Ice Cold instead of just dinting "Average".
+      const formDeltaMult = formDelta>=0 ? 22 : 34;
       // Streak kicker bumped 4->7: a player who's elite every match (not just
       // improving on their own baseline) — formDelta alone stays ~0 for someone
       // whose recent games match their own already-high average, so a genuine
       // multi-match hot run (e.g. 6G+2A across 4 starts) needs this term to read
       // as more than barely "In Form". 4 straight ≥7.4 games now adds +28, enough
       // to clear the "On Fire" threshold on its own.
-      const formSig=atWC?Math.max(6,Math.min(99,46+formDelta*22+streakLen*7)):8;
+      const formSig=atWC?Math.max(6,Math.min(99,46+formDelta*formDeltaMult+streakLen*7)):8;
       // Real hype (Google Trends search-interest delta, see scripts/live-worker/hype.mjs)
       // — independent of performance by construction, since it never reads
       // change7d/change30d/events. 0 = no live signal yet (cold-start neutral,
