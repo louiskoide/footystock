@@ -7389,14 +7389,18 @@ Afonso Moreira|Leverkusen|LW|21|4
         // grade. Keyed directly off avgR (not bar %): a single red->amber->
         // green blend across the whole 0-100 range put 7.3 in an olive/
         // mustard no-man's-land, since amber itself carries a lot of red —
-        // three graded ZONES with a hard boundary at 7.3 guarantees "7.3+ is
-        // green" is always literally true, while still grading smoothly
-        // within each zone instead of flat single colors.
+        // graded ZONES with a hard boundary at 7.3 guarantee "7.3+ is green"
+        // is always literally true. Our rating formula rarely produces truly
+        // bad (sub-5) games, so 6.0 (a do-nothing performance) should already
+        // read mildly red rather than neutral — 6.0 is anchored exactly at
+        // base RED (not blended toward amber) and 6.5 is the amber midline,
+        // so a merely-average game still reads as a little red, not amber.
         const lerpHex=(a,b,t)=>{ const pa=[1,3,5].map(i=>parseInt(a.slice(i,i+2),16)), pb=[1,3,5].map(i=>parseInt(b.slice(i,i+2),16));
           return '#'+pa.map((c,i)=>Math.round(c+(pb[i]-c)*t).toString(16).padStart(2,'0')).join(''); };
         const gradeColor=(avgR)=>{ if(!avgR) return RED;
           if(avgR<6.0) return lerpHex('#7f1d1d','#d23b2c',Math.max(0,(avgR-4.5)/(6.0-4.5)));
-          if(avgR<7.3) return lerpHex('#d23b2c','#e2a32b',(avgR-6.0)/(7.3-6.0));
+          if(avgR<6.5) return lerpHex('#d23b2c','#e2a32b',(avgR-6.0)/(6.5-6.0));
+          if(avgR<7.3) return '#e2a32b';
           return lerpHex('#3fa361','#0f6b3f',Math.min(1,(avgR-7.3)/(9.5-7.3))); };
         // Convert internal game anchor (inflated) to realistic €M display value.
         // Scale factor 0.38 maps game anchors to plausible TM range; perf ratio
