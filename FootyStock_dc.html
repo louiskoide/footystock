@@ -5266,8 +5266,18 @@ Afonso Moreira|Leverkusen|LW|21|4
       // close price is different each day even with no new match events.
       // Seeded by id + dayKey → changes midnight-to-midnight; WC players
       // get a bigger swing (±2%) than quiet bench players (±0.6%).
+      // Volatility boost while a bump is still live: a smooth, fully
+      // deterministic decay curve is a guaranteed trade — hatewatch right
+      // after any spike and the price WILL glide back down exactly on
+      // schedule, no real risk taken. Scaling the wobble up while a big
+      // chunk of price still rides on a decaying bump means the day-to-day
+      // path during that window can tick against the "expected" direction,
+      // so shorting (or buying) right at a peak is a good bet on average,
+      // not a certain one. Tapers back to the normal ±2%/±0.6% once the
+      // bump has faded, so calm players are unaffected.
       const wR = this.mulberry(this.hash(id + ':w:' + dayKey));
-      const wMag = atWC ? 0.02 : 0.006;
+      const liveBumpFrac = Math.min(1, Math.abs(cappedToday) / Math.max(1, price));
+      const wMag = (atWC ? 0.02 : 0.006) * (1 + liveBumpFrac * 2.5);
       const wobbledPrice = Math.max(2, hist[N-1] * (1 + (wR() - 0.5) * 2 * wMag));
 
       // REAL recorded history. The synthetic `hist` above is now only a
