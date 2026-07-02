@@ -43,6 +43,19 @@ function matchPlayer(flatIndex, apiName) {
   const surnameMatches = flatIndex.filter(c => c.norm.split(' ').pop() === surname);
   if (surnameMatches.length === 1) return surnameMatches[0].id;
 
+  // 4. Initial-disambiguated surname match. API-Football often sends squad
+  //    names as "J. Sánchez" (leading first-initial + surname) rather than a
+  //    full name — very common for non-marquee squad members. normName()
+  //    already reduces that to two words, "j sanchez", so when the bare
+  //    surname is ambiguous (multiple "Sánchez"es on our roster), use the
+  //    leading initial to pick the one candidate whose first name starts
+  //    with it instead of giving up entirely.
+  if (surnameMatches.length > 1 && words.length === 2 && words[0].length === 1) {
+    const initial = words[0];
+    const narrowed = surnameMatches.filter(c => c.norm[0] === initial);
+    if (narrowed.length === 1) return narrowed[0].id;
+  }
+
   return null;
 }
 
