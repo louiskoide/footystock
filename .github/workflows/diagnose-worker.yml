@@ -21,6 +21,10 @@ on:
         description: 'Run scripts/debug-supabase-write.mjs (single write+read-back debug)'
         type: boolean
         default: false
+      player_ids:
+        description: 'Space-separated player ids to inspect via scripts/debug-player-events.mjs (blank = skip)'
+        type: string
+        default: ''
 
 jobs:
   diagnose:
@@ -50,3 +54,6 @@ jobs:
       - name: Test Supabase write (optional debug)
         if: ${{ inputs.test_supabase_write }}
         run: node scripts/debug-supabase-write.mjs
+      - name: Inspect specific players (optional debug)
+        if: ${{ inputs.player_ids != '' }}
+        run: node scripts/debug-player-events.mjs ${{ inputs.player_ids }}
