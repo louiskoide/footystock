@@ -41,5 +41,5 @@ jobs:
       # as an optional step here (still executing THIS branch's script
       # content, per the ref used to dispatch) works without merging.
       - name: Run backfill (optional)
-        if: ${{ inputs.run_backfill == 'true' }}
-        run: node scripts/backfill-price-history.mjs ${{ inputs.backfill_dry_run == 'true' && '--dry-run' || '' }}
+        if: ${{ inputs.run_backfill }}
+        run: node scripts/backfill-price-history.mjs ${{ inputs.backfill_dry_run && '--dry-run' || '' }}
