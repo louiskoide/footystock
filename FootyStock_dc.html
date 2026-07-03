@@ -6121,13 +6121,19 @@ Mohammed Muntari|Al-Duhail|ST|32|6
   genCode(){return Math.random().toString(36).slice(2,8).toUpperCase();}
 
   async loadMyClub(){
-    this.setState({clubLoading:true,clubError:''});
+    // Only swap in the loading state on the very first load. Background
+    // refreshes (30s poll, re-entering the tab) must not flash the spinner —
+    // that collapses the club page and makes the layout jump, then jump back.
+    const firstLoad=!this.state.myClub&&!(this.state.clubPublicList||[]).length;
+    if(firstLoad) this.setState({clubLoading:true,clubError:''});
+    else if(this.state.clubError) this.setState({clubError:''});
     try{
       const uid=this.getUserId();
       const memberships=await Supa.get('club_members','user_id=eq.'+uid+'&select=club_id');
       if(!memberships.length){
         const pub=await Supa.get('clubs','is_public=eq.true&order=created_at.desc&limit=20&select=id,name,description,leader_name,is_public,min_net_worth,created_at');
-        this.setState({myClub:null,clubMembers:[],clubPublicList:pub,clubLoading:false});
+        const pubUnchanged=this.state.clubLoading===false&&this.state.myClub===null&&JSON.stringify(pub)===JSON.stringify(this.state.clubPublicList);
+        if(!pubUnchanged) this.setState({myClub:null,clubMembers:[],clubPublicList:pub,clubLoading:false});
         return;
       }
       const clubId=memberships[0].club_id;
