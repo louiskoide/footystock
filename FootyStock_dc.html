@@ -6386,7 +6386,12 @@ Afonso Moreira|Leverkusen|LW|21|4
       const emailVal=(emailInput&&emailInput.includes('@'))?emailInput:null;
       if(emailVal) this.saveEmail(emailVal);
       const payload={token,name,password_hash:hash,email:emailVal,ref_code,net_worth:10000,updated_at:new Date().toISOString()};
-      const res=await fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload)});
+      // return=minimal: this writes token/password_hash/email, none of which
+      // are in the public SELECT grant anymore (see the Supabase SQL near
+      // SUPABASE_URL) — without this, PostgREST's default attempt to hand
+      // back a representation of the written row needs SELECT on those
+      // columns and Postgres denies the whole request, not just the read.
+      const res=await fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(payload)});
       if(!res.ok){ const e=await res.json().catch(()=>{}); console.error('signup fail',e); this.setState({loginError:(e&&(e.message||e.hint||e.msg||e.error))||'Signup failed ('+res.status+')',loginSending:false}); return; }
       this._saveToken(token);
       this.saveUsername(name);
@@ -6444,7 +6449,7 @@ Afonso Moreira|Leverkusen|LW|21|4
     this.setState({loginError:'',loginSending:true});
     try{
       const hash=await this._hashPw(pw,this._resetName.toLowerCase());
-      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(this._resetToken),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({password_hash:hash})});
+      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(this._resetToken),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({password_hash:hash})});
       if(!res.ok){ this.setState({loginError:'Update failed. Try again.',loginSending:false}); return; }
       this._saveToken(this._resetToken);
       this._resetToken=null; this._resetName=null;
@@ -6470,7 +6475,7 @@ Afonso Moreira|Leverkusen|LW|21|4
       const rows=await Supa.post('rpc/verify_password_by_token',{p_token:token,p_hash:curHash});
       if(!rows||!rows.length){ this.setState({profileResetPwError:'Current password is incorrect.',profileResetPwOk:''}); return; }
       const newHash=await this._hashPw(nw,name.toLowerCase());
-      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({password_hash:newHash})});
+      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({password_hash:newHash})});
       if(!res.ok){ this.setState({profileResetPwError:'Update failed. Try again.',profileResetPwOk:''}); return; }
       this.setState({profileResetPwError:'',profileResetPwOk:'Password updated!',profileResetPwOpen:false});
     }catch(e){ this.setState({profileResetPwError:'Network error. Try again.',profileResetPwOk:''}); }
@@ -6516,7 +6521,7 @@ Afonso Moreira|Leverkusen|LW|21|4
     const token=this.loadToken(); if(!token){ this.setState({profileLinkEmailError:'Not logged in.',profileLinkEmailOk:''}); return; }
     this.setState({profileLinkEmailError:'',profileLinkEmailOk:''});
     try{
-      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({email})});
+      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify({email})});
       if(!res.ok){ this.setState({profileLinkEmailError:'Failed to save. Try again.',profileLinkEmailOk:''}); return; }
       this.saveEmail(email);
       this.setState({profileEmail:email,profileLinkEmailError:'',profileLinkEmailOk:'Email saved!',profileLinkEmailOpen:false});
@@ -6549,7 +6554,9 @@ Afonso Moreira|Leverkusen|LW|21|4
       .sort((a,b)=>(b[1].qty||0)-(a[1].qty||0)).slice(0,10)
       .map(([id,h])=>({id,qty:h.qty||0,avg:h.avg||0,side:'short'}));
     const topH=[...topLong,...topShort];
-    fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+    // return=minimal: same reason as doLogin()'s signup POST — this writes
+    // token/email, neither of which are publicly selectable anymore.
+    fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
       body:JSON.stringify({token:this.loadToken(),name,email:this.loadEmail()||null,trading_pnl,net_worth,top_holdings:topH,updated_at:new Date().toISOString()})}).catch(()=>{});
   }
   leaderboardData(){
@@ -6649,8 +6656,12 @@ Afonso Moreira|Leverkusen|LW|21|4
     const token=this.loadToken();
     const name=this.loadUsername()||'Anonymous';
     try{
-      // Try patch first; if no row exists yet, upsert to create it
-      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{
+      // Try patch first; if no row exists yet, upsert to create it.
+      // ?select=name (not phone/token/*) — phone isn't in the public SELECT
+      // grant, so asking PostgREST to hand back the full row would deny the
+      // whole PATCH; scoping the representation to an allowed column still
+      // lets us tell "0 rows matched" from "1 row updated".
+      const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token)+'&select=name',{
         method:'PATCH',
         headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'return=representation'},
         body:JSON.stringify({phone:val.trim()})
@@ -6661,7 +6672,7 @@ Afonso Moreira|Leverkusen|LW|21|4
         // No row yet — upsert to create it
         await fetch(this._sbUrl,{
           method:'POST',
-          headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
+          headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
           body:JSON.stringify({token,name,net_worth:10000,phone:val.trim()})
         });
       }
