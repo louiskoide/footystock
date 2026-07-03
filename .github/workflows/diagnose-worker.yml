@@ -65,6 +65,10 @@ on:
         description: 'If debugging the daily reward, also look up this exact username''s leaderboard + portfolios rows (blank = aggregate stats only)'
         type: string
         default: ''
+      debug_portfolio_write_token:
+        description: 'Run scripts/debug-portfolio-write.mjs for this exact token — re-sends that account''s real data via the same request shape persist() uses and prints the real HTTP status/body (persist() itself swallows this). Blank = skip.'
+        type: string
+        default: ''
 
 jobs:
   diagnose:
@@ -112,3 +116,6 @@ jobs:
       - name: Debug daily reward persistence (optional)
         if: ${{ inputs.debug_daily_reward }}
         run: node scripts/debug-daily-reward.mjs "${{ inputs.debug_daily_reward_username }}"
+      - name: Debug portfolio write (optional)
+        if: ${{ inputs.debug_portfolio_write_token != '' }}
+        run: node scripts/debug-portfolio-write.mjs "${{ inputs.debug_portfolio_write_token }}"
