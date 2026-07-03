@@ -2025,7 +2025,23 @@
           <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileOtherMedal }}</div>
         </div>
       </div>
-      <div style="text-align:center;padding:20px;font:500 13px 'Hanken Grotesk';color:#8a938c">Detailed stats are only visible to the account holder.</div>
+      <div style="font:700 18px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 13px">Top holdings</div>
+      <sc-if value="{{ profileOtherHasHoldings }}" hint-placeholder-val="{{ true }}">
+      <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:20px">
+        <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 90px 110px 110px;gap:12px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Player</span><span style="text-align:right">Shares</span><span style="text-align:right">Price</span><span style="text-align:right">Value</span></div>
+        <sc-for list="{{ profileOtherHoldings }}" as="h" hint-placeholder-count="3">
+          <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 90px 110px 110px;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #f3f4f0">
+            <span style="display:flex;flex-direction:column"><b style="font:600 15px 'Hanken Grotesk'">{{ h.name }}</b><span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ h.lg }} · {{ h.pos }}</span></span>
+            <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ h.qty }}</span>
+            <span style="text-align:right;font:500 13px 'Space Grotesk';color:#46504a">{{ h.price }}</span>
+            <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ h.value }}</span>
+          </div>
+        </sc-for>
+      </div>
+      </sc-if>
+      <sc-if value="{{ profileOtherNoHoldings }}" hint-placeholder-val="{{ false }}">
+        <div style="text-align:center;padding:20px;font:500 13px 'Hanken Grotesk';color:#8a938c">This player hasn't shared any holdings yet.</div>
+      </sc-if>
     </sc-if>
   </div>
   </sc-if>
@@ -6207,7 +6223,7 @@ Afonso Moreira|Leverkusen|LW|21|4
     const myNw=Math.round(this.netWorth());
     const sortBy=this.state.lbSortBy||'netWorth';
     const real=this._liveLeaderboard||[];
-    const arr=real.filter(e=>e.name!==myName).map(e=>({name:e.name,netWorth:e.netWorth||0,tradingPnl:e.tradingPnl||0}));
+    const arr=real.filter(e=>e.name!==myName).map(e=>({name:e.name,netWorth:e.netWorth||0,tradingPnl:e.tradingPnl||0,topHoldings:e.topHoldings||[]}));
     arr.push({name:myName,netWorth:myNw,tradingPnl:myPnl,me:true});
     arr.sort((a,b)=>sortBy==='tradingPnl'?(b.tradingPnl-a.tradingPnl):(b.netWorth-a.netWorth));
     return arr;
@@ -7830,6 +7846,11 @@ Afonso Moreira|Leverkusen|LW|21|4
       profileOtherPLColor: (()=>{ if(!S.profileViewName) return '#8a938c'; const e=leaderboard.find(x=>x.name===S.profileViewName); return e?e.profitColor:'#8a938c'; })(),
       profileOtherRank: (()=>{ if(!S.profileViewName) return '—'; const e=leaderboard.find(x=>x.name===S.profileViewName); return e?e.medal:'—'; })(),
       profileOtherMedal: (()=>{ if(!S.profileViewName) return '—'; const e=leaderboard.find(x=>x.name===S.profileViewName); return e?e.medal:'—'; })(),
+      profileOtherHoldings: (()=>{ if(!S.profileViewName) return []; const e=lb.find(x=>x.name===S.profileViewName); if(!e||!e.topHoldings) return [];
+        return e.topHoldings.map(h=>{ const p=this.byId(h.id); if(!p) return null; const price=this.curPrice(p);
+          return { name:p.name, lg:p.abbr, pos:p.pos, price:this.money(price), qty:h.qty, value:this.money(price*h.qty) }; }).filter(Boolean); })(),
+      profileOtherHasHoldings: (()=>{ if(!S.profileViewName) return false; const e=lb.find(x=>x.name===S.profileViewName); return !!(e&&e.topHoldings&&e.topHoldings.length); })(),
+      profileOtherNoHoldings: (()=>{ if(!S.profileViewName) return true; const e=lb.find(x=>x.name===S.profileViewName); return !(e&&e.topHoldings&&e.topHoldings.length); })(),
       profileInitials: (S.profileViewName || this.loadUsername() || 'YO').slice(0,2).toUpperCase(),
       profileIsOther: S.profileViewName !== null,
       goProfile:()=>this.openProfileView(null),
