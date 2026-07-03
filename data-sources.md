@@ -49,15 +49,18 @@ Fly.io worker (always-on, scripts/live-worker/)
   → resolves every record to our canonical slug ID
   → computes each player's price (see pricing-model.md)
   → serves prices.json-shaped JSON over HTTP (no commit/repo write)
-Static frontend (GitHub Pages)
+Static frontend (deploy target TBC — see CLAUDE.md)
   → polls the worker's /prices.json every 30s, merges it live
   → falls back silently to the hand-typed STARS/NEWS snapshot if unreachable
 User portfolios/trades
   → stay in localStorage (per-user, no server needed yet)
 ```
 
-Both the worker (`deploy-worker.yml`) and the frontend (`pages.yml`) auto-deploy
-on push to `main` — no manual `fly deploy` or commit-prices step needed.
+The worker (`deploy-worker.yml`) auto-deploys on push to `main` — no manual
+`fly deploy` step needed. The frontend's `pages.yml` was removed after failing
+on all 371 of its runs (GitHub Pages was never enabled for this repo) —
+confirm what actually serves `FootyStock_dc.html` in production before
+assuming a push to `main` publishes it.
 
 - **No database yet.** Prices are served live by the worker, never committed
   to the repo; portfolios stay in `localStorage`. Only add a DB (Supabase free
