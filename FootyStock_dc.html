@@ -194,9 +194,8 @@
             <div style="font:700 14px 'Space Grotesk';color:#16201a">{{ item.priceStr }}</div>
           </div>
         </sc-for>
-        <div style="display:flex;gap:10px;margin-top:20px">
-          <button onClick="{{ keepAllPacked }}" style="flex:1;padding:13px;background:#f5f6f3;color:#46504a;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer">Keep all</button>
-          <button onClick="{{ confirmPackSell }}" style="flex:1;padding:13px;background:#16a85f;color:#fff;border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer">{{ packSellBtnLabel }}</button>
+        <div style="margin-top:20px">
+          <button onClick="{{ confirmPackSell }}" style="width:100%;padding:13px;background: {{ packSellBtnBg }};color: {{ packSellBtnColor }};border:none;border-radius:12px;font:700 14px 'Hanken Grotesk';cursor:pointer">{{ packSellBtnLabel }}</button>
         </div>
       </div>
     </div>
@@ -5988,11 +5987,13 @@ Afonso Moreira|Leverkusen|LW|21|4
     // are the existing pendingPacks/packedHoldings mechanic (see
     // generatePack/claimPack), which is local-storage-only, same as every
     // other pack source in the app (competition rewards, mystery packs).
+    // Claiming just queues it — same as a competition-win pack landing in
+    // Packs, it's opened from there when the player chooses to, not forced
+    // open immediately.
     const pending=[pack,...(this.state.pendingPacks||[])];
     this.savePendingPacks(pending);
     this.setState({streak:newStreak,lastClaim:this.todayStr(),showReward:false,pendingPacks:pending},()=>{
       this.persist(); this.submitScore();
-      this.openPackRevealAt(0);
     });
   }
   stop(e){ e.stopPropagation(); }
@@ -8430,8 +8431,15 @@ Afonso Moreira|Leverkusen|LW|21|4
       showPackSell:S.showPackSell,
       packSellList:(S.packSellItems||[]).map(item=>({ ...item, sel:!!(S.packSellSel||{})[item.id], toggle:()=>this.togglePackSell(item.id) })),
       packSellBtnLabel:(()=>{ const n=Object.values(S.packSellSel||{}).filter(Boolean).length; return n>0?`Sell ${n} now`:'Done'; })(),
+      // One button, not two — "keep all" and "done" (nothing selected) were
+      // the same no-op action wearing different labels. It reads as an
+      // inert "Done" until you tick a stock to sell, then lights up green
+      // and becomes the sell action — confirmPackSell() already no-ops
+      // correctly when nothing's selected (just closes), so no separate
+      // handler is needed for the empty-selection case.
+      packSellBtnBg:(()=>{ const n=Object.values(S.packSellSel||{}).filter(Boolean).length; return n>0?'#16a85f':'#f5f6f3'; })(),
+      packSellBtnColor:(()=>{ const n=Object.values(S.packSellSel||{}).filter(Boolean).length; return n>0?'#fff':'#46504a'; })(),
       confirmPackSell:()=>this.confirmPackSell(),
-      keepAllPacked:()=>this.setState({showPackSell:false,packSellItems:[],packSellSel:{}}),
       openMysteryPackSell:()=>this.setState({mysteryOpen:false,showPackSell:true}),
       openPackReveal:()=>this.openPackReveal(),
       showPackReveal:S.showPackReveal,
