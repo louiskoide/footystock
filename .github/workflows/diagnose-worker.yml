@@ -49,6 +49,14 @@ on:
         description: 'If dumping the write log, filter to this one player id (blank = full log)'
         type: string
         default: ''
+      run_holdings_backfill:
+        description: 'Run scripts/backfill-leaderboard-holdings.mjs (regenerate every leaderboard row''s top_holdings with avg/side from their real portfolios row, so public profiles show P/L + hatewatch without waiting for that user to reconnect)'
+        type: boolean
+        default: false
+      holdings_backfill_dry_run:
+        description: 'If running the holdings backfill, dry-run it (log counts, write nothing)'
+        type: boolean
+        default: false
 
 jobs:
   diagnose:
@@ -90,3 +98,6 @@ jobs:
       - name: Dump write-audit trail (optional)
         if: ${{ inputs.dump_writelog }}
         run: node scripts/debug-writelog.mjs ${{ inputs.writelog_player_id }}
+      - name: Backfill leaderboard top_holdings from portfolios (optional)
+        if: ${{ inputs.run_holdings_backfill }}
+        run: node scripts/backfill-leaderboard-holdings.mjs ${{ inputs.holdings_backfill_dry_run && '--dry-run' || '' }}
