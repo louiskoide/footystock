@@ -43,7 +43,11 @@ await tryInsert('3. Upsert (merge-duplicates), return=representation  <-- the OL
 console.log('\n\nCleaning up test rows...');
 for (const t of testTokens) {
   try {
-    const r = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?token=eq.${encodeURIComponent(t)}`, { method: 'DELETE', headers: HDR });
+    // return=minimal: a DELETE with no Prefer set hits the exact same
+    // "needs SELECT to build a representation" wall as the upsert tests
+    // above, and silently fails to actually delete anything (learned the
+    // hard way — this left a diag_test_ row sitting on the live leaderboard).
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?token=eq.${encodeURIComponent(t)}`, { method: 'DELETE', headers: { ...HDR, Prefer: 'return=minimal' } });
     console.log(`  deleted ${t}: ${r.status}`);
   } catch (e) {
     console.log(`  cleanup failed for ${t} (harmless, it's an obviously-fake diag_test_ row): ${e.message}`);
