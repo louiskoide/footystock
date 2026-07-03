@@ -2717,8 +2717,15 @@ class Component extends DCLogic {
     setTimeout(()=>this.submitScore(), 3000);
     // sync portfolio from cloud (handles cross-device and cross-domain merge)
     setTimeout(()=>this.syncFromCloud(), 100);
-    // auto-open reward if claimable on first load
-    if(this.isClaimable()) this.setState({showReward:true});
+    // Reward auto-open is decided inside syncFromCloud(), once lastClaim has
+    // actually loaded — NOT here. state.lastClaim's boot default is null
+    // (see initial state), so checking isClaimable() at this point always
+    // reads null!==todayStr()===true regardless of real claim history,
+    // forcing the reward modal open on every single reload even for a
+    // player who already claimed today. Whatever happened after that (claim
+    // clicked before the real cloud data landed, a later sync overwriting
+    // the in-flight claim) is how "today's reward" could silently fail to
+    // stick.
     // handle ?ref= referral param
     const refParam=new URLSearchParams(window.location.search).get('ref');
     if(refParam){ this._setCookie('fs_pending_ref',refParam,1); history.replaceState(null,'',window.location.pathname); }
@@ -2774,6 +2781,10 @@ class Component extends DCLogic {
       const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(token));
       if(!rows||!rows.length){
         this.setState({portfolioLoading:false});
+        // Brand-new account, no portfolio row yet — lastClaim is still its
+        // genuine never-claimed default (null), so it's safe to decide
+        // claimability right here.
+        if(this.isClaimable()) this.setState({showReward:true});
         // Still check referral (new user who just signed up via referral link)
         await this.checkPendingRef();
         this.getReferralCount();
@@ -2781,7 +2792,8 @@ class Component extends DCLogic {
       }
       const r=rows[0];
       const today=new Date().toISOString().slice(0,10);
-      this.setState({ cash:r.cash??10000, holdings:r.holdings||{}, txns:r.txns||[], shorts:r.shorts||{}, streak:r.streak||0, lastClaim:r.last_claim||null, joinDate:r.join_date||today, allTimeHigh:r.all_time_high||10000, bonusCash:r.bonus_cash||0, portfolioLoading:false });
+      this.setState({ cash:r.cash??10000, holdings:r.holdings||{}, txns:r.txns||[], shorts:r.shorts||{}, streak:r.streak||0, lastClaim:r.last_claim||null, joinDate:r.join_date||today, allTimeHigh:r.all_time_high||10000, bonusCash:r.bonus_cash||0, portfolioLoading:false },
+        ()=>{ if(this.isClaimable()) this.setState({showReward:true}); });
       // After portfolio is loaded, check referral (for referred user) and referrer reward queue
       await this.checkPendingRef();
       const pendingRewards=r.pending_ref_rewards||0;
@@ -5701,7 +5713,16 @@ Afonso Moreira|Leverkusen|LW|21|4
   todayStr(){ return new Date().toISOString().slice(0,10); }
   yesterdayStr(){ return new Date(Date.now()-86400000).toISOString().slice(0,10); }
   isClaimable(){ return this.state.lastClaim !== this.todayStr(); }
-  rewardSchedule(){ return [200,200,200,200,200,200,1000]; }
+  // Daily reward is a randomized stock pack (reuses the same
+  // pendingPacks/packedHoldings mechanic as competition rewards, see
+  // generateRangedPack/claimReward) rather than flat cash — days 1-6 give a
+  // "Daily Login Pack" (2 stocks, $30-$150 each), day 7 a "Premium Daily
+  // Login Pack" (4 stocks, $100-$200 each).
+  rewardSchedule(){
+    const daily={minVal:30,maxVal:150,count:2,label:'Daily Login Pack'};
+    const premium={minVal:100,maxVal:200,count:4,label:'Premium Daily Login Pack'};
+    return [daily,daily,daily,daily,daily,daily,premium];
+  }
   nextStreakDay(){ // what day in cycle this claim will be
     if(!this.isClaimable()) return ((this.state.streak-1)%7)+1;
     const continues = this.state.lastClaim===this.yesterdayStr();
@@ -5959,8 +5980,20 @@ Afonso Moreira|Leverkusen|LW|21|4
     if(!this.isClaimable()){ this.setState({showReward:false}); return; }
     const continues=this.state.lastClaim===this.yesterdayStr();
     const newStreak=continues?this.state.streak+1:1;
-    const amt=this.rewardSchedule()[((newStreak-1)%7)];
-    this.setState({cash:this.state.cash+amt,bonusCash:(this.state.bonusCash||0)+amt,streak:newStreak,lastClaim:this.todayStr(),showReward:false},()=>{ this.persist(); this.submitScore(); });
+    const cfg=this.rewardSchedule()[((newStreak-1)%7)];
+    const stocks=this.generateRangedPack(cfg.minVal,cfg.maxVal,cfg.count);
+    const pack={stocks,label:cfg.label,source:'daily',claimedAt:new Date().toISOString()};
+    // Streak/lastClaim stay cloud-synced via persist() exactly as before —
+    // only the reward itself changed from cash to a pack. Packs themselves
+    // are the existing pendingPacks/packedHoldings mechanic (see
+    // generatePack/claimPack), which is local-storage-only, same as every
+    // other pack source in the app (competition rewards, mystery packs).
+    const pending=[pack,...(this.state.pendingPacks||[])];
+    this.savePendingPacks(pending);
+    this.setState({streak:newStreak,lastClaim:this.todayStr(),showReward:false,pendingPacks:pending},()=>{
+      this.persist(); this.submitScore();
+      this.openPackRevealAt(0);
+    });
   }
   stop(e){ e.stopPropagation(); }
 
@@ -6670,6 +6703,15 @@ Afonso Moreira|Leverkusen|LW|21|4
   generatePack(minVal, count){
     const DB=this.getDB();
     const eligible=DB.filter(p=>this.curPrice(p)>=minVal);
+    const shuffled=[...eligible].sort(()=>Math.random()-.5);
+    return shuffled.slice(0,count).map(p=>({id:p.id,name:p.name,pos:p.pos||'',team:p.team,price:parseFloat(this.curPrice(p).toFixed(2))}));
+  }
+  // Same shape as generatePack, but bounded both ends — used for the daily
+  // login pack, where the reward is deliberately a mid-tier band (e.g.
+  // $30-$150) rather than "anything above a floor".
+  generateRangedPack(minVal, maxVal, count){
+    const DB=this.getDB();
+    const eligible=DB.filter(p=>{ const pr=this.curPrice(p); return pr>=minVal&&pr<=maxVal; });
     const shuffled=[...eligible].sort(()=>Math.random()-.5);
     return shuffled.slice(0,count).map(p=>({id:p.id,name:p.name,pos:p.pos||'',team:p.team,price:parseFloat(this.curPrice(p).toFixed(2))}));
   }
@@ -7820,14 +7862,16 @@ Afonso Moreira|Leverkusen|LW|21|4
     // ---- reward modal ----
     const sched=this.rewardSchedule(); const claimable=this.isClaimable();
     const claimDay=this.nextStreakDay();
-    const rwDays=sched.map((amt,i)=>{ const n=i+1; const isClaim=claimable&&n===claimDay; const past=n<claimDay||(!claimable&&n<=claimDay);
+    const todayCfg=sched[claimDay-1];
+    const rwDays=sched.map((cfg,i)=>{ const n=i+1; const isClaim=claimable&&n===claimDay; const past=n<claimDay||(!claimable&&n<=claimDay);
       const cur=(!claimable&&n===claimDay);
-      return { n, amt:'$'+amt, bg:isClaim?'#e7f6ec':(past||cur?'#f0faf4':'#f5f6f3'), border:isClaim?'#16a85f':(past||cur?'#bfe6cd':'#eef1ec'),
+      return { n, amt:'×'+cfg.count, bg:isClaim?'#e7f6ec':(past||cur?'#f0faf4':'#f5f6f3'), border:isClaim?'#16a85f':(past||cur?'#bfe6cd':'#eef1ec'),
         labelColor:isClaim?'#16a85f':'#9aa39b', amtColor:isClaim?'#16a85f':(past||cur?'#16201a':'#aab2ab'),
         tick:(past||cur)?'✓':(isClaim?'◆':''), tickColor:isClaim?'#16a85f':'#7fb89a' }; });
-    const rw={ title:claimable?('Day '+claimDay+' · claim $'+sched[claimDay-1]):'Come back tomorrow',
-      subtitle:claimable?'Keep your streak alive — rewards grow through a 7-day cycle, resetting Day 7.':('Streak: '+this.state.streak+' days. Next reward unlocks tomorrow.'),
-      days:rwDays, claim:()=>this.claimReward(), btnLabel:claimable?('Claim $'+sched[claimDay-1]):'Claimed today ✓',
+    const packDesc=`${todayCfg.count} stocks · $${todayCfg.minVal}-$${todayCfg.maxVal} each`;
+    const rw={ title:claimable?('Day '+claimDay+' · claim your '+todayCfg.label):'Come back tomorrow',
+      subtitle:claimable?(packDesc+' — rewards grow through a 7-day cycle, resetting Day 7.'):('Streak: '+this.state.streak+' days. Next reward unlocks tomorrow.'),
+      days:rwDays, claim:()=>this.claimReward(), btnLabel:claimable?('Claim '+todayCfg.label):'Claimed today ✓',
       btnBg:claimable?'#16a85f':'#c4ccc3', btnCursor:claimable?'pointer':'default', btnOpacity:claimable?'1':'0.8' };
 
     // reward header button
@@ -8359,7 +8403,7 @@ Afonso Moreira|Leverkusen|LW|21|4
         return n===1?'1 reward pack waiting':''+n+' reward packs waiting';
       })(),
       pendingPacksList:(S.pendingPacks||[]).map((pk,i)=>({
-        label:`${pk.division||'Pack'} Division · ${pk.rank===1?'1st Place':'2nd Place'}`,
+        label:pk.label||`${pk.division||'Pack'} Division · ${pk.rank===1?'1st Place':'2nd Place'}`,
         stocksLabel:(()=>{const st=pk.stocks||[];const minP=st.length?Math.min(...st.map(s=>s.price||0)):0;return `$${Math.round(minP)}+ stock x${st.length}`;})(),
         isFirst:i===0,
         onClick:()=>this.openPackRevealAt(i),
@@ -8394,7 +8438,7 @@ Afonso Moreira|Leverkusen|LW|21|4
       packRevealTitle:(()=>{
         const pack=(S.pendingPacks||[])[0];
         if(!pack) return '';
-        return `${pack.division} Division · ${pack.rank===1?'1st Place':'2nd Place'}`;
+        return pack.label||`${pack.division} Division · ${pack.rank===1?'1st Place':'2nd Place'}`;
       })(),
       packRevealCards:(()=>{
         const pack=(S.pendingPacks||[])[0]; if(!pack) return [];
