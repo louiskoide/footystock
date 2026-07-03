@@ -22,6 +22,15 @@ const HTML_PATH = path.join(ROOT, 'FootyStock_dc.html');
 const API_KEY = process.env.API_FOOTBALL_KEY;
 const SEASON = process.env.WC_SEASON || '2026';
 const PORT = process.env.PORT || 8080;
+// /admin and /debug routes can trigger extra API-Football calls (up to ~240
+// for /admin/repair-stale-events?full=1) or expose internal matching state,
+// and had no auth at all — anyone on the internet could hit them. Gated
+// behind a shared secret; unset by default so these routes fail closed until
+// you run `fly secrets set ADMIN_SECRET=<random-string> --app footystock`.
+const ADMIN_SECRET = process.env.ADMIN_SECRET || null;
+function isAdminAuthorized(req) {
+  return !!ADMIN_SECRET && req.headers['x-admin-secret'] === ADMIN_SECRET;
+}
 const LIVE_POLL_MS = 30_000;   // while a tracked match is in play
 const IDLE_POLL_MS = 300_000;  // nothing live — just watching for kickoffs/results
 const HYPE_POLL_MS = 2 * 60 * 60_000; // every 2h: news-tone hype (GDELT) moves slower than search trends, and this keeps us well under GDELT's soft request limits (~470 players/cycle)
@@ -91,6 +100,13 @@ function loadState(season) {
     return null;
   }
 }
+
+// Safety net: a dropped client connection mid-request (routine on flaky
+// mobile/stadium wifi — exactly the live-match traffic this worker is built
+// for) throws as an uncaught exception without this, killing price-serving
+// for every user over one bad request. Log and keep running instead.
+process.on('uncaughtException', (err) => { console.error('uncaughtException:', err && err.stack || err); });
+process.on('unhandledRejection', (reason) => { console.error('unhandledRejection:', reason); });
 
 const client = makeClient(API_KEY);
 const crosswalk = loadCrosswalk(HTML_PATH);
@@ -175,6 +191,7 @@ const server = createServer((req, res) => {
   }
 
   if (url.pathname === '/debug/unmatched') {
+    if (!isAdminAuthorized(req)) { res.writeHead(403, { 'Content-Type': 'text/plain' }); res.end('forbidden'); return; }
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(JSON.stringify(state._unmatchedSquadNames || {}));
     return;
@@ -188,6 +205,7 @@ const server = createServer((req, res) => {
   // what API-Football itself reports (games.substitute/minutes/rating)
   // rather than guessing from our own derived min:0 events.
   if (url.pathname === '/debug/rawstats') {
+    if (!isAdminAuthorized(req)) { res.writeHead(403, { 'Content-Type': 'text/plain' }); res.end('forbidden'); return; }
     const id = url.searchParams.get('id');
     const date = url.searchParams.get('date');
     const p = id && state.players[id];
@@ -223,6 +241,7 @@ const server = createServer((req, res) => {
   // it lands. ?id=<playerId> filters to just that player. Remove once the
   // write-then-revert bug is root-caused.
   if (url.pathname === '/debug/writelog') {
+    if (!isAdminAuthorized(req)) { res.writeHead(403, { 'Content-Type': 'text/plain' }); res.end('forbidden'); return; }
     const id = url.searchParams.get('id');
     const log = getWriteLog();
     const filtered = id ? log.filter(w => w.id === id) : log;
@@ -239,6 +258,7 @@ const server = createServer((req, res) => {
   // the matchPlayer-collision outcome that lands on a wrong-but-nonzero
   // value instead of a detectable 0/null bench marker.
   if (url.pathname === '/admin/repair-stale-events' && req.method === 'POST') {
+    if (!isAdminAuthorized(req)) { res.writeHead(403, { 'Content-Type': 'text/plain' }); res.end('forbidden'); return; }
     const full = url.searchParams.get('full') === '1';
     repairStaleFixtures(client, crosswalk, state, undefined, { full }).then(result => {
       saveState(state);
@@ -260,6 +280,7 @@ const server = createServer((req, res) => {
   if (url.pathname === '/trade' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
+    req.on('error', () => { try { res.destroy(); } catch (e) {} });
     req.on('end', async () => {
       try {
         const { id, side, qty, price, referral } = JSON.parse(body);
@@ -314,6 +335,7 @@ const server = createServer((req, res) => {
   if (url.pathname === '/price-closes' && req.method === 'POST') {
     let body = '';
     req.on('data', chunk => { body += chunk; });
+    req.on('error', () => { try { res.destroy(); } catch (e) {} });
     req.on('end', () => {
       try {
         const { dayKey, closes } = JSON.parse(body);
@@ -346,6 +368,7 @@ const server = createServer((req, res) => {
     if (req.method === 'POST') {
       let body = '';
       req.on('data', chunk => { body += chunk; });
+      req.on('error', () => { try { res.destroy(); } catch (e) {} });
       req.on('end', () => {
         try {
           const { token, name, netWorth } = JSON.parse(body);
