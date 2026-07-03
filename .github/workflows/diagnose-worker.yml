@@ -73,6 +73,10 @@ on:
         description: 'Run scripts/debug-tables-check.mjs (read-only pre-launch sanity check: confirms leaderboard/portfolios/comments/referrals/clubs/club_messages/shares tables exist and hold real data, catching the same class of silent-schema-mismatch bug found in bonus_cash)'
         type: boolean
         default: false
+      debug_security_check:
+        description: 'Run scripts/debug-security-check.mjs (read-only: checks whether password_hash is readable via the public anon key on the leaderboard table)'
+        type: boolean
+        default: false
 
 jobs:
   diagnose:
@@ -126,3 +130,6 @@ jobs:
       - name: Debug tables check (optional)
         if: ${{ inputs.debug_tables_check }}
         run: node scripts/debug-tables-check.mjs
+      - name: Debug security check (optional)
+        if: ${{ inputs.debug_security_check }}
+        run: node scripts/debug-security-check.mjs
