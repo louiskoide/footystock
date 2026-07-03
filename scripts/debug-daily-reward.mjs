@@ -15,7 +15,10 @@
 // 2. last_claim just not landing — writes succeed but that specific column
 //    is empty/null across the board (e.g. it never actually changes value).
 //
-// Usage: node scripts/debug-daily-reward.mjs
+// Usage: node scripts/debug-daily-reward.mjs [username]
+// With a username, also looks up that specific account's leaderboard +
+// portfolios rows (token, streak, last_claim, updated_at) to see exactly
+// what's actually stored for them, rather than just aggregate stats.
 
 const SUPABASE_URL = 'https://pwlszzrvwhflijbjwnnf.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_1je-5UnGZ7cVl5iafQfICg_RtGpMTA_';
@@ -59,6 +62,18 @@ async function main() {
     const unordered = await getAll('portfolios', `token=eq.${encodeURIComponent(sampleToken)}&select=streak,last_claim,updated_at`);
     console.log(`\nWhat syncFromCloud()'s query (no order=) returns for a duplicated token, rows[0] would be used:`);
     console.log(JSON.stringify(unordered, null, 2));
+  }
+
+  const username = process.argv[2];
+  if (username) {
+    console.log(`\n--- Looking up "${username}" ---`);
+    const lbRows = await getAll('leaderboard', `name=eq.${encodeURIComponent(username)}&select=token,name,holdings_public,updated_at,net_worth,trading_pnl`);
+    if (!lbRows.length) { console.log('No leaderboard row found for that exact name.'); return; }
+    console.log('leaderboard row:', JSON.stringify(lbRows, null, 2));
+    for (const lb of lbRows) {
+      const portRows = await getAll('portfolios', `token=eq.${encodeURIComponent(lb.token)}&select=token,streak,last_claim,updated_at,cash`);
+      console.log(`portfolios row(s) for token ${lb.token}:`, JSON.stringify(portRows, null, 2));
+    }
   }
 }
 

@@ -61,6 +61,10 @@ on:
         description: 'Run scripts/debug-daily-reward.mjs (read-only: checks for duplicate portfolios rows per token and last_claim values, diagnosing why the daily reward keeps re-prompting)'
         type: boolean
         default: false
+      debug_daily_reward_username:
+        description: 'If debugging the daily reward, also look up this exact username''s leaderboard + portfolios rows (blank = aggregate stats only)'
+        type: string
+        default: ''
 
 jobs:
   diagnose:
@@ -107,4 +111,4 @@ jobs:
         run: node scripts/backfill-leaderboard-holdings.mjs ${{ inputs.holdings_backfill_dry_run && '--dry-run' || '' }}
       - name: Debug daily reward persistence (optional)
         if: ${{ inputs.debug_daily_reward }}
-        run: node scripts/debug-daily-reward.mjs
+        run: node scripts/debug-daily-reward.mjs "${{ inputs.debug_daily_reward_username }}"
