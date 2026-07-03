@@ -2028,19 +2028,36 @@
       <div style="font:700 18px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 13px">Top holdings</div>
       <sc-if value="{{ profileOtherHasHoldings }}" hint-placeholder-val="{{ true }}">
       <div class="fs-scrollx" style="background:#fff;border:1px solid #e8eae4;border-radius:16px;overflow:hidden;margin-bottom:20px">
-        <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 90px 110px 110px;gap:12px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Player</span><span style="text-align:right">Shares</span><span style="text-align:right">Price</span><span style="text-align:right">Value</span></div>
+        <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 90px 110px 110px 100px;gap:12px;padding:12px 22px;border-bottom:1px solid #eef1ec;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Player</span><span style="text-align:right">Shares</span><span style="text-align:right">Price</span><span style="text-align:right">Value</span><span style="text-align:right">P/L</span></div>
         <sc-for list="{{ profileOtherHoldings }}" as="h" hint-placeholder-count="3">
-          <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 90px 110px 110px;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #f3f4f0">
+          <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 90px 110px 110px 100px;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #f3f4f0">
             <span style="display:flex;flex-direction:column"><b style="font:600 15px 'Hanken Grotesk'">{{ h.name }}</b><span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ h.lg }} · {{ h.pos }}</span></span>
             <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ h.qty }}</span>
             <span style="text-align:right;font:500 13px 'Space Grotesk';color:#46504a">{{ h.price }}</span>
             <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ h.value }}</span>
+            <span style="text-align:right;font:700 13px 'Space Grotesk';color: {{ h.plColor }}">{{ h.pl }}</span>
           </div>
         </sc-for>
       </div>
       </sc-if>
       <sc-if value="{{ profileOtherNoHoldings }}" hint-placeholder-val="{{ false }}">
         <div style="text-align:center;padding:20px;font:500 13px 'Hanken Grotesk';color:#8a938c">This player hasn't shared any holdings yet.</div>
+      </sc-if>
+
+      <sc-if value="{{ profileOtherHasShorts }}" hint-placeholder-val="{{ false }}">
+      <div style="font:700 18px 'Space Grotesk';letter-spacing:-.01em;margin:0 2px 13px">Hatewatch positions</div>
+      <div class="fs-scrollx" style="background:#fff;border:1px solid #fcd9d6;border-radius:16px;overflow:hidden;margin-bottom:20px">
+        <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 90px 110px 110px 100px;gap:12px;padding:12px 22px;border-bottom:1px solid #fcd9d6;font:600 11px 'Hanken Grotesk';color:#9aa39b;letter-spacing:.06em;text-transform:uppercase"><span>Player</span><span style="text-align:right">Shares</span><span style="text-align:right">Price</span><span style="text-align:right">Value</span><span style="text-align:right">P/L</span></div>
+        <sc-for list="{{ profileOtherShorts }}" as="h" hint-placeholder-count="2">
+          <div class="fs-row-holdings" style="display:grid;grid-template-columns:1fr 90px 110px 110px 100px;gap:12px;align-items:center;padding:14px 22px;border-bottom:1px solid #f3f4f0">
+            <span style="display:flex;flex-direction:column"><b style="font:600 15px 'Hanken Grotesk'">{{ h.name }}</b><span style="font:500 12px 'Hanken Grotesk';color:#8a938c">{{ h.lg }} · {{ h.pos }}</span></span>
+            <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ h.qty }}</span>
+            <span style="text-align:right;font:500 13px 'Space Grotesk';color:#46504a">{{ h.price }}</span>
+            <span style="text-align:right;font:600 14px 'Space Grotesk'">{{ h.value }}</span>
+            <span style="text-align:right;font:700 13px 'Space Grotesk';color: {{ h.plColor }}">{{ h.pl }}</span>
+          </div>
+        </sc-for>
+      </div>
       </sc-if>
     </sc-if>
   </div>
@@ -6211,9 +6228,19 @@ Afonso Moreira|Leverkusen|LW|21|4
     const name=this.loadUsername(); if(!name||!this._sbUrl) return;
     const trading_pnl=Math.round(this.tradingPnl());
     const net_worth=Math.round(this.netWorth()-(this.state.bonusCash||0)-10000);
-    const topH=this.state.holdingsPublic===false?[]:Object.entries(this.state.holdings||{})
+    // avg (cost basis) is included alongside qty so a public profile can show
+    // real P/L, not just position size. side tags long vs. hatewatch (short)
+    // positions in the same array — no separate column needed, top_holdings
+    // is just a jsonb blob. Older rows written before this field existed
+    // simply have no `side`/`avg`; readers treat missing side as 'long' and
+    // missing avg as "P/L unknown" rather than crashing or faking a number.
+    const topLong=this.state.holdingsPublic===false?[]:Object.entries(this.state.holdings||{})
       .sort((a,b)=>(b[1].qty||0)-(a[1].qty||0)).slice(0,10)
-      .map(([id,h])=>({id,qty:h.qty||0}));
+      .map(([id,h])=>({id,qty:h.qty||0,avg:h.avg||0,side:'long'}));
+    const topShort=this.state.holdingsPublic===false?[]:Object.entries(this.state.shorts||{})
+      .sort((a,b)=>(b[1].qty||0)-(a[1].qty||0)).slice(0,10)
+      .map(([id,h])=>({id,qty:h.qty||0,avg:h.avg||0,side:'short'}));
+    const topH=[...topLong,...topShort];
     fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},
       body:JSON.stringify({token:this.loadToken(),name,email:this.loadEmail()||null,trading_pnl,net_worth,top_holdings:topH,updated_at:new Date().toISOString()})}).catch(()=>{});
   }
@@ -7156,7 +7183,10 @@ Afonso Moreira|Leverkusen|LW|21|4
       allUsers.push({topHoldings:selfH});
       for(const u of allUsers){
         for(const h of (u.topHoldings||[])){
-          if(!h.id||!h.qty) continue;
+          // top_holdings now also carries hatewatch (short) positions tagged
+          // side:'short' — exclude those here so "most held" doesn't count
+          // people betting AGAINST a stock as if they were long it.
+          if(!h.id||!h.qty||h.side==='short') continue;
           globalTally[h.id]=(globalTally[h.id]||{id:h.id,holders:0,qty:0});
           globalTally[h.id].holders+=1;
           globalTally[h.id].qty+=h.qty;
@@ -7785,6 +7815,23 @@ Afonso Moreira|Leverkusen|LW|21|4
     const rewardBtnColor=claimable?'#0c1f15':'#16a85f';
     const rewardBtnBg=claimable?'#a8f0c8':'#e7f6ec';
 
+    // other user's public profile: top_holdings carries both long and
+    // hatewatch (short) positions, tagged by `side` (see submitScore()).
+    // Split once here rather than re-filtering per computed prop below.
+    const otherPositions=(()=>{
+      if(!S.profileViewName) return {long:[],short:[]};
+      const e=lb.find(x=>x.name===S.profileViewName);
+      const raw=(e&&e.topHoldings)||[];
+      const mk=(h,isShort)=>{ const p=this.byId(h.id); if(!p) return null; const price=this.curPrice(p);
+        const hasAvg=h.avg!=null; const plv=hasAvg?(isShort?(h.avg-price):(price-h.avg))*h.qty:null; const up=plv!=null&&plv>=0;
+        return { name:p.name, lg:p.abbr, pos:p.pos, price:this.money(price), qty:h.qty, value:this.money(price*h.qty),
+          pl:hasAvg?(up?'+':'−')+this.money(Math.abs(plv)).slice(1):'—', plColor:hasAvg?(up?GREEN:RED):'#8a938c' }; };
+      return {
+        long: raw.filter(h=>h.side!=='short').map(h=>mk(h,false)).filter(Boolean),
+        short: raw.filter(h=>h.side==='short').map(h=>mk(h,true)).filter(Boolean),
+      };
+    })();
+
     return {
       // shell
       navTabs, ticker, leagueChips, marketCols, search:S.search, onSearch:(e)=>this.onSearch(e),
@@ -7846,11 +7893,11 @@ Afonso Moreira|Leverkusen|LW|21|4
       profileOtherPLColor: (()=>{ if(!S.profileViewName) return '#8a938c'; const e=leaderboard.find(x=>x.name===S.profileViewName); return e?e.profitColor:'#8a938c'; })(),
       profileOtherRank: (()=>{ if(!S.profileViewName) return '—'; const e=leaderboard.find(x=>x.name===S.profileViewName); return e?e.medal:'—'; })(),
       profileOtherMedal: (()=>{ if(!S.profileViewName) return '—'; const e=leaderboard.find(x=>x.name===S.profileViewName); return e?e.medal:'—'; })(),
-      profileOtherHoldings: (()=>{ if(!S.profileViewName) return []; const e=lb.find(x=>x.name===S.profileViewName); if(!e||!e.topHoldings) return [];
-        return e.topHoldings.map(h=>{ const p=this.byId(h.id); if(!p) return null; const price=this.curPrice(p);
-          return { name:p.name, lg:p.abbr, pos:p.pos, price:this.money(price), qty:h.qty, value:this.money(price*h.qty) }; }).filter(Boolean); })(),
-      profileOtherHasHoldings: (()=>{ if(!S.profileViewName) return false; const e=lb.find(x=>x.name===S.profileViewName); return !!(e&&e.topHoldings&&e.topHoldings.length); })(),
-      profileOtherNoHoldings: (()=>{ if(!S.profileViewName) return true; const e=lb.find(x=>x.name===S.profileViewName); return !(e&&e.topHoldings&&e.topHoldings.length); })(),
+      profileOtherHoldings: otherPositions.long,
+      profileOtherHasHoldings: otherPositions.long.length>0,
+      profileOtherNoHoldings: otherPositions.long.length===0,
+      profileOtherShorts: otherPositions.short,
+      profileOtherHasShorts: otherPositions.short.length>0,
       profileInitials: (S.profileViewName || this.loadUsername() || 'YO').slice(0,2).toUpperCase(),
       profileIsOther: S.profileViewName !== null,
       goProfile:()=>this.openProfileView(null),
