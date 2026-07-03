@@ -6,9 +6,9 @@ before touching anything that fetches, stores, or merges external data.
 **Update (live era):** we now pay for an API-Football tier with a 7,500
 req/day cap, specifically to support live in-play polling instead of a
 once-daily batch (see "Why live polling fits the budget" below). Everything
-else — Trends, GDELT, TheSportsDB, the localStorage-only portfolio model —
-stays on free tiers; this project is not trying to spend money broadly, just
-on the one feed that buys live updates.
+else — GDELT, TheSportsDB, the Supabase backend (see CLAUDE.md Architecture
+rule 3) — stays on free tiers; this project is not trying to spend money
+broadly, just on the one feed that buys live updates.
 
 ## The stack (each source has one job)
 
@@ -52,8 +52,10 @@ Fly.io worker (always-on, scripts/live-worker/)
 Static frontend (deploy target TBC — see CLAUDE.md)
   → polls the worker's /prices.json every 30s, merges it live
   → falls back silently to the hand-typed STARS/NEWS snapshot if unreachable
-User portfolios/trades
-  → stay in localStorage (per-user, no server needed yet)
+Accounts, portfolios, leaderboard, clubs, referrals
+  → Supabase Postgres, fetched directly from the browser with the public
+    anon key (see CLAUDE.md Architecture rule 3 for the RLS-is-off /
+    SECURITY DEFINER RPC pattern this relies on)
 ```
 
 The worker (`deploy-worker.yml`) auto-deploys on push to `main` — no manual
@@ -62,11 +64,14 @@ on all 371 of its runs (GitHub Pages was never enabled for this repo) —
 confirm what actually serves `FootyStock_dc.html` in production before
 assuming a push to `main` publishes it.
 
-- **No database yet.** Prices are served live by the worker, never committed
-  to the repo; portfolios stay in `localStorage`. Only add a DB (Supabase free
-  tier) when cross-device portfolios or a real cross-user leaderboard require
-  it.
-- **Never fetch from the browser.** Keys, CORS, and rate limits all forbid it.
+- **A Supabase backend is live**, not a future maybe — see CLAUDE.md
+  Architecture rule 3 for what's stored there and the access-control pattern
+  in use. Prices themselves are still served live by the worker, never
+  committed to the repo.
+- **Never fetch the data-source APIs above from the browser** (API-Football,
+  GDELT, TheSportsDB) — keys, CORS, and rate limits all forbid it. Supabase
+  is the one deliberate exception: its anon key is meant to be public, which
+  is exactly why the RLS/RPC discipline in CLAUDE.md matters.
 
 ## The merge layer (the genuinely fiddly part)
 
