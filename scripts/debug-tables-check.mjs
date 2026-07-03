@@ -32,3 +32,4 @@ await check('referrals', 'select=id,referred_token,created_at&order=created_at.d
 await check('clubs', 'select=id,name,created_at&order=created_at.desc&limit=3');
 await check('club_messages', 'select=id,type,created_at&order=created_at.desc&limit=3');
 await check('shares', 'select=player_id,remaining,total&limit=3');
+await check('portfolios', 'select=token,watch&order=updated_at.desc&limit=3');
