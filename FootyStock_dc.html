@@ -2691,6 +2691,39 @@ begin
 end;
 $$;
 grant execute on function credit_referral(text, text) to anon, authenticated;
+
+-- Replaces submitScore()'s direct upsert (Prefer: resolution=merge-duplicates)
+-- to leaderboard. Empirically confirmed (2026-07-03) that PostgREST's
+-- ON CONFLICT DO UPDATE upsert path requires table-level SELECT on
+-- leaderboard regardless of the return= preference — the error is
+-- "permission denied for table leaderboard" with a hint literally saying
+-- "GRANT SELECT ON public.leaderboard TO anon", even with return=minimal.
+-- That's incompatible with restricting SELECT on token/password_hash/email,
+-- so the upsert has to run as the function owner instead, same as every
+-- other sensitive leaderboard write above. doLogin()'s signup insert and
+-- savePhone()'s fallback insert didn't need this — they're plain, non-
+-- conflicting inserts — but submitScore() is called repeatedly against an
+-- already-existing token and genuinely needs ON CONFLICT DO UPDATE.
+create or replace function upsert_leaderboard_score(
+  p_token text, p_name text, p_email text, p_trading_pnl numeric,
+  p_net_worth numeric, p_top_holdings jsonb
+)
+returns void
+language sql
+security definer
+set search_path = public
+as $$
+  insert into leaderboard (token, name, email, trading_pnl, net_worth, top_holdings, updated_at)
+  values (p_token, p_name, p_email, p_trading_pnl, p_net_worth, p_top_holdings, now())
+  on conflict (token) do update set
+    name = excluded.name,
+    email = excluded.email,
+    trading_pnl = excluded.trading_pnl,
+    net_worth = excluded.net_worth,
+    top_holdings = excluded.top_holdings,
+    updated_at = excluded.updated_at;
+$$;
+grant execute on function upsert_leaderboard_score(text, text, text, numeric, numeric, jsonb) to anon, authenticated;
 */
 
 const SUPABASE_URL='https://pwlszzrvwhflijbjwnnf.supabase.co';
@@ -6388,10 +6421,18 @@ Afonso Moreira|Leverkusen|LW|21|4
       const payload={token,name,password_hash:hash,email:emailVal,ref_code,net_worth:10000,updated_at:new Date().toISOString()};
       // return=minimal: this writes token/password_hash/email, none of which
       // are in the public SELECT grant anymore (see the Supabase SQL near
-      // SUPABASE_URL) — without this, PostgREST's default attempt to hand
-      // back a representation of the written row needs SELECT on those
-      // columns and Postgres denies the whole request, not just the read.
-      const res=await fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},body:JSON.stringify(payload)});
+      // SUPABASE_URL). Plain insert, not an upsert: token is a fresh
+      // crypto.randomUUID() (collision is a non-issue) and the username
+      // dupe-check above already ran, so ON CONFLICT semantics were never
+      // actually needed here — which matters because PostgREST's upsert
+      // path (resolution=merge-duplicates) requires table-level SELECT to
+      // do its merge, which would defeat the whole point of restricting
+      // SELECT on token/password_hash/email (confirmed empirically: the
+      // exact same "permission denied for table leaderboard" error occurs
+      // with an upsert regardless of return=minimal vs return=representation
+      // — it's the ON CONFLICT resolution itself that needs SELECT, not the
+      // response representation).
+      const res=await fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'return=minimal'},body:JSON.stringify(payload)});
       if(!res.ok){ const e=await res.json().catch(()=>{}); console.error('signup fail',e); this.setState({loginError:(e&&(e.message||e.hint||e.msg||e.error))||'Signup failed ('+res.status+')',loginSending:false}); return; }
       this._saveToken(token);
       this.saveUsername(name);
@@ -6554,10 +6595,14 @@ Afonso Moreira|Leverkusen|LW|21|4
       .sort((a,b)=>(b[1].qty||0)-(a[1].qty||0)).slice(0,10)
       .map(([id,h])=>({id,qty:h.qty||0,avg:h.avg||0,side:'short'}));
     const topH=[...topLong,...topShort];
-    // return=minimal: same reason as doLogin()'s signup POST — this writes
-    // token/email, neither of which are publicly selectable anymore.
-    fetch(this._sbUrl,{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
-      body:JSON.stringify({token:this.loadToken(),name,email:this.loadEmail()||null,trading_pnl,net_worth,top_holdings:topH,updated_at:new Date().toISOString()})}).catch(()=>{});
+    // rpc/upsert_leaderboard_score, not a direct upsert: this repeatedly
+    // updates an existing row by token, which needs real ON CONFLICT DO
+    // UPDATE semantics — PostgREST's upsert path needs table SELECT to do
+    // that, which is incompatible with token/email being non-public
+    // columns, so the upsert runs inside a SECURITY DEFINER function instead
+    // (see the SQL near SUPABASE_URL).
+    fetch(this._sbUrl.replace('/leaderboard','/rpc/upsert_leaderboard_score'),{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json'},
+      body:JSON.stringify({p_token:this.loadToken(),p_name:name,p_email:this.loadEmail()||null,p_trading_pnl:trading_pnl,p_net_worth:net_worth,p_top_holdings:topH})}).catch(()=>{});
   }
   leaderboardData(){
     const myName=this.loadUsername()||'You';
@@ -6669,10 +6714,12 @@ Afonso Moreira|Leverkusen|LW|21|4
       if(!res.ok) throw new Error(await res.text());
       const rows=await res.json();
       if(!rows||rows.length===0){
-        // No row yet — upsert to create it
+        // No row yet — plain insert (the PATCH above already confirmed no
+        // row exists for this token, and ON CONFLICT semantics would need
+        // table SELECT anyway — see the note on doLogin()'s signup insert).
         await fetch(this._sbUrl,{
           method:'POST',
-          headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates,return=minimal'},
+          headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'return=minimal'},
           body:JSON.stringify({token,name,net_worth:10000,phone:val.trim()})
         });
       }
