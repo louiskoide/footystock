@@ -5050,7 +5050,15 @@ Afonso Moreira|Leverkusen|LW|21|4
           // now reads as a real letdown instead of a shrug.
           const isDefPos = /^(CB|LB|RB|WB|GK|DEF|SW)$/i.test(pos);
           const ratingBase = (isDefPos ? 6.5 : 6.0) + notoriety*1.5;
-          const ratingPart = (s.rating-ratingBase)*1.3 + Math.pow(ratingExcess,1.8)*1.5;
+          // Symmetric to ratingExcess above: a genuinely bad game should
+          // accelerate the same way an outlier great one does, not just
+          // scale linearly. Without this, a mediocre showing from a
+          // maxed-notoriety player (Pedri: 6.3 vs a ratingBase of 7.5 once
+          // notoriety is factored in) only produced a mild ~2% drop — nowhere
+          // near how disappointing that actually reads for the most
+          // expensive stock in the game turning in a below-par game.
+          const ratingShortfall = Math.max(0, ratingBase-s.rating);
+          const ratingPart = (s.rating-ratingBase)*1.3 + Math.pow(ratingExcess,1.8)*1.5 - Math.pow(ratingShortfall,1.6)*0.9;
           // A cheap/fringe player being an unused sub is a non-event (0 for
           // notoriety=0, matching prior behavior exactly). An expensive stock
           // being left out is real information a market would react to (fitness
