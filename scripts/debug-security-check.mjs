@@ -18,6 +18,20 @@ console.log('HTTP status:', resp.status);
 const body = await resp.text();
 console.log('body:', body);
 
+// If the revoke above still isn't taking effect, it's almost certainly the
+// classic Postgres gotcha: a table-wide `grant select on table leaderboard
+// to anon` (from the original setup) can't be narrowed by a column-level
+// REVOKE — Postgres can't "subtract" a column from a whole-table grant, so
+// the REVOKE silently does nothing even though it reports success. The real
+// fix is: revoke the whole-table SELECT, then re-grant SELECT on the exact
+// safe column list. Print the full column list (currently still exposed)
+// so that list can be built without guessing.
+console.log('\nFull column list currently exposed via select=* (to build the safe re-grant list):');
+const colResp = await fetch(`${SUPABASE_URL}/rest/v1/leaderboard?select=*&limit=1`, { headers: HDR });
+console.log('HTTP status:', colResp.status);
+const colBody = await colResp.json().catch(() => null);
+console.log('columns:', colBody && colBody[0] ? Object.keys(colBody[0]).join(', ') : JSON.stringify(colBody));
+
 // Confirms the verify_password/verify_password_by_token RPC migration was
 // actually run in Supabase (FootyStock_dc.html's doVerifyOtp()/doResetPw()
 // depend on these existing — without them, login and password-change are
