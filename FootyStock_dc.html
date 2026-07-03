@@ -5262,20 +5262,27 @@ Afonso Moreira|Leverkusen|LW|21|4
       // underneath are still strong.
       const sentimentStrength = clamp((formScore+hypeScore+demandScore)/3, -1, 1);
       for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N){ e._impactPct=0; continue; }
-        // More expensive players face real extra downside on bad games —
-        // bumped 25%->50% max extra penalty. This stacks with (not duplicates)
-        // the ratingBase notoriety premium above: that premium controls WHETHER
-        // a game reads as negative at all for a star (a "meh" 6.5 now genuinely
-        // is one for a maxed-notoriety player), this controls HOW HARD a
-        // negative delta actually hits once it exists. Without both, an
-        // expensive stock's bad games barely register and it just compounds
-        // upward on every decent-but-unremarkable performance.
-        // Bump is the primary per-match price driver — fairValue's avgR-based approach
-        // dilutes incremental match impact (2nd good game barely moves avgR), so the
-        // bump must carry the visible match-day spike. 1.0 multiplier → delta≈4 (goal
-        // + good rating) creates ~4% chart move on match day, decaying naturally.
-        const downScale = e.delta < 0 ? 1.0 * (1 + notoriety * 0.5) : 1.0;
-        const bump=(e.delta/100)*price*downScale, ramp=1, halfLife=3;
+        // Bidirectional notoriety scale, replacing the old downside-only
+        // multiplier. Two problems it fixes:
+        // 1. A rating-based reward alone still doesn't capture "this was
+        //    EXPECTED of an expensive stock" — Mbappé (9.3, notoriety~1) and
+        //    Oyarzabal (9.1, notoriety~0.5) produced near-identical +7.7%
+        //    moves despite Mbappé's ratingBase premium already being higher,
+        //    because the convex rating-excess bonus swamps that gap once
+        //    both ratings are similarly exceptional. The upside itself now
+        //    gets muted with notoriety (1.15x for an unknown down to 0.60x
+        //    for a maxed-notoriety superstar) so a genuinely expected
+        //    superstar performance moves the price less than the same
+        //    performance from someone who wasn't supposed to do that.
+        // 2. Every stock was still compounding upward over time even after
+        //    the earlier downside bump — goals/assists are pure upside with
+        //    no symmetric "expected, so neutral" adjustment, and good games
+        //    are also more likely to partially stick (persistence roll
+        //    above) than bad ones. So downside now starts from a higher
+        //    floor too (1.4x-2.0x, was 1.0x-1.5x) — bad games hit harder
+        //    than good games help, for every stock, not just expensive ones.
+        const notorietyScale = e.delta < 0 ? (1.4 + notoriety*0.6) : (1.15 - notoriety*0.55);
+        const bump=(e.delta/100)*price*notorietyScale, ramp=1, halfLife=3;
         // Seeded per event (id+date) so every viewer sees the same outcome
         // and it stays stable day to day — this is "was this a real
         // re-rating" being decided once, not a coin flip that flickers.
