@@ -2752,8 +2752,18 @@ class Component extends DCLogic {
   _persistToCloud(s){
     if(!this._sbUrl) return;
     const token=this.loadToken(); if(!token||token==='anon') return;
-    const payload={ token, cash:s.cash, holdings:s.holdings, txns:(s.txns||[]).slice(0,500), shorts:s.shorts||{}, streak:s.streak||0, last_claim:s.lastClaim||null, join_date:s.joinDate||null, all_time_high:s.allTimeHigh||10000, bonus_cash:s.bonusCash||0, updated_at:new Date().toISOString() };
-    fetch(this._sbUrl.replace('/leaderboard','/portfolios'),{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload)}).catch(()=>{});
+    // No bonus_cash here — the live portfolios table has no such column
+    // (confirmed via Supabase's own error: PGRST204 "Could not find the
+    // 'bonus_cash' column of 'portfolios' in the schema cache"). Sending it
+    // made PostgREST reject the ENTIRE upsert with a 400, silently — every
+    // field in this payload (cash, holdings, streak, last_claim, txns) was
+    // failing to save, not just this one, because the whole request was
+    // being rejected before any column got written. That's why the daily
+    // reward "didn't stick": last_claim was in the very same doomed write.
+    const payload={ token, cash:s.cash, holdings:s.holdings, txns:(s.txns||[]).slice(0,500), shorts:s.shorts||{}, streak:s.streak||0, last_claim:s.lastClaim||null, join_date:s.joinDate||null, all_time_high:s.allTimeHigh||10000, updated_at:new Date().toISOString() };
+    fetch(this._sbUrl.replace('/leaderboard','/portfolios'),{method:'POST',headers:{...this._sbHdr,'Content-Type':'application/json','Prefer':'resolution=merge-duplicates'},body:JSON.stringify(payload)})
+      .then(resp=>{ if(!resp.ok) resp.text().then(body=>console.error('persist() portfolio write rejected:',resp.status,body)).catch(()=>{}); })
+      .catch(e=>console.error('persist() portfolio write failed (network):',e));
   }
   async syncFromCloud(){
     if(!this._sbUrl){ this.setState({portfolioLoading:false}); return; }

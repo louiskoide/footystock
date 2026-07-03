@@ -40,8 +40,11 @@ async function main() {
     last_claim: cur.last_claim || null,
     join_date: cur.join_date || null,
     all_time_high: cur.all_time_high || 10000,
-    bonus_cash: cur.bonus_cash || 0,
     updated_at: new Date().toISOString(),
+    // bonus_cash deliberately omitted — root cause confirmed: that column
+    // doesn't exist in the live schema, and PostgREST rejected the WHOLE
+    // upsert (400 PGRST204) every time it was included. Fixed in
+    // FootyStock_dc.html's _persistToCloud(); this script now mirrors it.
   };
   console.log('\nSending exact _persistToCloud() payload shape (real data, only updated_at bumped)...');
   const resp = await fetch(`${SUPABASE_URL}/rest/v1/portfolios`, {
