@@ -2350,9 +2350,9 @@
       <span style="font:500 13px 'Hanken Grotesk';color:#46504a">Referrals used</span>
       <span style="font:700 14px 'Space Grotesk'">{{ referralCount }} / 5</span>
     </div>
-    <a href="{{ whatsappShareLink }}" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#25d366;color:#fff;border-radius:12px;padding:12px 16px;font:600 13px 'Hanken Grotesk';text-decoration:none;margin-bottom:4px">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347z"/><path d="M12 0C5.373 0 0 5.373 0 12c0 2.123.556 4.118 1.528 5.849L.057 23.25a.75.75 0 0 0 .92.92l5.4-1.47A11.953 11.953 0 0 0 12 24c6.627 0 12-5.373 12-12S18.627 0 12 0zm0 22c-1.937 0-3.75-.52-5.309-1.43l-.38-.22-3.203.871.888-3.108-.243-.395A9.956 9.956 0 0 1 2 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10z"/></svg>
-      Share on WhatsApp
+    <a href="{{ xShareLink }}" target="_blank" rel="noopener" style="display:flex;align-items:center;justify-content:center;gap:8px;background:#000;color:#fff;border-radius:12px;padding:12px 16px;font:600 13px 'Hanken Grotesk';text-decoration:none;margin-bottom:4px">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M18.901 1.153h3.68l-8.04 9.19L24 22.846h-7.406l-5.8-7.584-6.638 7.584H.474l8.6-9.83L0 1.154h7.594l5.243 6.932ZM17.61 20.644h2.039L6.486 3.24H4.298Z"/></svg>
+      Share on X
     </a>
   </div>
 </div>
@@ -8594,7 +8594,11 @@ Afonso Moreira|Leverkusen|LW|21|4
       copyRefCodeLabel: S.copyRefCodeLabel||'Copy code',
       shareCopied: S.shareCopied,
       shareCopiedLabel: S.shareCopied ? 'Copied!' : 'Copy link',
-      whatsappShareLink: 'https://wa.me/?text='+encodeURIComponent('Join me on FootyStock — the football stock market game! Use my link: '+window.location.origin+window.location.pathname+'?ref='+this.getRefCode()),
+      xShareLink: (()=>{
+        const msg=`Join me on FootyStock — I'm ${this.pct((pl/10000)*100)} with a net worth of ${this.money(nw)}!`;
+        const link=window.location.origin+window.location.pathname+'?ref='+this.getRefCode();
+        return 'https://twitter.com/intent/tweet?text='+encodeURIComponent(msg)+'&url='+encodeURIComponent(link);
+      })(),
       referralCount: this._referralCount||0,
       mysteryOpen: S.mysteryOpen, closeMystery:()=>this.setState({mysteryOpen:false}),
       stopMystery:(e)=>{ e&&e.stopPropagation&&e.stopPropagation(); },
