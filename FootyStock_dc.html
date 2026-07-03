@@ -2559,14 +2559,36 @@ alter table shares disable row level security;
 -- the original setup already granted table-wide SELECT to anon/authenticated
 -- — Postgres can't narrow a whole-table grant with a column-specific revoke.
 -- You must revoke the whole-table SELECT and re-grant it on every column
--- except password_hash instead (confirmed against the live schema: token,
--- name, net_worth, updated_at, top_holdings, phone, email, ref_code,
--- trading_pnl, holdings_public). email/phone are deliberately still
--- selectable here — doForgotLookup()/loadMyPhone() read them directly and
--- have no server-side-verified replacement yet (unlike password_hash).
+-- except password_hash instead.
+--
+-- Second pre-launch fix (same root cause, wider blast radius): `token` is
+-- also the bearer session credential (loadToken()/fs_token — whoever holds
+-- it can read/write that account, no password involved), yet it sat in the
+-- same public SELECT grant as password_hash, and `email`/`phone` sat there
+-- too. Three concrete exploit paths this closes:
+--   1. Bulk scraping: `select=token,name` (or email,phone) with no filter
+--      returned every user's session token / PII to anyone with the public
+--      anon key.
+--   2. doForgotLookup() fetched a row by *username alone*
+--      (`select=token,name,email`) and only compared the email client-side
+--      afterwards — the token was already in the network response before
+--      the email check ran, so typing any known username into "forgot
+--      password" (right or wrong email) leaked that account's token+email.
+--   3. Referral codes are meant to be public, but `_resolveRefCode()`
+--      turned a public ref_code into the referrer's private token
+--      client-side, and `referrals.referrer_token`/`referred_token` were
+--      equally bulk-readable.
+-- token/email/phone are now dropped from the public grant entirely, and
+-- every flow that used to read them directly is replaced by a narrow
+-- SECURITY DEFINER RPC that does the real check (password match / email
+-- match / not-already-claimed) server-side and returns only what that
+-- specific flow needs.
 
 revoke select on table leaderboard from anon, authenticated;
-grant select (token, name, net_worth, updated_at, top_holdings, phone, email, ref_code, trading_pnl, holdings_public) on table leaderboard to anon, authenticated;
+grant select (name, net_worth, updated_at, top_holdings, ref_code, trading_pnl, holdings_public) on table leaderboard to anon, authenticated;
+
+revoke select on table referrals from anon, authenticated;
+grant select (id, ref_code, created_at) on table referrals to anon, authenticated;
 
 create or replace function verify_password(p_name text, p_hash text)
 returns table(token text, name text)
@@ -2595,6 +2617,75 @@ as $$
   limit 1;
 $$;
 grant execute on function verify_password_by_token(text, text) to anon, authenticated;
+
+-- Returns the caller's own name/email/ref_code given the token they already
+-- hold locally (cookie/localStorage) — replaces syncFromCloud()'s old
+-- `select=token,name,email,ref_code` now that email isn't in the public grant.
+create or replace function get_my_account(p_token text)
+returns table(name text, email text, ref_code text)
+language sql
+security definer
+set search_path = public
+as $$
+  select l.name, l.email, l.ref_code
+  from leaderboard l
+  where l.token = p_token
+  limit 1;
+$$;
+grant execute on function get_my_account(text) to anon, authenticated;
+
+-- Replaces doForgotLookup()'s raw select-by-username-then-check-email-in-JS:
+-- the email match now happens in the WHERE clause, server-side, so a token
+-- is only ever returned when the email actually matches. A non-matching
+-- name/email pair returns zero rows, same as an unknown username — this
+-- deliberately can't distinguish "wrong username" from "right username,
+-- wrong email" to avoid leaking which usernames exist.
+create or replace function lookup_reset_token(p_name text, p_email text)
+returns table(token text)
+language sql
+security definer
+set search_path = public
+as $$
+  select l.token
+  from leaderboard l
+  where l.name = p_name
+    and l.email is not null
+    and lower(l.email) = lower(p_email)
+  limit 1;
+$$;
+grant execute on function lookup_reset_token(text, text) to anon, authenticated;
+
+-- Replaces _resolveRefCode()+_creditReferrer()+the two direct `referrals`
+-- POSTs: resolves the ref_code, checks the not-already-claimed rule, records
+-- the referral, and credits the referrer's pending_ref_rewards — all in one
+-- server-side call, so the referrer's token never reaches the redeemer's
+-- browser. Returns a status string so the UI can keep its existing distinct
+-- error messages ('ok' | 'already_claimed' | 'invalid_code' | 'self_referral').
+create or replace function credit_referral(p_code text, p_referred_token text)
+returns text
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_referrer_token text;
+begin
+  if exists (select 1 from referrals where referred_token = p_referred_token) then
+    return 'already_claimed';
+  end if;
+  select token into v_referrer_token from leaderboard where ref_code = upper(p_code) limit 1;
+  if v_referrer_token is null then
+    return 'invalid_code';
+  end if;
+  if v_referrer_token = p_referred_token then
+    return 'self_referral';
+  end if;
+  insert into referrals(ref_code, referred_token, referrer_token) values (upper(p_code), p_referred_token, v_referrer_token);
+  update portfolios set pending_ref_rewards = coalesce(pending_ref_rewards, 0) + 1 where token = v_referrer_token;
+  return 'ok';
+end;
+$$;
+grant execute on function credit_referral(text, text) to anon, authenticated;
 */
 
 const SUPABASE_URL='https://pwlszzrvwhflijbjwnnf.supabase.co';
@@ -2842,8 +2933,11 @@ class Component extends DCLogic {
     if(!this._sbUrl){ this.setState({portfolioLoading:false}); return; }
     const token=this.loadToken(); if(!token||token==='anon'){ this.setState({portfolioLoading:false}); return; }
     try{
-      // Check leaderboard first — determines if this token belongs to a real account
-      const lbRows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(token)+'&select=token,name,email,ref_code');
+      // Check leaderboard first — determines if this token belongs to a real account.
+      // email isn't in the public grant anymore (see the Supabase SQL near
+      // SUPABASE_URL), so this goes through rpc/get_my_account instead of a
+      // raw select.
+      const lbRows=await Supa.post('rpc/get_my_account',{p_token:token});
       if(!lbRows||!lbRows.length){
         // No account for this token — user must log in
         this.setState({portfolioLoading:false,loggedIn:false});
@@ -6267,7 +6361,7 @@ Afonso Moreira|Leverkusen|LW|21|4
     if(pw!==pw2){ this.setState({loginError:'Passwords do not match.'}); return; }
     this.setState({loginError:'',loginSending:true});
     try{
-      const existing=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name)+'&select=token');
+      const existing=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name)+'&select=name');
       if(existing&&existing.length){ this.setState({loginError:'Username taken. Try another.',loginSending:false}); return; }
     }catch(e){}
     try{
@@ -6315,11 +6409,13 @@ Afonso Moreira|Leverkusen|LW|21|4
     if(!email||!email.includes('@')){ this.setState({loginError:'Enter the email linked to your account.'}); return; }
     this.setState({loginError:'',loginSending:true});
     try{
-      const rows=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name)+'&select=token,name,email');
-      if(!rows||!rows.length){ this.setState({loginError:'Account not found.',loginSending:false}); return; }
-      const row=rows[0];
-      if(!row.email||row.email.toLowerCase()!==email){ this.setState({loginError:'Email does not match our records.',loginSending:false}); return; }
-      this._resetToken=row.token; this._resetName=row.name;
+      // rpc/lookup_reset_token checks name+email together, server-side, so a
+      // token is only ever returned on a real match (see the Supabase SQL
+      // near SUPABASE_URL) — it can't distinguish "no such user" from "wrong
+      // email" on purpose, to avoid leaking which usernames exist.
+      const rows=await Supa.post('rpc/lookup_reset_token',{p_name:name,p_email:email});
+      if(!rows||!rows.length){ this.setState({loginError:'No account found with that username and email.',loginSending:false}); return; }
+      this._resetToken=rows[0].token; this._resetName=name;
       this.setState({loginStep:'reset',loginError:'',loginSending:false});
     }catch(e){ this.setState({loginError:'Network error. Try again.',loginSending:false}); }
   }
@@ -6372,14 +6468,16 @@ Afonso Moreira|Leverkusen|LW|21|4
     const token=this.loadToken();
     this.setState({profileRefError:'',profileRefOk:''});
     try{
-      const existing=await Supa.get('referrals','referred_token=eq.'+encodeURIComponent(token)+'&select=id');
-      if(existing&&existing.length){ this.setState({profileRefError:'You have already claimed a referral bonus.',profileRefOk:'',profileRefClaimed:true}); return; }
-      const referrerToken=await this._resolveRefCode(code);
-      if(!referrerToken){ this.setState({profileRefError:'Code not found. Double-check and try again.',profileRefOk:''}); return; }
-      await Supa.post('referrals',{ref_code:code,referred_token:token,referrer_token:referrerToken});
+      // rpc/credit_referral resolves the code, checks the not-already-claimed
+      // rule, records the referral, and credits the referrer — all server-side,
+      // so the referrer's token never reaches this browser (see the Supabase
+      // SQL near SUPABASE_URL).
+      const status=await Supa.post('rpc/credit_referral',{p_code:code,p_referred_token:token});
+      if(status==='already_claimed'){ this.setState({profileRefError:'You have already claimed a referral bonus.',profileRefOk:'',profileRefClaimed:true}); return; }
+      if(status==='invalid_code'){ this.setState({profileRefError:'Code not found. Double-check and try again.',profileRefOk:''}); return; }
+      if(status==='self_referral'){ this.setState({profileRefError:"You can't use your own referral code.",profileRefOk:''}); return; }
       this.setState({profileRefClaimed:true,profileRefError:'',profileRefOk:'Referral claimed! Awarding your free stocks…'});
       await this.awardMysteryStocks('ref_'+code);
-      await this._creditReferrer(referrerToken);
       this.setState({profileRefOk:'Done! Check your portfolio.'});
     }catch(e){ this.setState({profileRefError:'Something went wrong. Try again.',profileRefOk:''}); }
   }
@@ -6456,39 +6554,15 @@ Afonso Moreira|Leverkusen|LW|21|4
   getRefCode(){
     return this.state.myRefCode||this.loadToken().replace(/-/g,'').slice(0,6).toUpperCase();
   }
-  async _resolveRefCode(code){
-    // Given a short ref_code, return the referrer's full token (or null)
-    try{
-      const rows=await Supa.get('leaderboard','ref_code=eq.'+encodeURIComponent(code.toUpperCase())+'&select=token');
-      return (rows&&rows.length)?rows[0].token:null;
-    }catch(e){ return null; }
-  }
-  async _creditReferrer(referrerToken){
-    // Increment pending_ref_rewards on the referrer's portfolio so they get stocks on next load
-    if(!referrerToken||!this._sbUrl) return;
-    const portfolioUrl=this._sbUrl.replace('/leaderboard','/portfolios');
-    try{
-      const rows=await Supa.get('portfolios','token=eq.'+encodeURIComponent(referrerToken)+'&select=token,pending_ref_rewards');
-      if(!rows||!rows.length) return;
-      const cur=rows[0].pending_ref_rewards||0;
-      fetch(portfolioUrl+'?token=eq.'+encodeURIComponent(referrerToken),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({pending_ref_rewards:cur+1})}).catch(()=>{});
-    }catch(e){}
-  }
   async checkPendingRef(){
     const pending=this._getCookie("fs_pending_ref");
     if(!pending) return;
     const myToken=this.loadToken();
     if(pending===this.getRefCode()){ this._delCookie("fs_pending_ref"); return; }
     try{
-      const existing=await Supa.get("referrals","referred_token=eq."+encodeURIComponent(myToken)+"&select=id");
-      if(existing&&existing.length){ this._delCookie("fs_pending_ref"); return; }
-      // Resolve short code to referrer's full token
-      const referrerToken=await this._resolveRefCode(pending);
-      if(!referrerToken){ this._delCookie("fs_pending_ref"); return; }
-      await Supa.post("referrals",{ref_code:pending,referred_token:myToken,referrer_token:referrerToken});
+      const status=await Supa.post('rpc/credit_referral',{p_code:pending,p_referred_token:myToken});
       this._delCookie("fs_pending_ref");
-      await this.awardMysteryStocks("ref_"+pending);
-      await this._creditReferrer(referrerToken);
+      if(status==='ok') await this.awardMysteryStocks("ref_"+pending);
     }catch(e){}
   }
   async awardMysteryStocks(seed){
