@@ -69,6 +69,10 @@ on:
         description: 'Run scripts/debug-portfolio-write.mjs for this exact token — re-sends that account''s real data via the same request shape persist() uses and prints the real HTTP status/body (persist() itself swallows this). Blank = skip.'
         type: string
         default: ''
+      debug_tables_check:
+        description: 'Run scripts/debug-tables-check.mjs (read-only pre-launch sanity check: confirms leaderboard/portfolios/comments/referrals/clubs/club_messages/shares tables exist and hold real data, catching the same class of silent-schema-mismatch bug found in bonus_cash)'
+        type: boolean
+        default: false
 
 jobs:
   diagnose:
@@ -119,3 +123,6 @@ jobs:
       - name: Debug portfolio write (optional)
         if: ${{ inputs.debug_portfolio_write_token != '' }}
         run: node scripts/debug-portfolio-write.mjs "${{ inputs.debug_portfolio_write_token }}"
+      - name: Debug tables check (optional)
+        if: ${{ inputs.debug_tables_check }}
+        run: node scripts/debug-tables-check.mjs
