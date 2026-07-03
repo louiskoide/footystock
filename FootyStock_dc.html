@@ -2082,7 +2082,7 @@
       <span style="font:600 14px 'Hanken Grotesk';color:#46504a">Shares</span>
       <div style="display:flex;align-items:center;gap:14px">
         <button onClick="{{ tr.dec }}" style="width:34px;height:34px;border-radius:10px;border:1px solid #e1e4dd;background:#fff;font:600 20px 'Hanken Grotesk';color:#16201a;cursor:pointer;line-height:1">−</button>
-        <span style="font:700 22px 'Space Grotesk';min-width:40px;text-align:center">{{ tr.qty }}</span>
+        <input id="fs-trade-qty" type="text" inputmode="numeric" pattern="[0-9]*" value="{{ tr.qtyDraft }}" onInput="{{ tr.onQtyInput }}" onBlur="{{ tr.onQtyBlur }}" style="font:700 22px 'Space Grotesk';width:56px;text-align:center;border:1px solid #e1e4dd;border-radius:8px;padding:4px 2px;background:#fff;color:#16201a;outline:none" />
         <button onClick="{{ tr.inc }}" style="width:34px;height:34px;border-radius:10px;border:1px solid #e1e4dd;background:#fff;font:600 20px 'Hanken Grotesk';color:#16201a;cursor:pointer;line-height:1">+</button>
       </div>
     </div>
@@ -2547,7 +2547,7 @@ class Component extends DCLogic {
       filterOpen:false, filterNation:'ALL', filterTeam:'ALL', filterAgeMin:'', filterAgeMax:'', filterPriceMin:'', filterPriceMax:'',
       filterVolMin:'', filterVolMax:'', filter1dMin:'', filter1dMax:'', filter7dMin:'', filter7dMax:'',
       chartHoverIdx:null, chartDragStart:null,
-      tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1,
+      tradeOpen:false, tradeId:null, tradeSide:'buy', tradeQty:1, tradeQtyDraft:'1',
       showReward:false, tick:0, pendingOrders:[], ready:false, recapDismissed:false,
       feedbackOpen:false, feedbackText:'', feedbackName:'', feedbackSending:false, feedbackSent:false, feedbackError:'',
       profileViewName: null,
@@ -5844,7 +5844,7 @@ Afonso Moreira|Leverkusen|LW|21|4
   clearTrigger(id){ const triggers={...this.state.triggers}; delete triggers[id]; this.saveTriggers(triggers); this.setState({triggers}); }
   dismissTriggerNotice(){ this.setState({triggerNotice:null}); }
 
-  openTrade(id,side){ const p=this.byId(id); const held=this.state.holdings[id]; const shorted=this.state.shorts[id]; if(side==='sell'&&(!held||held.qty<1))return; if(side==='cover'&&(!shorted||shorted.qty<1))return; this.setState({tradeOpen:true,tradeId:id,tradeSide:side,tradeQty:1}); }
+  openTrade(id,side){ const p=this.byId(id); const held=this.state.holdings[id]; const shorted=this.state.shorts[id]; if(side==='sell'&&(!held||held.qty<1))return; if(side==='cover'&&(!shorted||shorted.qty<1))return; this.setState({tradeOpen:true,tradeId:id,tradeSide:side,tradeQty:1,tradeQtyDraft:'1'}); }
   closeTrade(){ this.setState({tradeOpen:false}); }
   openFeedback(){ this.setState({feedbackOpen:true,feedbackSent:false,feedbackError:'',feedbackText:'',feedbackName:''}); }
   closeFeedback(){ this.setState({feedbackOpen:false}); }
@@ -5865,7 +5865,25 @@ Afonso Moreira|Leverkusen|LW|21|4
       else{ this.setState({feedbackError:'Submission failed — please try again.',feedbackSending:false}); }
     }catch(e){ this.setState({feedbackError:'Network error — please try again.',feedbackSending:false}); }
   }
-  setTradeQty(q){ this.setState({tradeQty:Math.max(1,q)}); }
+  setTradeQty(q){ const n=Math.max(1,q); this.setState({tradeQty:n,tradeQtyDraft:String(n)}); }
+  // Free-text shares entry (needed for cheap stocks, where tapping + a
+  // hundred times to reach the desired quantity isn't realistic). Keeps the
+  // raw typed string as tradeQtyDraft so the input reflects exactly what was
+  // typed (including a momentarily-empty box while backspacing a multi-digit
+  // number) rather than snapping back to "1" on every keystroke; tradeQty
+  // (the numeric value everything else — total, validation, confirm button —
+  // actually reads) tracks alongside it, clamped to >=1 with non-digits
+  // stripped.
+  onTradeQtyInput(e){
+    const raw=e.target.value.replace(/[^0-9]/g,'').slice(0,6);
+    const n=raw===''?1:Math.max(1,parseInt(raw,10));
+    this.setState({tradeQtyDraft:raw,tradeQty:n});
+  }
+  onTradeQtyBlur(){
+    // On blur, normalize the draft back to match the clamped number (fixes
+    // an empty box, leading zeros, etc. left over from mid-edit).
+    this.setState({tradeQtyDraft:String(this.state.tradeQty)});
+  }
   pricesAreFresh(){
     // Prices must have refreshed successfully within the last 5 minutes.
     if(!this._lastFetchMs) return false;
@@ -7789,6 +7807,8 @@ Afonso Moreira|Leverkusen|LW|21|4
       const sharesLabel=sharesLeft!=null?(sharesLeft+' / '+(sharesTotal||'?')+' shares left'):null;
       const sharesBarPct=sharesTotal&&sharesTotal>0?Math.round(100*sharesLeft/sharesTotal):null;
       tr={ name:p.name,team:p.team,pos:p.pos,price:this.money(price),qty,
+        qtyDraft:S.tradeQtyDraft!=null?S.tradeQtyDraft:String(qty),
+        onQtyInput:(e)=>this.onTradeQtyInput(e),onQtyBlur:()=>this.onTradeQtyBlur(),
         sideLabel,sideColor,
         total:this.money(total),balanceLabel:'Cash after',balanceAfter:this.money(cashAfter),balanceColor:cashAfter<0?'#e04040':'#16201a',
         buyingPower:this.money(bp),marginWarning:'',
