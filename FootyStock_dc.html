@@ -95,6 +95,13 @@
     /* Chart: less tall on narrow screens */
     .fs-price-chart{height:200px!important}
     .fs-modal-card{padding:20px!important}
+    /* Share/Feedback FABs: full-width text pills overlap page content (e.g.
+       the detail page's 24H/7D/30D/90D chart toggle) on narrow screens —
+       shrink to stacked icon-only circles tucked in the corner instead. */
+    .fs-fab{padding:13px!important;border-radius:50%!important;right:16px!important}
+    .fs-fab-label{display:none!important}
+    .fs-fab-share{bottom:70px!important}
+    .fs-fab-feedback{bottom:16px!important}
   }
   @media (max-width:420px){
     .fs-movers-grid{grid-template-columns:1fr!important}
@@ -2217,9 +2224,9 @@
 </sc-if>
 
 <!-- ============ SHARE BUTTON ============ -->
-<button onClick="{{ openShare }}" style="position:fixed;bottom:28px;right:130px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#0a4a2f;color:#3ddc8a;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
+<button class="fs-fab fs-fab-share" onClick="{{ openShare }}" style="position:fixed;bottom:28px;right:130px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#0a4a2f;color:#3ddc8a;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
   <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="18" cy="5" r="2"/><circle cx="18" cy="15" r="2"/><circle cx="3" cy="10" r="2"/><line x1="3" y1="10" x2="16" y2="5"/><line x1="3" y1="10" x2="16" y2="15"/></svg>
-  Share
+  <span class="fs-fab-label">Share</span>
 </button>
 
 <!-- ============ PORTFOLIO LOADING OVERLAY ============ -->
@@ -2300,9 +2307,9 @@
 </sc-if>
 
 <!-- ============ FEEDBACK BUTTON ============ -->
-<button onClick="{{ openFeedback }}" style="position:fixed;bottom:28px;right:24px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
+<button class="fs-fab fs-fab-feedback" onClick="{{ openFeedback }}" style="position:fixed;bottom:28px;right:24px;z-index:80;display:inline-flex;align-items:center;gap:7px;background:#16201a;color:#eaf3ed;border:none;border-radius:999px;padding:11px 18px;font:600 13px 'Hanken Grotesk';cursor:pointer;box-shadow:0 4px 20px rgba(10,20,14,.28)">
   <svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13a2 2 0 0 1-2 2H6l-4 4V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2z"/></svg>
-  Feedback
+  <span class="fs-fab-label">Feedback</span>
 </button>
 
 <!-- ============ FEEDBACK MODAL ============ -->
