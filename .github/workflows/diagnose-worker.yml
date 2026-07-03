@@ -57,6 +57,10 @@ on:
         description: 'If running the holdings backfill, dry-run it (log counts, write nothing)'
         type: boolean
         default: false
+      debug_daily_reward:
+        description: 'Run scripts/debug-daily-reward.mjs (read-only: checks for duplicate portfolios rows per token and last_claim values, diagnosing why the daily reward keeps re-prompting)'
+        type: boolean
+        default: false
 
 jobs:
   diagnose:
@@ -101,3 +105,6 @@ jobs:
       - name: Backfill leaderboard top_holdings from portfolios (optional)
         if: ${{ inputs.run_holdings_backfill }}
         run: node scripts/backfill-leaderboard-holdings.mjs ${{ inputs.holdings_backfill_dry_run && '--dry-run' || '' }}
+      - name: Debug daily reward persistence (optional)
+        if: ${{ inputs.debug_daily_reward }}
+        run: node scripts/debug-daily-reward.mjs
