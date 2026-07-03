@@ -49,7 +49,7 @@ Fly.io worker (always-on, scripts/live-worker/)
   → resolves every record to our canonical slug ID
   → computes each player's price (see pricing-model.md)
   → serves prices.json-shaped JSON over HTTP (no commit/repo write)
-Static frontend (deploy target TBC — see CLAUDE.md)
+Static frontend (Vercel — footystock.com, rewrite serves FootyStock_dc.html at /)
   → polls the worker's /prices.json every 30s, merges it live
   → falls back silently to the hand-typed STARS/NEWS snapshot if unreachable
 Accounts, portfolios, leaderboard, clubs, referrals
@@ -61,8 +61,9 @@ Accounts, portfolios, leaderboard, clubs, referrals
 The worker (`deploy-worker.yml`) auto-deploys on push to `main` — no manual
 `fly deploy` step needed. The frontend's `pages.yml` was removed after failing
 on all 371 of its runs (GitHub Pages was never enabled for this repo) —
-confirm what actually serves `FootyStock_dc.html` in production before
-assuming a push to `main` publishes it.
+Vercel is the confirmed host instead, auto-deploying via its own GitHub
+integration (no workflow file involved), with `vercel.json`'s rewrite serving
+`FootyStock_dc.html` at `/`.
 
 - **A Supabase backend is live**, not a future maybe — see CLAUDE.md
   Architecture rule 3 for what's stored there and the access-control pattern

@@ -53,15 +53,15 @@ Entertainment only — **no real money is involved**.
   *worker-code* deploy — acceptable, since the roster rarely changes
   mid-tournament; trigger `workflow_dispatch` manually if it ever needs a
   forced refresh.)
-- **The static frontend has no confirmed automatic deploy right now.**
+- **Vercel is the confirmed static frontend host** (confirmed 2026-07-03).
   `.github/workflows/pages.yml` was removed after failing on all 371 of its
   runs (`Get Pages site failed` — GitHub Pages was never enabled in repo
-  settings for `louiskoide/footystock`). `vercel.json` exists in the repo and
-  the "Deployment discipline" section below manages a Vercel 100-deploys/day
-  limit as if Vercel is the real, active host — but nothing in this repo
-  confirms that connection is actually live. Don't assume pushing to `main`
-  publishes `FootyStock_dc.html` anywhere until that's verified; treat it as
-  opened directly/locally for testing until then.
+  settings for `louiskoide/footystock`) — Vercel's own GitHub integration is
+  what actually auto-deploys on push to `main`, not a workflow file, which is
+  why nothing in `.github/workflows/` shows it. `vercel.json`'s `rewrites`
+  rule serves `FootyStock_dc.html`'s content at `/` (so `footystock.com/`
+  never shows the filename), and the "Deployment discipline" section below
+  manages the real 100-deploys/day limit this triggers.
 
 ## Architecture rules — do not violate
 
