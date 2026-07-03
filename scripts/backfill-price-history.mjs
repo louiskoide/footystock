@@ -171,7 +171,10 @@ function computeSyntheticHist(id, name, pos, age, tier) {
       // Expectations scale up with notoriety: a maxed-notoriety star needs up
       // to 1.5 points more to be considered "living up to the price".
       const ratingBase = (isDefPos ? 6.5 : 6.0) + notoriety * 1.5;
-      const ratingPart = (s.rating - ratingBase) * 1.3 + Math.pow(ratingExcess, 1.8) * 1.5;
+      // Symmetric to ratingExcess: a genuinely bad game accelerates the same
+      // way an outlier great one does, not just linearly.
+      const ratingShortfall = Math.max(0, ratingBase - s.rating);
+      const ratingPart = (s.rating - ratingBase) * 1.3 + Math.pow(ratingExcess, 1.8) * 1.5 - Math.pow(ratingShortfall, 1.6) * 0.9;
       const delta = parseFloat((ratingPart + goalPart + assistPart).toFixed(2));
       events.push({ offset: offOf(s.d), delta });
     }
@@ -255,22 +258,35 @@ function computeSyntheticHist(id, name, pos, age, tier) {
   // halfLife 6->3 and BUMP_CAP: halfLife=6 was slower than the ~3-4 day gap
   // between WC matches, so a bump barely faded before the next one stacked
   // fully on top with no ceiling — a near-guaranteed staircase instead of
-  // genuine "spike then settle". downScale bumped 25%->50% max extra penalty
-  // on negative deltas, stacking with (not duplicating) the ratingBase
-  // notoriety premium above.
+  // genuine "spike then settle".
   const BUMP_CAP = 0.25;
   const bumpTotal = new Array(N).fill(0);
+  // Persistence: whether a bump fully reverts to 0 or partially sticks as a
+  // real re-rating is a seeded coin flip (stable per event, same for every
+  // viewer) weighted by current signals. No demandScore here (backfill has
+  // no live user-trading data for historical days), so this is
+  // (formScore+hypeScore)/2 rather than buildDB()'s 3-way average.
+  const sentimentStrength = clamp((formScore + hypeScore) / 2, -1, 1);
   const bumpEvents = news ? [...events, { offset: offOf(news.d), delta: news.bias }] : events;
   for (const e of bumpEvents) {
     const idx = N - 1 - e.offset;
     if (idx < 0 || idx >= N) continue;
-    const downScale = e.delta < 0 ? 1.0 * (1 + notoriety * 0.5) : 1.0;
-    const bump = (e.delta / 100) * price * downScale, ramp = 1, halfLife = 3;
+    // Bidirectional notoriety scale: positive deltas are muted with
+    // notoriety (an expected superstar performance moves price less),
+    // negative deltas are amplified further (bad games hit harder than
+    // good ones help, for every stock, escalating with notoriety).
+    const notorietyScale = e.delta < 0 ? (1.4 + notoriety * 0.6) : (1.15 - notoriety * 0.55);
+    const bump = (e.delta / 100) * price * notorietyScale, ramp = 1, halfLife = 3;
+    const aligned = (e.delta >= 0) === (sentimentStrength >= 0);
+    const alignMag = Math.abs(sentimentStrength);
+    const pHold = aligned ? clamp(0.15 + alignMag * 0.55, 0.15, 0.70) : clamp(0.05 + (1 - alignMag) * 0.10, 0.05, 0.15);
+    const holdRoll = mulberry(hash(id + ':hold:' + e.offset))();
+    const floor = holdRoll < pHold ? clamp(0.3 + alignMag * 0.5, 0.3, 0.8) : 0;
     for (let j = idx; j < N; j++) {
       const daysIn = j - idx + 1;
       const riseK = Math.min(1, daysIn / ramp);
       const eased = riseK * riseK * (3 - 2 * riseK);
-      const decay = Math.pow(0.5, Math.max(0, daysIn - ramp) / halfLife);
+      const decay = floor + (1 - floor) * Math.pow(0.5, Math.max(0, daysIn - ramp) / halfLife);
       bumpTotal[j] += bump * eased * decay;
     }
   }

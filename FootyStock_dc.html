@@ -5299,7 +5299,7 @@ Afonso Moreira|Leverkusen|LW|21|4
         const aligned = (e.delta>=0) === (sentimentStrength>=0);
         const alignMag = Math.abs(sentimentStrength);
         const pHold = aligned ? clamp(0.15+alignMag*0.55, 0.15, 0.70) : clamp(0.05+(1-alignMag)*0.10, 0.05, 0.15);
-        const holdRoll = this.mulberry(this.hash(id+':hold:'+e.d))();
+        const holdRoll = this.mulberry(this.hash(id+':hold:'+e.offset))();
         const floor = holdRoll < pHold ? clamp(0.3+alignMag*0.5, 0.3, 0.8) : 0;
         // The "what's driving the price" list must show what this match did
         // to price AT THE TIME — its own peak, day-of contribution (eased=
