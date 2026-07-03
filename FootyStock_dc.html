@@ -1879,7 +1879,7 @@
         <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
           <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Win rate</div>
           <div style="font:700 22px 'Space Grotesk';margin-top:6px">{{ profileStats.winRateFmt }}</div>
-          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">profitable open positions</div>
+          <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">of closed trades</div>
         </div>
       </div>
 
@@ -1910,7 +1910,7 @@
           <div style="font:500 12px 'Hanken Grotesk';color:#8a938c;margin-top:2px">most shares bought</div>
         </div>
         <div style="background:#fff;border:1px solid #e8eae4;border-radius:14px;padding:16px 18px">
-          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Best open position</div>
+          <div style="font:600 10px 'Hanken Grotesk';color:#8a938c;letter-spacing:.08em;text-transform:uppercase">Best trade ever</div>
           <div style="font:700 16px 'Space Grotesk';margin-top:6px;line-height:1.2">{{ profileStats.bestPLNameDisplay }}</div>
           <div style="font:500 12px 'Hanken Grotesk';color:#16a85f;margin-top:2px">{{ profileStats.bestPosPctFmt }}</div>
         </div>
@@ -6001,6 +6001,50 @@ Afonso Moreira|Leverkusen|LW|21|4
   // ---------- profile ----------
   openProfileView(name){ this.setState({profileViewName:name||null,view:'profile'}); }
   closeProfileView(){ this.setState({view:'leaders',profileViewName:null}); }
+  // Replays the full transaction log in chronological order (txns is stored
+  // newest-first, see fillPendingOrders' unshift) to reconstruct the cost
+  // basis at the moment of each close — SELL txns never stored their own
+  // avg cost, so this is the only way to recover a closed trade's real
+  // realized +/-. Mirrors the same weighted-average-cost logic already used
+  // live in fillPendingOrders. Covers both long (BUY->SELL) and short
+  // (HATEWATCH->COVER) round trips, independently costed.
+  closedTrades(){
+    const txns=(this.state.txns||[]).slice().reverse();
+    const longAvg={}, shortAvg={};
+    const closed=[];
+    for(const t of txns){
+      if(t.side==='BUY'){
+        const cur=longAvg[t.id]||{qty:0,avg:0};
+        const newQty=cur.qty+t.qty;
+        longAvg[t.id]={qty:newQty,avg:newQty>0?(cur.qty*cur.avg+t.qty*t.price)/newQty:0};
+      }else if(t.side==='SELL'){
+        const cur=longAvg[t.id];
+        if(cur&&cur.qty>0){
+          const closeQty=Math.min(cur.qty,t.qty);
+          const pl=(t.price-cur.avg)*closeQty;
+          const plPct=cur.avg>0?(t.price-cur.avg)/cur.avg*100:0;
+          closed.push({id:t.id,name:t.name,pl,plPct,date:t.date});
+          const newQty=cur.qty-closeQty;
+          longAvg[t.id]={qty:newQty,avg:newQty>0?cur.avg:0};
+        }
+      }else if(t.side==='HATEWATCH'){
+        const cur=shortAvg[t.id]||{qty:0,avg:0};
+        const newQty=cur.qty+t.qty;
+        shortAvg[t.id]={qty:newQty,avg:newQty>0?(cur.qty*cur.avg+t.qty*t.price)/newQty:0};
+      }else if(t.side==='COVER'){
+        const cur=shortAvg[t.id];
+        if(cur&&cur.qty>0){
+          const closeQty=Math.min(cur.qty,t.qty);
+          const pl=(cur.avg-t.price)*closeQty; // short profits when buy-back price < entry
+          const plPct=cur.avg>0?(cur.avg-t.price)/cur.avg*100:0;
+          closed.push({id:t.id,name:t.name,pl,plPct,date:t.date});
+          const newQty=cur.qty-closeQty;
+          shortAvg[t.id]={qty:newQty,avg:newQty>0?cur.avg:0};
+        }
+      }
+    }
+    return closed;
+  }
   profileStats(){
     const S=this.state; const txns=S.txns||[];
     const buys=txns.filter(t=>t.side==='BUY');
@@ -6014,21 +6058,23 @@ Afonso Moreira|Leverkusen|LW|21|4
     const favEntry=Object.values(buyByPlayer).sort((a,b)=>b.qty-a.qty)[0]||null;
     // unique players ever traded
     const tradedIds=new Set(txns.map(t=>t.id));
-    // current holdings analysis
-    const h=S.holdings; const DB=this.getDB();
+    // open-positions count (still current holdings — a distinct stat from win rate/best trade below)
+    const h=S.holdings;
+    const totalLong=Object.keys(h).filter(id=>this.byId(id)).length;
+    // Win rate and best trade are about REALIZED outcomes — how you actually
+    // did when you closed a position — not the unrealized P/L of whatever
+    // happens to still be open right now (which reads "—" for anyone
+    // currently flat, even after a long, genuinely profitable trading
+    // history).
+    const closed=this.closedTrades();
+    const winCount=closed.filter(c=>c.pl>=0).length;
+    const winRate=closed.length>0?Math.round(winCount/closed.length*100):null;
     let bestPL=null, bestPLName='', bestPLPct=0;
     let worstPL=null, worstPLName='', worstPLPct=0;
-    let winCount=0, totalLong=0;
-    for(const id in h){
-      const holding=h[id]; const p=this.byId(id);
-      if(!p) continue;
-      const cur=this.curPrice(p); const pl=(cur-holding.avg)*holding.qty; const plPct=(cur-holding.avg)/holding.avg*100;
-      totalLong++;
-      if(pl>=0) winCount++;
-      if(bestPL===null||pl>bestPL){ bestPL=pl; bestPLName=p.name; bestPLPct=plPct; }
-      if(worstPL===null||pl<worstPL){ worstPL=pl; worstPLName=p.name; worstPLPct=plPct; }
+    for(const c of closed){
+      if(bestPL===null||c.pl>bestPL){ bestPL=c.pl; bestPLName=c.name; bestPLPct=c.plPct; }
+      if(worstPL===null||c.pl<worstPL){ worstPL=c.pl; worstPLName=c.name; worstPLPct=c.plPct; }
     }
-    const winRate=totalLong>0?Math.round(winCount/totalLong*100):null;
     // portfolio diversity: unique leagues in holdings
     const heldLeagues=new Set(Object.keys(h).map(id=>{ const p=this.byId(id); return p?p.lg:''; }).filter(Boolean));
     const nw=this.netWorth(); const pl=this.tradingPnl();
