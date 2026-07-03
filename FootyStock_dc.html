@@ -5709,8 +5709,19 @@ Afonso Moreira|Leverkusen|LW|21|4
   }
 
   // ---------- daily reward ----------
-  todayStr(){ return new Date().toISOString().slice(0,10); }
-  yesterdayStr(){ return new Date(Date.now()-86400000).toISOString().slice(0,10); }
+  // Local calendar date, NOT toISOString() (which is always UTC). The old
+  // UTC-based version reset the "daily" cutoff at UTC midnight regardless
+  // of the player's actual timezone — anyone west of UTC (the Americas)
+  // would see the reward flip back to claimable while it was still the
+  // SAME evening on their own clock, well after they'd already claimed
+  // that day, reading as "it lets me claim again despite already
+  // claiming". Local date keeps the cutoff aligned with the player's own
+  // day. Deliberately separate from buildDB()'s dayKey (used for the
+  // shared/global price history, which must stay UTC-consistent across
+  // every viewer) — this is purely the per-user reward/txn-date clock.
+  _localDateStr(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  todayStr(){ return this._localDateStr(new Date()); }
+  yesterdayStr(){ const d=new Date(); d.setDate(d.getDate()-1); return this._localDateStr(d); }
   isClaimable(){ return this.state.lastClaim !== this.todayStr(); }
   // Daily reward is a randomized stock pack (reuses the same
   // pendingPacks/packedHoldings mechanic as competition rewards, see
