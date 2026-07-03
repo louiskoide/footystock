@@ -4256,6 +4256,35 @@ Afonso Moreira|Leverkusen|LW|21|4
     return out;
   }
 
+  // Real FIFA World Ranking (June 2026, pre-tournament) for every nation in
+  // the 2026 World Cup field, grouped into 5 tiers rather than keyed off raw
+  // numeric rank — a market shouldn't price "rank 41 vs rank 42" as a
+  // meaningfully different opponent, only the rough class of team. Used by
+  // buildDB()'s per-match bump loop: beating/impressing against a weak
+  // opponent should move the price less than doing the same against an
+  // elite one, and a bad game against a weak opponent should sting more
+  // than the same bad game against a genuine contender.
+  // Elite: FIFA top ~8. Strong: ~9-20. Mid: ~21-40. Bad: ~41-65.
+  // Very Weak: ~65+. Ties/adjacent ranks grouped by tier, not exact order.
+  NATION_STRENGTH(){
+    if(this._nationStrength) return this._nationStrength;
+    const ELITE=1.0, STRONG=0.5, MID=0, BAD=-0.5, VERY_WEAK=-1.0;
+    const out = {
+      // Elite (FIFA ~1-8)
+      Argentina:ELITE, Spain:ELITE, France:ELITE, England:ELITE, Portugal:ELITE, Brazil:ELITE, Morocco:ELITE, Netherlands:ELITE,
+      // Strong (FIFA ~9-20)
+      Belgium:STRONG, Germany:STRONG, Croatia:STRONG, Colombia:STRONG, Mexico:STRONG, Senegal:STRONG, Uruguay:STRONG, USA:STRONG, Japan:STRONG, Switzerland:STRONG, Iran:STRONG,
+      // Mid (FIFA ~21-40)
+      Turkey:MID, Ecuador:MID, Austria:MID, 'South Korea':MID, Algeria:MID, Egypt:MID, Canada:MID, Norway:MID, 'Ivory Coast':MID, Panama:MID, Sweden:MID, Czechia:MID,
+      // Bad (FIFA ~41-65)
+      Paraguay:BAD, Scotland:BAD, Australia:BAD, 'DR Congo':BAD, Tunisia:BAD, Uzbekistan:BAD, Qatar:BAD, Iraq:BAD, 'South Africa':BAD, 'Saudi Arabia':BAD, 'Cape Verde':BAD, Jordan:BAD, Bosnia:BAD,
+      // Very Weak (FIFA ~65+)
+      Ghana:VERY_WEAK, 'Curaçao':VERY_WEAK, 'New Zealand':VERY_WEAK, Haiti:VERY_WEAK,
+    };
+    this._nationStrength = out;
+    return out;
+  }
+
   slug(name){ return name.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,''); }
 
   // ---------- REAL market values (€M, Transfermarkt-style, mid-2026, form-adjusted) ----------
@@ -5290,7 +5319,22 @@ Afonso Moreira|Leverkusen|LW|21|4
         //    floor too (1.4x-2.0x, was 1.0x-1.5x) — bad games hit harder
         //    than good games help, for every stock, not just expensive ones.
         const notorietyScale = e.delta < 0 ? (1.4 + notoriety*0.6) : (1.15 - notoriety*0.55);
-        const bump=(e.delta/100)*price*notorietyScale, ramp=1, halfLife=3;
+        // Opponent-strength scale, on top of notorietyScale. oppStrength is
+        // +1 (Elite) .. -1 (Very Weak), 0 for an unmapped/unknown opponent
+        // (no effect). Rises: a strong opponent amplifies the reward and a
+        // weak one discounts it, with the swing widest for LOW-notoriety
+        // (cheap/unknown) stocks — an unheralded player outperforming a top
+        // side is the real underdog story a market chases; a superstar doing
+        // it is already priced in. Falls: a weak opponent amplifies the
+        // punishment and a strong one forgives it, with the swing widest for
+        // HIGH-notoriety (expensive) stocks — a $792 stock stinking it up
+        // against a minnow is real information; the same stock struggling
+        // against Argentina is far more excusable.
+        const oppStrength = this.NATION_STRENGTH()[e.oppTeam] || 0;
+        const oppScale = e.delta < 0
+          ? (1 - oppStrength * (0.25 + notoriety*0.35))
+          : (1 + oppStrength * (0.30 - notoriety*0.18));
+        const bump=(e.delta/100)*price*notorietyScale*oppScale, ramp=1, halfLife=3;
         // Seeded per event (id+date) so every viewer sees the same outcome
         // and it stays stable day to day — this is "was this a real
         // re-rating" being decided once, not a coin flip that flickers.

@@ -66,6 +66,18 @@ const dataFn = new Function(`
 `);
 const { WC, STARS, NEWS, NATION } = dataFn();
 
+// Real FIFA World Ranking (June 2026, pre-tournament), grouped into 5 tiers
+// — kept in sync with NATION_STRENGTH() in FootyStock_dc.html. See that
+// method's comment for the rank bands and why tiers instead of raw rank.
+const ELITE = 1.0, STRONG = 0.5, MID = 0, BAD = -0.5, VERY_WEAK = -1.0;
+const NATION_STRENGTH = {
+  Argentina: ELITE, Spain: ELITE, France: ELITE, England: ELITE, Portugal: ELITE, Brazil: ELITE, Morocco: ELITE, Netherlands: ELITE,
+  Belgium: STRONG, Germany: STRONG, Croatia: STRONG, Colombia: STRONG, Mexico: STRONG, Senegal: STRONG, Uruguay: STRONG, USA: STRONG, Japan: STRONG, Switzerland: STRONG, Iran: STRONG,
+  Turkey: MID, Ecuador: MID, Austria: MID, 'South Korea': MID, Algeria: MID, Egypt: MID, Canada: MID, Norway: MID, 'Ivory Coast': MID, Panama: MID, Sweden: MID, Czechia: MID,
+  Paraguay: BAD, Scotland: BAD, Australia: BAD, 'DR Congo': BAD, Tunisia: BAD, Uzbekistan: BAD, Qatar: BAD, Iraq: BAD, 'South Africa': BAD, 'Saudi Arabia': BAD, 'Cape Verde': BAD, Jordan: BAD, Bosnia: BAD,
+  Ghana: VERY_WEAK, 'Curaçao': VERY_WEAK, 'New Zealand': VERY_WEAK, Haiti: VERY_WEAK,
+};
+
 // ── live worker data (real match events — zero API-Football calls) ────────
 
 const WORKER_URL = process.env.LIVE_WORKER_URL || 'https://footystock.fly.dev';
@@ -157,7 +169,7 @@ function computeSyntheticHist(id, name, pos, age, tier) {
         // notoriety=0). An expensive stock being left out is real
         // information a market would react to — mild on purpose since it's
         // often just rest/rotation, not bad news.
-        events.push({ offset: offOf(s.d), delta: parseFloat((-0.6 * notoriety).toFixed(2)) });
+        events.push({ offset: offOf(s.d), oppTeam: s.opp, delta: parseFloat((-0.6 * notoriety).toFixed(2)) });
         continue;
       }
       const g = s.g || 0, a = s.a || 0;
@@ -176,7 +188,7 @@ function computeSyntheticHist(id, name, pos, age, tier) {
       const ratingShortfall = Math.max(0, ratingBase - s.rating);
       const ratingPart = (s.rating - ratingBase) * 1.3 + Math.pow(ratingExcess, 1.8) * 1.5 - Math.pow(ratingShortfall, 1.6) * 0.9;
       const delta = parseFloat((ratingPart + goalPart + assistPart).toFixed(2));
-      events.push({ offset: offOf(s.d), delta });
+      events.push({ offset: offOf(s.d), oppTeam: s.opp, delta });
     }
   }
 
@@ -276,7 +288,14 @@ function computeSyntheticHist(id, name, pos, age, tier) {
     // negative deltas are amplified further (bad games hit harder than
     // good ones help, for every stock, escalating with notoriety).
     const notorietyScale = e.delta < 0 ? (1.4 + notoriety * 0.6) : (1.15 - notoriety * 0.55);
-    const bump = (e.delta / 100) * price * notorietyScale, ramp = 1, halfLife = 3;
+    // Opponent-strength scale on top of notorietyScale — kept in sync with
+    // buildDB()'s bump loop. oppStrength is 0 (no effect) for the synthetic
+    // news bump, which has no oppTeam.
+    const oppStrength = NATION_STRENGTH[e.oppTeam] || 0;
+    const oppScale = e.delta < 0
+      ? (1 - oppStrength * (0.25 + notoriety * 0.35))
+      : (1 + oppStrength * (0.30 - notoriety * 0.18));
+    const bump = (e.delta / 100) * price * notorietyScale * oppScale, ramp = 1, halfLife = 3;
     const aligned = (e.delta >= 0) === (sentimentStrength >= 0);
     const alignMag = Math.abs(sentimentStrength);
     const pHold = aligned ? clamp(0.15 + alignMag * 0.55, 0.15, 0.70) : clamp(0.05 + (1 - alignMag) * 0.10, 0.05, 0.15);
