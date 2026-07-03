@@ -2535,6 +2535,47 @@ create table if not exists shares (
   updated_at timestamptz default now()
 );
 alter table shares disable row level security;
+
+-- Pre-launch security fix: password_hash on `leaderboard` was readable by
+-- ANY client using the public anon key (a plain `select=password_hash` GET
+-- request returns it) — combined with the app's client-side SHA-256+
+-- username-salt hashing (not a real password KDF), a leaked dump would be
+-- crackable at scale, which matters since people reuse passwords across
+-- sites. This revokes direct read access to that column and moves password
+-- verification into two SECURITY DEFINER functions that compare the hash
+-- server-side and never return it. doVerifyOtp()/doResetPw() call these via
+-- rpc/verify_password and rpc/verify_password_by_token instead of fetching
+-- password_hash directly — run this once in the Supabase SQL editor:
+
+revoke select (password_hash) on table leaderboard from anon, authenticated;
+
+create or replace function verify_password(p_name text, p_hash text)
+returns table(token text, name text)
+language sql
+security definer
+set search_path = public
+as $$
+  select l.token, l.name
+  from leaderboard l
+  where l.name = p_name
+    and l.password_hash = p_hash
+  limit 1;
+$$;
+grant execute on function verify_password(text, text) to anon, authenticated;
+
+create or replace function verify_password_by_token(p_token text, p_hash text)
+returns table(token text)
+language sql
+security definer
+set search_path = public
+as $$
+  select l.token
+  from leaderboard l
+  where l.token = p_token
+    and l.password_hash = p_hash
+  limit 1;
+$$;
+grant execute on function verify_password_by_token(text, text) to anon, authenticated;
 */
 
 const SUPABASE_URL='https://pwlszzrvwhflijbjwnnf.supabase.co';
@@ -6233,12 +6274,14 @@ Afonso Moreira|Leverkusen|LW|21|4
     if(!pw){ this.setState({loginError:'Enter your password.'}); return; }
     this.setState({loginError:'',loginSending:true});
     try{
-      // Look up by username only
-      const rows=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(input)+'&select=token,name,password_hash');
-      if(!rows||!rows.length){ this.setState({loginError:'Account not found.',loginSending:false}); return; }
+      // Verified server-side via the verify_password() RPC — password_hash
+      // itself is never sent back to the client (see the Supabase SQL in
+      // CLAUDE.md/README for the revoke + function that makes this the
+      // only way to check a password now).
+      const hash=await this._hashPw(pw, input.toLowerCase());
+      const rows=await Supa.post('rpc/verify_password',{p_name:input,p_hash:hash});
+      if(!rows||!rows.length){ this.setState({loginError:'Incorrect username or password.',loginSending:false}); return; }
       const row=rows[0];
-      const hash=await this._hashPw(pw,(row.name||input).toLowerCase());
-      if(hash!==row.password_hash){ this.setState({loginError:'Incorrect password.',loginSending:false}); return; }
       this._saveToken(row.token);
       this.saveUsername(row.name||input);
       this.setState({loggedIn:true,loginStep:'email',loginError:'',loginSending:false});
@@ -6253,7 +6296,7 @@ Afonso Moreira|Leverkusen|LW|21|4
     if(!email||!email.includes('@')){ this.setState({loginError:'Enter the email linked to your account.'}); return; }
     this.setState({loginError:'',loginSending:true});
     try{
-      const rows=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name)+'&select=token,name,email,password_hash');
+      const rows=await Supa.get('leaderboard','name=eq.'+encodeURIComponent(name)+'&select=token,name,email');
       if(!rows||!rows.length){ this.setState({loginError:'Account not found.',loginSending:false}); return; }
       const row=rows[0];
       if(!row.email||row.email.toLowerCase()!==email){ this.setState({loginError:'Email does not match our records.',loginSending:false}); return; }
@@ -6291,10 +6334,11 @@ Afonso Moreira|Leverkusen|LW|21|4
     if(!token||!name){ this.setState({profileResetPwError:'Not logged in.',profileResetPwOk:''}); return; }
     this.setState({profileResetPwError:'',profileResetPwOk:''});
     try{
-      const rows=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(token)+'&select=password_hash');
-      if(!rows||!rows.length){ this.setState({profileResetPwError:'Account not found.',profileResetPwOk:''}); return; }
+      // Verified server-side via verify_password_by_token() — password_hash
+      // is never read back to the client (see the Supabase SQL setup).
       const curHash=await this._hashPw(cur,name.toLowerCase());
-      if(curHash!==rows[0].password_hash){ this.setState({profileResetPwError:'Current password is incorrect.',profileResetPwOk:''}); return; }
+      const rows=await Supa.post('rpc/verify_password_by_token',{p_token:token,p_hash:curHash});
+      if(!rows||!rows.length){ this.setState({profileResetPwError:'Current password is incorrect.',profileResetPwOk:''}); return; }
       const newHash=await this._hashPw(nw,name.toLowerCase());
       const res=await fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({password_hash:newHash})});
       if(!res.ok){ this.setState({profileResetPwError:'Update failed. Try again.',profileResetPwOk:''}); return; }
