@@ -187,7 +187,11 @@ function computeSyntheticHist(id, name, pos, age, tier) {
       // way an outlier great one does, not just linearly.
       const ratingShortfall = Math.max(0, ratingBase - s.rating);
       const ratingPart = (s.rating - ratingBase) * 1.3 + Math.pow(ratingExcess, 1.8) * 1.5 - Math.pow(ratingShortfall, 1.6) * 0.9;
-      const delta = parseFloat((ratingPart + goalPart + assistPart).toFixed(2));
+      // A short cameo is a noisy sample — dampen ratingPart (not the real,
+      // discrete goal/assist events) toward a 0.35 floor below 45 minutes.
+      // Kept in sync with buildDB()'s minScale.
+      const minScale = (s.min == null) ? 1 : Math.max(0.35, Math.min(1, s.min / 45));
+      const delta = parseFloat((ratingPart * minScale + goalPart + assistPart).toFixed(2));
       events.push({ offset: offOf(s.d), oppTeam: s.opp, delta });
     }
   }
