@@ -188,9 +188,10 @@ function computeSyntheticHist(id, name, pos, age, tier) {
       const ratingShortfall = Math.max(0, ratingBase - s.rating);
       const ratingPart = (s.rating - ratingBase) * 1.3 + Math.pow(ratingExcess, 1.8) * 1.5 - Math.pow(ratingShortfall, 1.6) * 0.9;
       // A short cameo is a noisy sample — dampen ratingPart (not the real,
-      // discrete goal/assist events) toward a 0.35 floor below 45 minutes.
-      // Kept in sync with buildDB()'s minScale.
-      const minScale = (s.min == null) ? 1 : Math.max(0.35, Math.min(1, s.min / 45));
+      // discrete goal/assist events) with a curved taper (^1.4) toward zero
+      // the shorter the cameo, full weight at 45+ minutes. Kept in sync
+      // with buildDB()'s minScale.
+      const minScale = (s.min == null) ? 1 : Math.min(1, Math.pow(s.min / 45, 1.4));
       const delta = parseFloat((ratingPart * minScale + goalPart + assistPart).toFixed(2));
       events.push({ offset: offOf(s.d), oppTeam: s.opp, delta });
     }

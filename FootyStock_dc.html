@@ -5093,13 +5093,16 @@ Afonso Moreira|Leverkusen|LW|21|4
           // shouldn't move price nearly as much as it would from a full
           // match's worth of evidence, even if the per-match rating itself
           // reads low. 45 minutes (matches rating.mjs's own per-90 stat
-          // normalization threshold) is treated as a full-confidence sample;
-          // below that it tapers down to a 0.35 floor rather than 0, since a
-          // short cameo still carries SOME signal, just far less. Goals and
-          // assists are real, discrete events regardless of minutes — a
-          // stoppage-time winner isn't discounted — so only ratingPart is
-          // scaled, not goalPart/assistPart.
-          const minScale = (s.min==null) ? 1 : Math.max(0.35, Math.min(1, s.min/45));
+          // normalization threshold) is treated as a full-confidence sample.
+          // A flat 0.35 floor was tried first but still let a genuine
+          // 2-10 minute cameo swing price several percent — a curved taper
+          // (^1.4) instead lets it fall much closer to zero the shorter the
+          // cameo is (a real 10' sub still moves price a little, a token 2'
+          // appearance barely at all), while 30-45 minute appearances still
+          // carry most of their weight. Goals and assists are real, discrete
+          // events regardless of minutes — a stoppage-time winner isn't
+          // discounted — so only ratingPart is scaled, not goalPart/assistPart.
+          const minScale = (s.min==null) ? 1 : Math.min(1, Math.pow(s.min/45, 1.4));
           // A cheap/fringe player being an unused sub is a non-event (0 for
           // notoriety=0, matching prior behavior exactly). An expensive stock
           // being left out is real information a market would react to (fitness
