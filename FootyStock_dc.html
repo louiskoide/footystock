@@ -7892,8 +7892,16 @@ Afonso Moreira|Leverkusen|LW|21|4
 
         const formLabel=(f)=>{ if(f>=88)return'Unstoppable'; if(f>=74)return'On Fire 🔥'; if(f>=60)return'In Form'; if(f>=48)return'Average'; if(f>=34)return'Cold'; if(f>=20)return'Out of Form'; return'Ice Cold'; };
         const formBarColor=(f)=>f>=60?GREEN:f>=48?'#e2a32b':RED;
-        const hypeLabel=(h)=>{ if(h>=88)return'Phenomenon'; if(h>=74)return'Viral'; if(h>=60)return'Trending'; if(h>=46)return'Building Buzz'; if(h>=32)return'Under the Radar'; return'Ghost'; };
-        const hypeBarColor=(h)=>h>=60?GREEN:h>=46?'#e2a32b':RED;
+        // Display-only calibration, same spirit as the Match rating bar below:
+        // the underlying moodSig formula (and hence hypeScore/price) is
+        // untouched — only where each band's label/color cuts in changes.
+        // The 1.4->1.55 multiplier nudge alone wasn't enough to make the top
+        // bands reachable in practice, so this pass moves the cutoffs
+        // themselves down substantially instead of pushing the raw signal
+        // further (which would also make hype swing price more — a separate,
+        // bigger question this isn't trying to answer).
+        const hypeLabel=(h)=>{ if(h>=76)return'Phenomenon'; if(h>=64)return'Viral'; if(h>=52)return'Trending'; if(h>=42)return'Building Buzz'; if(h>=30)return'Under the Radar'; return'Ghost'; };
+        const hypeBarColor=(h)=>h>=52?GREEN:h>=42?'#e2a32b':RED;
         // Display-only calibration for the "Match rating" bar — separate from
         // p.signals.fotmob (which stays untouched, since that still feeds the
         // actual price formula's perfScore). This bar's job is just to LOOK
