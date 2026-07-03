@@ -1,11 +1,54 @@
 name: Diagnose live worker + price history (one-off)
 
 # Manual-only, read-only diagnostic: reports how much World Cup fixture/event
-# data the live worker has recovered, and how much real (non-flat) price
-# history Supabase holds. Zero API-Football calls, zero writes — safe to run
-# any time. See scripts/diagnose-worker.mjs.
+# data the live worker has recovered, how much real (non-flat) price history
+# Supabase holds, and tails recent Fly logs to see what the poll loop is
+# actually doing. Zero API-Football calls beyond what the worker itself makes
+# on its own schedule, zero writes — safe to run any time.
+# See scripts/diagnose-worker.mjs.
 on:
   workflow_dispatch:
+    inputs:
+      run_backfill:
+        description: 'Also run scripts/backfill-price-history.mjs after the diagnostic'
+        type: boolean
+        default: false
+      backfill_dry_run:
+        description: 'If running the backfill, dry-run it (log counts, write nothing)'
+        type: boolean
+        default: false
+      test_supabase_write:
+        description: 'Run scripts/debug-supabase-write.mjs (single write+read-back debug)'
+        type: boolean
+        default: false
+      player_ids:
+        description: 'Space-separated player ids to inspect via scripts/debug-player-events.mjs (blank = skip)'
+        type: string
+        default: ''
+      rawstats_player_ids:
+        description: 'Space-separated player ids to inspect via scripts/debug-rawstats.mjs (raw API-Football games.substitute/minutes/rating for their whole team; blank = skip)'
+        type: string
+        default: ''
+      repair_stale_events:
+        description: 'Run scripts/repair-stale-events.mjs (re-fetch only fixtures stuck with a stale bench marker after exhausting grace-polls)'
+        type: boolean
+        default: false
+      repair_full:
+        description: 'If repairing, use --full (reprocess every finished tracked-nation fixture, not just flagged ones — catches wrong-but-nonzero matchPlayer-collision outcomes the narrow mode cannot detect)'
+        type: boolean
+        default: false
+      repair_watch_ids:
+        description: 'Space-separated player ids to highlight in the repair details response (blank = print everything)'
+        type: string
+        default: ''
+      dump_writelog:
+        description: 'Dump the global write-audit trail via scripts/debug-writelog.mjs (every write to any player, tagged by source: poll-finished/poll-live/repair)'
+        type: boolean
+        default: false
+      writelog_player_id:
+        description: 'If dumping the write log, filter to this one player id (blank = full log)'
+        type: string
+        default: ''
 
 jobs:
   diagnose:
@@ -17,3 +60,33 @@ jobs:
           node-version: 20
       - name: Run diagnostic
         run: node scripts/diagnose-worker.mjs
+      - uses: superfly/flyctl-actions/setup-flyctl@master
+      - name: Tail recent Fly logs (30s)
+        run: timeout 30 flyctl logs --app footystock --no-tail 2>&1 | tail -200 || true
+        env:
+          FLY_API_TOKEN: ${{ secrets.FLY_API_TOKEN }}
+      # backfill-price-history.yml (dedicated workflow, same script) isn't
+      # dispatchable by name until it exists on the default branch — GitHub's
+      # workflow_dispatch API only lists/looks-up workflows registered on
+      # main, even though it executes whichever version exists on the ref
+      # you pass. Since this file IS already on main, running the backfill
+      # as an optional step here (still executing THIS branch's script
+      # content, per the ref used to dispatch) works without merging.
+      - name: Run backfill (optional)
+        if: ${{ inputs.run_backfill }}
+        run: node scripts/backfill-price-history.mjs ${{ inputs.backfill_dry_run && '--dry-run' || '' }}
+      - name: Test Supabase write (optional debug)
+        if: ${{ inputs.test_supabase_write }}
+        run: node scripts/debug-supabase-write.mjs
+      - name: Inspect specific players (optional debug)
+        if: ${{ inputs.player_ids != '' }}
+        run: node scripts/debug-player-events.mjs ${{ inputs.player_ids }}
+      - name: Inspect raw API-Football stats (optional debug)
+        if: ${{ inputs.rawstats_player_ids != '' }}
+        run: node scripts/debug-rawstats.mjs ${{ inputs.rawstats_player_ids }}
+      - name: Repair stale bench-marker events (optional)
+        if: ${{ inputs.repair_stale_events }}
+        run: node scripts/repair-stale-events.mjs ${{ inputs.repair_full && '--full' || '' }} ${{ inputs.repair_watch_ids }}
+      - name: Dump write-audit trail (optional)
+        if: ${{ inputs.dump_writelog }}
+        run: node scripts/debug-writelog.mjs ${{ inputs.writelog_player_id }}

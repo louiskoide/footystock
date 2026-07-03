@@ -2796,13 +2796,14 @@ class Component extends DCLogic {
     'Stade Brestois':['SB2','LI1'],'Angers':['ANG','LI1'],'Auxerre':['AUX','LI1'],'Le Havre':['HAV','LI1'],
     // Rest of World (explicit entries for notable non-top-5 clubs)
     'Ajax':['AJA','ROW'],'PSV':['PSV','ROW'],'Benfica':['SLB','ROW'],'Sporting':['SCP','ROW'],'Porto':['POR','ROW'],
+    'Orlando City':['ORL','ROW'],
   }; }
   ROSTER(){ return `
 Erling Haaland|Man City|ST|25|1
 Phil Foden|Man City|AM|26|2
 Rodri|Man City|CM|30|2
 Savinho|Man City|RW|22|3
-Bernardo Silva|Man City|CM|31|3
+Bernardo Silva|Real Madrid|CM|31|3
 Jérémy Doku|Man City|LW|25|3
 Joško Gvardiol|Man City|CB|24|4
 Omar Marmoush|Man City|ST|27|3
@@ -2845,8 +2846,8 @@ Mohammed Kudus|Tottenham|RW|25|3
 Micky van de Ven|Tottenham|CB|25|4
 Mathys Tel|Tottenham|ST|21|5
 Bruno Guimarães|Newcastle|CM|28|3
-Anthony Gordon|Barcelona|LW|24|3
-Sandro Tonali|Newcastle|CM|26|4
+Anthony Gordon|Barcelona|LW|24|2
+Sandro Tonali|Tottenham|CM|26|3
 Nick Woltemade|Newcastle|ST|23|4
 Ollie Watkins|Aston Villa|ST|30|3
 Morgan Rogers|Aston Villa|AM|23|4
@@ -2874,7 +2875,7 @@ Marcus Rashford|Man Utd|LW|28|3
 Gavi|Barcelona|CM|21|4
 Alejandro Balde|Barcelona|LB|22|4
 Julián Álvarez|Atlético|ST|26|2
-Antoine Griezmann|Atlético|ST|35|4
+Antoine Griezmann|Orlando City|ST|35|5
 Alexander Sørloth|Atlético|ST|30|5
 Giuliano Simeone|Atlético|RW|23|5
 Nico Williams|Athletic|LW|24|3
@@ -2923,7 +2924,6 @@ Aleksandar Pavlović|Bayern|CM|21|4
 Nicolas Jackson|Chelsea|ST|24|4
 Lennart Karl|Bayern|AM|18|5
 Patrik Schick|Leverkusen|ST|30|4
-Alejandro Grimaldo|Leverkusen|LB|30|4
 Ernest Poku|Leverkusen|RW|21|5
 Serhou Guirassy|Dortmund|ST|29|3
 Karim Adeyemi|Dortmund|LW|24|4
@@ -2947,7 +2947,7 @@ João Neves|Paris SG|CM|21|3
 Désiré Doué|Paris SG|AM|20|3
 Achraf Hakimi|Paris SG|RB|27|3
 Bradley Barcola|Paris SG|LW|23|4
-Gonçalo Ramos|Paris SG|ST|25|5
+Gonçalo Ramos|AC Milan|ST|25|4
 Nuno Mendes|Paris SG|LB|24|4
 Warren Zaïre-Emery|Paris SG|CM|20|4
 Maghnes Akliouche|Monaco|AM|23|4
@@ -2972,14 +2972,14 @@ Sergiño Dest|PSV|RB|25|6
 Vangelis Pavlidis|Benfica|ST|27|5
 Kerem Aktürkoğlu|Fenerbahçe|LW|27|5
 Gianluca Prestianni|Benfica|AM|19|6
-Geovany Quenda|Sporting|RW|18|5
+Geovany Quenda|Chelsea|RW|18|4
 Francisco Trincão|Sporting|RW|26|5
 Morten Hjulmand|Sporting|CM|27|5
 Rodrigo Mora|Porto|AM|18|5
 Samu Aghehowa|Porto|ST|21|5
-Theo Hernández|Al-Hilal|LB|28|4
-Ibrahima Konaté|Liverpool|CB|26|3
-Christopher Nkunku|Milan|AM|28|4
+Theo Hernández|Milan|LB|28|4
+Ibrahima Konaté|Real Madrid|CB|27|3
+Christopher Nkunku|Chelsea|AM|28|4
 Youssouf Fofana|Milan|CM|27|5
 John Stones|Man City|CB|32|4
 Eberechi Eze|Arsenal|AM|27|4
@@ -3014,7 +3014,7 @@ Yassine Bounou|Sevilla|GK|34|5
 Sofyan Amrabat|Fenerbahçe|CM|28|5
 Hakim Ziyech|Wydad AC|RW|32|5
 Noussair Mazraoui|Man Utd|RB|27|4
-Andy Robertson|Liverpool|LB|31|4
+Andy Robertson|Tottenham|LB|31|4
 Billy Gilmour|Napoli|CM|24|5
 Kaoru Mitoma|Brighton|LW|28|4
 Wataru Endo|Liverpool|CM|31|5
@@ -3100,7 +3100,7 @@ Conor Gallagher|Tottenham|CM|26|5
 Jarrod Bowen|West Ham|RW|29|4
 Morgan Gibbs-White|Nottingham Forest|AM|26|4
 Ivan Toney|Al-Ahli|ST|30|5
-Kieran Trippier|Newcastle|RB|35|5
+Kieran Trippier|Wolves|RB|35|5
 Ederson|Man City|GK|32|4
 Marquinhos|Paris SG|CB|31|4
 Danilo|Flamengo|RB|34|5
@@ -3112,8 +3112,8 @@ Richarlison|Tottenham|ST|29|4
 Wesley|Flamengo|ST|24|6
 David Raya|Arsenal|GK|30|4
 Robin Le Normand|Atlético|CB|29|4
-Aymeric Laporte|Athletic|CB|32|5
-Marc Cucurella|Chelsea|LB|27|4
+Aymeric Laporte|Al-Nassr|CB|32|5
+Marc Cucurella|Real Madrid|LB|27|3
 Fabián Ruiz|Paris SG|CM|29|4
 Ferran Torres|Barcelona|RW|26|4
 Yeremy Pino|Villarreal|RW|22|5
@@ -3291,7 +3291,6 @@ Mohammed Al-Owais|Al-Hilal|GK|33|6
 Yasser Al-Shahrani|Al-Hilal|LB|33|6
 Abdulelah Al-Malki|Al-Hilal|CM|26|6
 Sami Al-Najei|Al-Hilal|LW|24|6
-Abdou Diallo|Umm Salal|CB|29|5
 Youssouf Sabaly|Real Betis|RB|33|6
 Pape Gueye|Villarreal|CM|26|5
 Iliman Ndiaye|Everton|LW|25|4
@@ -3340,7 +3339,7 @@ Dani Carvajal|Real Madrid|RB|33|4
 Pedro Porro|Tottenham|RB|26|4
 Eric García|Barcelona|CB|24|5
 Valentín Carboni|Inter|AM|21|5
-Marcos Senesi|Bournemouth|CB|28|5
+Marcos Senesi|Tottenham|CB|28|5
 Gio Lo Celso|Villarreal|CM|28|5
 Nélson Semedo|Fenerbahçe|RB|32|5
 Rúben Neves|Al-Hilal|CM|28|4
@@ -3449,19 +3448,19 @@ Grant Kekana|Mamelodi Sundowns|CB|30|6
 Maxence Lacroix|Crystal Palace|CB|25|5
 Lucas Digne|Aston Villa|LB|33|5
 Nico O'Reilly|Man City|CM|20|5
-Elliot Anderson|Nottm Forest|CM|22|5
+Elliot Anderson|Man City|CM|23|3
 Jarell Quansah|Leverkusen|CB|22|5
 Douglas Santos|Zenit|LB|29|6
 Marcos Llorente|Atlético|CM|32|5
 Felix Nmecha|Dortmund|CM|25|5
-Gonzalo Montiel|River Plate|RB|28|5
-Facundo Medina|Lens|CB|25|5
+Gonzalo Montiel|Sevilla|RB|28|5
+Facundo Medina|Marseille|CB|25|5
 Nicolás Tagliafico|Lyon|LB|32|5
 Nico Paz|Como|AM|21|5
 Gonçalo Inácio|Sporting|CB|24|4
 Renato Veiga|Villarreal|CB|22|5
-João Félix|Al-Nassr|AM|26|4
-Jan Paul van Hecke|Brighton|CB|25|5
+João Félix|Chelsea|AM|26|4
+Jan Paul van Hecke|Tottenham|CB|26|4
 Crysencio Summerville|West Ham|LW|23|4
 Johan Mojica|Mallorca|LB|31|5
 Gustavo Puerta|Racing Santander|CM|21|5
@@ -3481,7 +3480,7 @@ Petar Sučić|Inter|CM|22|5
 Ivan Perišić|PSV|LW|36|5
 Chadi Riad|Crystal Palace|CB|22|5
 Neil El Aynaoui|Roma|CM|22|5
-Ismael Saibari|PSV|AM|24|5
+Ismael Saibari|Bayern|AM|24|4
 Ayoub El Kaabi|Olympiacos|ST|31|5
 Raúl Rangel|Guadalajara|GK|28|6
 Israel Reyes|Club América|CB|23|6
@@ -4133,7 +4132,6 @@ Weverton|Palmeiras|GK|38|6
 Alex Sandro|Flamengo|LB|35|6
 Ibañez|Al-Ahli|CB|27|5
 Léo Pereira|Flamengo|CB|30|5
-Éderson Silva|Atalanta|CM|27|4
 Fabinho|Al-Ittihad|CM|32|6
 Luiz Henrique|Zenit|RW|25|4
 Neymar|Santos|RW|34|4
@@ -4204,7 +4202,6 @@ Mousa Al-Tamari|Rennes|RW|29|5
 Oliver Baumann|Hoffenheim|GK|36|6
 Alexander Nübel|Stuttgart|GK|29|4
 Waldemar Anton|Dortmund|CB|29|4
-Nathaniel Brown|Eintracht|LB|22|4
 Malick Thiaw|Newcastle|CB|24|4
 Nadiem Amiri|Mainz|CM|29|5
 Assan Ouédraogo|RB Leipzig|AM|19|4
@@ -4238,6 +4235,19 @@ Yusuf Abdurisag|Al-Sadd|RW|26|6
 Ahmed Alaa|Al-Gharafa|ST|26|6
 Tahsin Jamshid|Al-Duhail|AM|23|6
 Mohammed Muntari|Al-Duhail|ST|32|6
+Mateus Fernandes|Tottenham|CM|21|3
+Jérémy Jacquet|Liverpool|CB|20|3
+Marco Palestra|Chelsea|RB|21|3
+Éderson Silva|Man Utd|CM|26|4
+Emmanuel Emegha|Chelsea|ST|23|4
+Bazoumana Touré|Newcastle|LW|20|3
+Luka Vuskovic|Brighton|CB|19|3
+Jeff Ekhator|Juventus|ST|19|5
+Hayden Hackney|Everton|CM|24|5
+Alejandro Grimaldo|Atlético|LB|30|4
+Pascal Struijk|Brighton|CB|26|5
+Nathaniel Brown|Bayern|LB|23|3
+Afonso Moreira|Leverkusen|LW|21|4
 `; }
 
   OPPONENTS_BY_LEAGUE(){
@@ -4363,7 +4373,7 @@ Mohammed Muntari|Al-Duhail|ST|32|6
     // USA players
     A('Gio Reyna 15,Brendan Aaronson 8,Josh Sargent 8,Walker Zimmermann 5,Matt Turner 6,Tim Ream 3,Chris Richards 15,Luca Koleosho 18,Ismael Kone 15');
     // Senegalese players (Mané €7m; Koulibaly €4.5m at 35)
-    A('Sadio Mané 7,Kalidou Koulibaly 5,Édouard Mendy 5,Pape Matar Sarr 30,Abdou Diallo 8,Youssouf Sabaly 6,Habib Diallo 6');
+    A('Sadio Mané 7,Kalidou Koulibaly 5,Édouard Mendy 5,Pape Matar Sarr 30,Youssouf Sabaly 6,Habib Diallo 6');
     // Uruguayan players (Pellistri €5m; Giménez ~€25m)
     A('Sergio Rochet 8,José María Giménez 25,Mathías Olivera 22,Facundo Pellistri 5,Nicolás De La Cruz 15,Sebastián Coates 5,Maxi Gómez 4,Fernando Muslera 2,Giorgian De Arrascaeta 10');
     // Mexican players (Lozano in MLS San Diego FC €3.5m; Álvarez at Fenerbahce €22m)
@@ -4513,7 +4523,7 @@ Mohammed Muntari|Al-Duhail|ST|32|6
     A('S. El Mourabet 0.4,Gessime Yassine 3,A. Amaimouni 0.4,A. Sbaï 0.4,Soufiane Rahimi 4');
     A('Jo Hyeon-Woo 0.8,Kim Seung-Gyu 0.4,Song Bum-Keun 0.8,Cho Wi-Je 0.4,Kim Moon-Hwan 0.6,Lee Han-Beom 2,Park Jin-Seop 0.8,Lee Tae-Seok 0.5');
     A('Jens Castrop 3,Lee Gi-Hyuk 0.4,Eom Ji-Sung 1.5,Kim Jin-Gyu 0.5,Lee Dong-Gyeong 1,Lee Jae-Sung 1.5,Paik Seung-Ho 2');
-    A('Weverton 1,Alex Sandro 1.5,Ibañez 10,Léo Pereira 8,Éderson Silva 30,Fabinho 6,Luiz Henrique 25,Neymar 12');
+    A('Weverton 1,Alex Sandro 1.5,Ibañez 10,Léo Pereira 8,Fabinho 6,Luiz Henrique 25,Neymar 12');
     A('Rayan 25,Thiago 30');
     A('Mert Günok 1,Samet Akaydin 1.5,Eren Elmalı 4,Ozan Kabak 8,Çağlar Söyüncü 4,Kaan Ayhan 1.5,Oğuz Aydın 5,Deniz Gül 4');
     A('İrfan Can Kahveci 4');
@@ -4526,12 +4536,14 @@ Mohammed Muntari|Al-Duhail|ST|32|6
     A('Anas Badawi 0.4,Abdallah Naseeb 0.4,Saleem Obaid 0.4,Ehsan Haddad 0.4,Mohannad Abu Taha 0.5,Mohammad Al-Daoud 0.4,Ibrahim Sa\'deh 0.4,Nizar Al-Rashdan 0.5');
     A('Noor Al-Rawabdeh 0.6,Rajaei Ayed 0.3,Amer Jamous 0.4,Mahmoud Al-Mardi 0.5,Mohammed Abu Zurayq 0.7,Odeh Al-Fakhouri 0.6,Ali Azaizeh 0.5,Ali Olwan 1');
     A('Mohammad Abu Ghoush 0.4,Mousa Al-Tamari 8');
-    A('Oliver Baumann 2,Alexander Nübel 18,Waldemar Anton 18,Nathaniel Brown 30,Malick Thiaw 30,Nadiem Amiri 10,Assan Ouédraogo 25,Jamie Leweling 15');
+    A('Oliver Baumann 2,Alexander Nübel 18,Waldemar Anton 18,Malick Thiaw 30,Nadiem Amiri 10,Assan Ouédraogo 25,Jamie Leweling 15');
     A('Marvin Keller 1.5,Yvon Mvogo 1,Aurèle Amenda 5,Eray Cömert 2,Luca Jaquez 5,Miro Muheim 4,Ardon Jashari 30,Christian Fassnacht 1');
     A('Cedric Itten 1.5,Johan Manzambi 8');
     A('Mahmud Abunada 0.4,Meshaal Barsham 0.8,Homam Ahmed 0.8,Sultan Al Braik 0.3,Ahmed Al Hussain 0.3,Abdulla Al Oui 0.3,Jassem Gaber 0.5,Lucas Mendes 0.4');
     A('Guy Laye 0.3,Pedro Miguel 0.3,Assim Madibo 0.5,Ahmed Al Ganehi 0.3,Abdulaziz Hatem 0.3,Ahmed Fathi 0.4,Mohamed Al Manai 0.3,Yusuf Abdurisag 0.6');
     A('Ahmed Alaa 0.4,Tahsin Jamshid 0.3,Mohammed Muntari 0.4');
+    // Summer 2026 transfer window arrivals (anchored near reported fee)
+    A('Mateus Fernandes 85,Jérémy Jacquet 70,Marco Palestra 55,Éderson Silva 42,Emmanuel Emegha 25,Bazoumana Touré 50,Luka Vuskovic 48,Jeff Ekhator 16,Hayden Hackney 20,Alejandro Grimaldo 21,Pascal Struijk 19,Nathaniel Brown 55,Afonso Moreira 32');
     this._val=v; return v;
   }
 
@@ -4642,14 +4654,14 @@ Mohammed Muntari|Al-Duhail|ST|32|6
       // because our underdog multiplier amplifies unknown players more.
       'vozinha-famalicao':NW('WORLD CUP BUZZ','The 40-year-old Cape Verde keeper pulled off 7 saves in a stunning 0-0 draw with Spain. He has gone viral with 16M+ Instagram followers overnight and is being called the tournament\'s feel-good story. Cape Verde became the smallest nation by population to ever reach the knockouts.',9.0,'06-25'),
       'ayyoub-bouaddi-lille':NW('WORLD CUP BUZZ','The 18-year-old maths student bossed Brazil\'s midfield — 87 touches, multiple completed dribbles, MOTM rating from every major outlet. Comparisons to Zidane at the same age are everywhere.',9.0,'06-21'),
-      'ismael-saibari-psv':NW('WORLD CUP BUZZ','Three goals in three group games for Morocco, each at a decisive moment. He\'s become the heartbeat of Morocco\'s run and is being linked with every top-six Premier League club.',8.5,'06-26'),
+      'ismael-saibari-bayern':NW('TRANSFER','Three goals in three group games for Morocco turned into a €50m+ move to Bayern Munich, officially completed July 1 — one of the World Cup\'s biggest transfer stories.',9.0,'07-01'),
       'keito-nakamura-reims':NW('WORLD CUP BUZZ','Nakamura has been Japan\'s standout creative force — two goals and two assists in the group stage, routinely outclassing opponents worth 10x his transfer fee. J-League fans are calling him the best Japanese player since Kagawa.',8.5,'06-25'),
       'deniz-undav-stuttgart':NW('WORLD CUP BUZZ','Three goals in Germany\'s first two games coming off the bench. His super-sub impact has matched Roger Milla\'s legendary World Cup substitute record for goal contributions — Germany\'s secret weapon.',8.0,'06-22'),
       'yasin-ayari-brighton':NW('WORLD CUP BUZZ','Two goals against Tunisia in a poignant performance — the Sweden midfielder of Tunisian heritage playing against his ancestral nation. His composed sujoud celebration went global. Multiple European giants have already made inquiries.',7.5,'06-20'),
       'folarin-balogun-monaco':NW('WORLD CUP BUZZ','Balogun opened his tournament with a brace against Paraguay, announced himself as the USMNT\'s main man with authority. USA fans are already saying this is his tournament to own.',7.5,'06-16'),
       'pau-cubarsi-barcelona':NW('WORLD CUP BUZZ','19 years old and playing every single minute of Spain\'s group stage without looking out of place once. Analysts calling him the most composed teenager at a World Cup since Pirlo in 1998.',7.5,'06-26'),
       'nico-o-reilly-man-city':NW('WORLD CUP BUZZ','O\'Reilly earned a place in England\'s group stage squad and hit the crossbar as a substitute against Ghana. At 20, playing on the biggest stage for a tournament host — scouts from across Europe are watching his every move.',6.5,'06-24'),
-      'nico-paz-como':NW('WORLD CUP BUZZ','Got his first World Cup start in Argentina\'s final group game at 21 and impressed — calm on the ball, intelligent movement off it. Zero goals or assists but already being talked about as a future Argentina regular by coaches who watched.',6.0,'06-25'),
+      'nico-paz-como':NW('TRANSFER','Got his first World Cup start in Argentina\'s final group game at 21 and impressed — and Real Madrid just confirmed Como paid €60m to fully remove Madrid\'s cut-price buyback option, a strong signal of how highly his value is now rated.',7.5,'06-26'),
       'william-pacho-paris-sg':NW('WORLD CUP BUZZ','Ecuador shocked Germany in the group stage and Pacho was the anchor at the back for one of the tournament\'s biggest upsets. The PSG centre-back is proving his big-money transfer fee at the biggest stage.',7.5,'06-26'),
       'weston-mckennie-juventus':NW('WORLD CUP BUZZ','The only USA player to start all three group games — captained the side against Turkey and created three chances in the 4-1 win over Paraguay. McKennie\'s engine and leadership are the spine of this USMNT in front of a home crowd.',7.0,'06-27'),
       'felix-nmecha-dortmund':NW('WORLD CUP BUZZ','Nmecha has been Germany\'s unsung hero in midfield — breaking up play, driving forward, and scoring the only goal in a tight win. Pundits calling him one of the tournament\'s most underrated performers.',6.5,'06-19'),
@@ -4657,7 +4669,38 @@ Mohammed Muntari|Al-Duhail|ST|32|6
       'bruno-guimaraes-newcastle':NW('WORLD CUP BUZZ','Joint-leading assist maker of the group stage with three. Guimarães has become the fulcrum of a rampant Brazil side and is being called the best midfielder at the tournament by several analysts.',7.5,'06-26'),
       'kai-havertz-arsenal':NW('WORLD CUP BUZZ','A brace in Germany\'s 7-1 demolition of Curaçao — penalty and a deft chip — earned him Player of the Match and finally quieted the critics. He has been Germany\'s most complete forward throughout the group stage.',7.0,'06-14'),
       'ousmane-dembele-paris-sg':NW('MATCH RECAP','Hat-trick against Norway inside the opening 20 minutes — the first player since Ronaldo to score three so quickly in a WC group game. France\'s attack looks unstoppable with Mbappé and Dembélé in this form.',8.5,'06-20'),
-      'vinicius-junior-real-madrid':NW('MATCH RECAP','Four goals in all three group games — Brazil\'s primary offensive reference back to his very best after a difficult club season. ESPN ranking him joint-top with Messi in the Golden Boot race.',8.5,'06-26')
+      'vinicius-junior-real-madrid':NW('MATCH RECAP','Four goals in all three group games — Brazil\'s primary offensive reference back to his very best after a difficult club season. ESPN ranking him joint-top with Messi in the Golden Boot race.',8.5,'06-26'),
+
+      // ── Summer 2026 transfer window ─────────────────────────────────────
+      'goncalo-ramos-ac-milan':NW('TRANSFER','AC Milan smashed their transfer record to sign him from PSG for a fee north of €74m — Milan\'s first major statement signing of the summer.',6.0,'06-29'),
+      'anthony-gordon-barcelona':NW('TRANSFER','Barcelona\'s biggest signing of the summer — an €80m move from Newcastle confirmed July 1, a huge step up for a 24-year-old.',8.5,'07-01'),
+      'marc-cucurella-real-madrid':NW('TRANSFER','Completed a move to Real Madrid from Chelsea for an initial €55m, beating Barcelona and Atlético to his signature.',6.5,'07-01'),
+      'elliot-anderson-man-city':NW('TRANSFER','Man City agreed a club-record £116m fee for the Nottingham Forest midfielder — the most expensive British player in history at 23.',9.0,'07-01'),
+      'sandro-tonali-tottenham':NW('TRANSFER','Tottenham smashed their transfer record to sign him from Newcastle in a deal worth up to £100m.',6.5,'07-01'),
+      'bernardo-silva-real-madrid':NW('TRANSFER','Joined Real Madrid as a free agent after leaving Manchester City — a Bosman move for one of the most tactically versatile midfielders in the game.',3.0,'07-01'),
+      'ibrahima-konate-real-madrid':NW('TRANSFER','Left Liverpool as a free agent to join Real Madrid on a four-year deal reported worth around €21m a year.',4.5,'07-01'),
+      'jan-paul-van-hecke-tottenham':NW('TRANSFER','Tottenham\'s third summer signing — a £52m move from Brighton as Spurs rebuild their back line.',4.5,'06-29'),
+      'geovany-quenda-chelsea':NW('TRANSFER','Chelsea completed the €51m signing of the 18-year-old from Sporting — a huge fee that confirms him as one of Europe\'s hottest wing prospects.',8.0,'07-01'),
+      'facundo-medina-marseille':NW('TRANSFER','Joined Marseille from Lens for an €18m fee.',2.0,'07-01'),
+      'marcos-senesi-tottenham':NW('TRANSFER','Signed for Tottenham as a free agent after four years at Bournemouth, De Zerbi\'s second signing of the summer.',3.0,'07-01'),
+      'andy-robertson-tottenham':NW('TRANSFER','The Liverpool legend joined Tottenham on a free transfer after his contract expired — a boyhood-favourite exit softened by staying in the Premier League.',0.5,'07-01'),
+      'kieran-trippier-wolves':NW('TRANSFER','Left Newcastle for Wolves on a free transfer at 35 — a step down the table late in his career.',-3.0,'06-30'),
+      'antoine-griezmann-orlando-city':NW('TRANSFER','Officially confirmed leaving Atlético Madrid — and La Liga — for Orlando City in MLS at 35, ending a decade at the club.',-5.0,'07-01'),
+      'mateus-fernandes-tottenham':NW('TRANSFER','Tottenham beat Manchester United to a club-record £85m deal, all guaranteed with no add-ons, for the 21-year-old West Ham midfielder — medical underway.',8.0,'07-01'),
+      'jeremy-jacquet-liverpool':NW('TRANSFER','Liverpool completed a €70m move from Rennes for the 20-year-old French centre-back — a huge fee for a player yet to win a senior cap.',8.5,'07-01'),
+      'marco-palestra-chelsea':NW('TRANSFER','Chelsea signed the Serie A Defender of the Season from Atalanta for up to £47m at just 21.',6.5,'07-01'),
+      'ederson-silva-man-utd':NW('TRANSFER','Manchester United agreed a fee near €45m with Atalanta for the Brazilian midfielder, replacing the departing Casemiro.',4.5,'06-28'),
+      'emmanuel-emegha-chelsea':NW('TRANSFER','Chelsea\'s pre-agreed €25m deal for the Strasbourg striker officially completes this summer.',4.0,'07-01'),
+      'bazoumana-toure-newcastle':NW('TRANSFER','Newcastle\'s replacement for Anthony Gordon — a rapid rise for the 20-year-old winger, arriving from Hoffenheim for around €50m barely a year after his last move.',7.0,'07-01'),
+      'luka-vuskovic-brighton':NW('TRANSFER','Brighton beat competition to sign the 19-year-old from Tottenham for up to £50m — roughly four times what Spurs paid for him.',5.0,'06-30'),
+      'jeff-ekhator-juventus':NW('TRANSFER','Juventus signed the 19-year-old, capped by Italy for the first time this summer, from Genoa for €16m.',4.0,'06-28'),
+      'hayden-hackney-everton':NW('TRANSFER','Everton close in on a Championship Player of the Season, agreeing an initial £16.5m fee with Middlesbrough that could rise to £25m.',4.5,'06-30'),
+      'alejandro-grimaldo-atletico':NW('TRANSFER','Returned to Spain to join Atlético Madrid from Bayer Leverkusen for around €21m — a Euro 2024 winner strengthening the left side.',3.5,'06-27'),
+      'pascal-struijk-brighton':NW('TRANSFER','A surprise £20m move to Brighton after eight years and the captaincy at Leeds.',2.5,'06-30'),
+      'nathaniel-brown-bayern':NW('TRANSFER','Bayern Munich completed a €55m deal for the Germany international left-back from Eintracht Frankfurt.',7.5,'06-28'),
+      'afonso-moreira-leverkusen':NW('TRANSFER','Bayer Leverkusen signed the Portuguese winger from Lyon for €32m on a five-year deal.',4.0,'06-17'),
+      'rafael-leao-milan':NW('TRANSFER SAGA','Has publicly said he wants to leave AC Milan this summer, with Manchester United and Galatasaray both linked — no destination agreed yet.',-1.5,'06-29'),
+      'denzel-dumfries-inter':NW('TRANSFER RUMOR','A move to Real Madrid is reportedly expected to be finalised imminently, following Bernardo Silva and Konaté through the door on frees.',2.0,'07-01')
     };
     const MOOD={
       'kylian-mbappe-real-madrid':'\u201cMr World Cup\u201d trending after the Iraq brace',
@@ -4673,7 +4716,7 @@ Mohammed Muntari|Al-Duhail|ST|32|6
       'bruno-fernandes-man-utd':'Premier League Player of the Season talk all over his timeline',
       'vozinha-famalicao':'"Mr Cape Verde" — 16M Instagram followers in 48h, memes and tributes from every corner of the internet',
       'ayyoub-bouaddi-lille':'"The maths genius who solved Brazil" — viral profile piece breaking everywhere',
-      'ismael-saibari-psv':'"Morocco\'s new Ziyech" trending in Arab football circles and beyond',
+      'ismael-saibari-bayern':'"Morocco\'s new Ziyech" trending in Arab football circles and beyond',
       'keito-nakamura-reims':'"Samurai Messi" trending in Japan; clubs reportedly queuing up',
       'deniz-undav-stuttgart':'"Super-sub Undav" highlight reels have 12M views across social media',
       'yasin-ayari-brighton':'Sujoud celebration clip hit 8M views, story resonating globally',
@@ -4776,7 +4819,7 @@ Mohammed Muntari|Al-Duhail|ST|32|6
     add('Tunisia','Wahbi Khazri,Ellyes Skhiri,Aymen Dahmen,Montassar Talbi,Mohamed Drager,Anis Ben Slimane,Seifeddine Jaziri');
     add('Cape Verde','Garry Rodrigues,Vozinha,Stopira,Jovane Cabral,Ryan Mendes');
     add('Saudi Arabia','Salem Al-Dawsari,Mohammed Kanno,Firas Al-Buraikan,Mohammed Al-Owais,Yasser Al-Shahrani,Abdulelah Al-Malki,Sami Al-Najei');
-    add('Senegal','Sadio Mané,Kalidou Koulibaly,Édouard Mendy,Pape Matar Sarr,Nicolas Jackson,Abdou Diallo,Youssouf Sabaly,Pape Gueye,Iliman Ndiaye,Habib Diallo');
+    add('Senegal','Sadio Mané,Kalidou Koulibaly,Édouard Mendy,Pape Matar Sarr,Nicolas Jackson,Youssouf Sabaly,Pape Gueye,Iliman Ndiaye,Habib Diallo');
     add('Iraq','Aymen Hussein,Jalal Hassan,Ali Adnan,Amir Al-Ammari');
     add('Algeria','Riyad Mahrez,Ramy Bensebaini,Ismaël Bennacer,Anthony Mandrea,Aïssa Mandi,Rachid Ghezzal,Youcef Atal,Baghdad Bounedjah');
     add('Austria','David Alaba,Marcel Sabitzer,Konrad Laimer,Christoph Baumgartner,Patrick Pentz,Philipp Lienhart,Stefan Posch,Florian Grillitsch,Marko Arnautović');
@@ -4923,6 +4966,15 @@ Mohammed Muntari|Al-Duhail|ST|32|6
       // tier-based estimate for players with no listed value). Real signals
       // below push price away from this; it is not randomized on its own.
       const anchor = (mv!=null) ? mv : tierBase[tier]*(0.9+0.5*r())*(youth?1.15:1);
+      // Underdog multiplier: an unknown cheap player surpassing expectations
+      // generates outsized hype vs a known star doing what's expected. We
+      // derive notoriety [0,1] from anchor (20=unknown → 0, 200=superstar → 1)
+      // and use it to asymmetrically scale perf/form — unknowns get amplified
+      // upside and softened downside; expensive stars get the reverse. Defined
+      // here (not down near perf/form) so the per-match delta loop below can
+      // also use it — a $792 stock having a mediocre or benched game should
+      // sting more than the same happening to a bench player.
+      const notoriety = Math.max(0, Math.min(1, (anchor - 20) / 180)); // 0=unknown, 1=superstar
       const D=this.DATA();
       const stars=D.STARS[id]||null;
       const news=D.NEWS[id]||null;
@@ -4985,10 +5037,34 @@ Mohammed Muntari|Al-Duhail|ST|32|6
           // goals are conceded, even when they personally made 8 clearances. Using
           // the same 6.0 baseline as attackers made a CB in a 1-0 loss look terrible
           // even with a solid individual game.
+          // These base numbers must NOT change for an unknown player (notoriety=0)
+          // — they're tied to rating.mjs's own "truly anonymous, did-nothing"
+          // neutral point (6.0, see rating.mjs's `let rating = 6.0`). Shifting the
+          // flat baseline for everyone was tried and is exactly what caused "the
+          // great depression" bug (see comment above `g`/`a`) — a mismatch there
+          // makes every ordinary game compound negatively for every player, not
+          // just stars. Instead, expectations scale up WITH notoriety: an unknown
+          // player's neutral point stays exactly 6.0/6.5, but a maxed-notoriety
+          // superstar needs up to 1.5 points more to be considered "living up to
+          // the price" — so a merely-average 6.5 from a $792 stock (Yamal-tier)
+          // now reads as a real letdown instead of a shrug.
           const isDefPos = /^(CB|LB|RB|WB|GK|DEF|SW)$/i.test(pos);
-          const ratingBase = isDefPos ? 6.5 : 6.0;
-          const ratingPart = (s.rating-ratingBase)*1.3 + Math.pow(ratingExcess,1.8)*1.5;
-          const delta=bench?0:parseFloat((ratingPart+goalPart+assistPart).toFixed(2));
+          const ratingBase = (isDefPos ? 6.5 : 6.0) + notoriety*1.5;
+          // Symmetric to ratingExcess above: a genuinely bad game should
+          // accelerate the same way an outlier great one does, not just
+          // scale linearly. Without this, a mediocre showing from a
+          // maxed-notoriety player (Pedri: 6.3 vs a ratingBase of 7.5 once
+          // notoriety is factored in) only produced a mild ~2% drop — nowhere
+          // near how disappointing that actually reads for the most
+          // expensive stock in the game turning in a below-par game.
+          const ratingShortfall = Math.max(0, ratingBase-s.rating);
+          const ratingPart = (s.rating-ratingBase)*1.3 + Math.pow(ratingExcess,1.8)*1.5 - Math.pow(ratingShortfall,1.6)*0.9;
+          // A cheap/fringe player being an unused sub is a non-event (0 for
+          // notoriety=0, matching prior behavior exactly). An expensive stock
+          // being left out is real information a market would react to (fitness
+          // doubt, tactical benching, squad-rotation risk) — mild on purpose
+          // since it's often just rest/rotation, not bad news, but not nothing.
+          const delta=bench?parseFloat((-0.6*notoriety).toFixed(2)):parseFloat((ratingPart+goalPart+assistPart).toFixed(2));
           const st=[]; if(g)st.push(g+'G'); if(a)st.push(a+'A'); if(!g&&!a)st.push('—');
           events.push({offset:offOf(s.d),oppTeam:s.opp,rating:s.rating,goals:g,assists:a,yellow:!!s.yellow,red:!!s.red,min:(s.min==null?null:s.min),bench,delta,statLine:st.join(' '),note:s.note,marks:s.marks||[],live:!!s.live,elapsed:(s.elapsed==null?null:s.elapsed)}); } }
       else if(inSquad){
@@ -5027,11 +5103,37 @@ Mohammed Muntari|Al-Duhail|ST|32|6
       for(const rt of ratingsByRecency.slice(0,6)){ ewmaR+=rt*wgt; ewmaW+=wgt; wgt*=0.75; }
       ewmaR = ewmaW ? ewmaR/ewmaW : 0;
       const formDelta = (ewmaW && avgR) ? (ewmaR-avgR) : 0;
-      // Streak kicker bumped 2->4: a player who's elite every match (not just
-      // improving on their own baseline) should still earn some extra credit
-      // for sustained excellence, capped well below formDelta's own swing so
-      // it stays the "small bonus" the spec calls for, not the main term.
-      const formSig=atWC?Math.max(6,Math.min(99,46+formDelta*22+streakLen*4)):8;
+      // Asymmetric like the price-side upMult/downMult below: a slump should
+      // read as more damning than a hot run reads as impressive. Negative
+      // formDelta (genuinely below the player's own baseline) gets a heavier
+      // multiplier than positive, so a real bad patch drops clearly into
+      // Cold/Out of Form/Ice Cold instead of just dinting "Average".
+      const formDeltaMult = formDelta>=0 ? 22 : 34;
+      // Streak kicker bumped 4->7: a player who's elite every match (not just
+      // improving on their own baseline) — formDelta alone stays ~0 for someone
+      // whose recent games match their own already-high average, so a genuine
+      // multi-match hot run (e.g. 6G+2A across 4 starts) needs this term to read
+      // as more than barely "In Form". 4 straight ≥7.4 games now adds +28, enough
+      // to clear the "On Fire" threshold on its own.
+      // Elite kicker: streakLen only counts GAMES, not how good they were — a
+      // string of bare 7.4s and a string of 9.3-rated braces both max out the
+      // same. That left a player who's been legitimately dominant every match
+      // (recency-weighted rating ~9.0, e.g. Mbappé's 8.4-9.31 run) capped at
+      // "On Fire" instead of "Unstoppable", since formDelta is ~0 when recent
+      // form simply matches an already-elite baseline. This rewards how far
+      // ABOVE the streak bar (7.4) the recent EWMA itself sits — zero below
+      // 7.4 (same qualifying bar as the streak), scaling up for genuinely
+      // legendary form. Needs a real streak behind it too: on its own it
+      // can't reach Unstoppable, only combined with formDelta+streakLen can.
+      // Coefficient calibrated to a real reference point, not a guess: the
+      // single best FULL-SEASON average rating across Europe's top 5 leagues
+      // last year (FotMob) was Kane's 8.14 — so even matching that across 4
+      // straight matches (a small, high-variance sample) is at the real-world
+      // ceiling, not routine. At 18, replicating Kane's record over 4 games
+      // lands right at Unstoppable's doorstep (~87, just short) — only truly
+      // exceeding it (8.5+, essentially unheard of) clears the bar outright.
+      const eliteKicker = Math.max(0, ewmaR-7.4)*18; // ewmaR is 0 with no rated matches, so this is naturally 0 then too
+      const formSig=atWC?Math.max(6,Math.min(99,46+formDelta*formDeltaMult+streakLen*7+eliteKicker)):8;
       // Real hype (Google Trends search-interest delta, see scripts/live-worker/hype.mjs)
       // — independent of performance by construction, since it never reads
       // change7d/change30d/events. 0 = no live signal yet (cold-start neutral,
@@ -5043,10 +5145,13 @@ Mohammed Muntari|Al-Duhail|ST|32|6
       // matches means no more spotlight. This is a hype-axis effect, not a
       // performance one, so it's applied here rather than to fotmob/formSig.
       const eliminated = atWC && !!wcEff && /^Eliminated/.test(wcEff.status);
-      const moodSig=Math.max(6,Math.min(99,(46+hypeRaw*1.4+(stars?14:0)) - (eliminated?30:0)));
+      // hypeRaw multiplier nudged 1.4->1.55: makes the top hype bands (Trending/
+      // Viral/Phenomenon) very slightly easier to reach without changing what a
+      // neutral/negative signal looks like (0 stays 0).
+      const moodSig=Math.max(6,Math.min(99,(46+hypeRaw*1.55+(stars?14:0)) - (eliminated?30:0)));
       const tmVal=(mv!=null)?mv:Math.round((tierBase[tier]*(0.9+0.5*r())) * (youth?1.18:1) /10)*5;
       const tmTrendUp = change30d>=0;
-      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*1.4));
+      const transferSig=news?(news.bias>=0?Math.min(99,72+news.bias*2):Math.max(20,52+news.bias*3)):Math.max(8,Math.min(90,46+hypeRaw*1.55));
 
       // ---- price = anchor + performance + form + hype, in log space (see
       // pricing-model.md). A player with no real signal trades flat at
@@ -5066,12 +5171,8 @@ Mohammed Muntari|Al-Duhail|ST|32|6
       // and the 1D change exploded. Gate on avgR>0 (an actual rated match) so
       // no-minutes-yet is a real neutral and a debut is a normal-sized move.
       const hasMatchData = atWC && avgR>0;
-      // Underdog multiplier: an unknown cheap player surpassing expectations
-      // generates outsized hype vs a known star doing what's expected. We
-      // derive notoriety [0,1] from anchor (20=unknown → 0, 200=superstar → 1)
-      // and use it to asymmetrically scale perf/form — unknowns get amplified
-      // upside and softened downside; expensive stars get the reverse.
-      const notoriety = clamp((anchor - 20) / 180, 0, 1); // 0=unknown, 1=superstar
+      // notoriety is defined up near `anchor`, before the per-match delta
+      // loop, so both that loop and perf/form below can use it.
       // Neutral stays at fotmob=46 (rating 6.0 = no price effect). Divisor
       // tightened 30→18 so 7.0 avg → rawPerf≈0.75 and 7.5 → max, without
       // making 6.0 look positive.
@@ -5138,29 +5239,92 @@ Mohammed Muntari|Al-Duhail|ST|32|6
       // matching what the live 90-minute ticker already shows by full time
       // (same 0.6 multiplier) instead of quietly burying ~75% of it in a
       // multi-day ease-in the live chart never reflected.
+      // Two changes vs. the original single-event version, both aimed at the
+      // same exploit: halfLife=6 was slower than the ~3-4 day gap between WC
+      // matches, so a bump barely faded before the next one stacked fully on
+      // top — additively, with no ceiling. For any consistently-decent
+      // starter that produced a near-guaranteed, low-risk staircase (buy,
+      // hold through each match, repeat) instead of genuine "spike then
+      // settle" — the exact "ratchets upward forever" pattern
+      // pricing-model.md's decay rule exists to prevent.
+      // 1. halfLife 6->3: a single match's spike now mostly fades before the
+      //    next typical match, so consecutive good games don't just compound.
+      // 2. BUMP_CAP: the *combined* still-live bump from all recent matches is
+      //    capped at ±25% of price. A hot streak of overlapping bumps (common
+      //    in a tight knockout schedule) can no longer stack past a ceiling —
+      //    one huge match can still nearly hit the cap alone, but repeated
+      //    good games can't ratchet the price indefinitely.
+      const BUMP_CAP=0.25;
+      const bumpTotal=new Array(N).fill(0);
+      // Persistence: whether a bump eventually decays all the way back to
+      // ZERO (the old behavior — every spike/dip is mathematically
+      // guaranteed to fully revert, so reacting to one is pointless, you
+      // already know how it ends) or partially STICKS as a real re-rating
+      // should itself be uncertain, and weighted by whether the player's
+      // current signals actually back it up. A rise backed by strong current
+      // form/hype/demand is more likely to be a genuine re-rating that
+      // holds; the same rise with nothing behind it was more likely a fluke
+      // that fully reverts. Symmetric on the downside: a drop is more likely
+      // to stick (not bounce back) when current signals are weak too — real
+      // fear compounding — but tends to fully recover if the fundamentals
+      // underneath are still strong.
+      const sentimentStrength = clamp((formScore+hypeScore+demandScore)/3, -1, 1);
       for(const e of events){ const idx=N-1-e.offset; if(idx<0||idx>=N){ e._impactPct=0; continue; }
-        // More expensive players face slightly larger downside on bad games
-        // (notoriety already in scope): notoriety∈[0,1], adds up to 25% extra
-        // penalty on negative delta only — subtle, not dramatic.
-        // Bump is the primary per-match price driver — fairValue's avgR-based approach
-        // dilutes incremental match impact (2nd good game barely moves avgR), so the
-        // bump must carry the visible match-day spike. 1.0 multiplier → delta≈4 (goal
-        // + good rating) creates ~4% chart move on match day, decaying naturally.
-        // Expensive players get up to 25% more downside only.
-        const downScale = e.delta < 0 ? 1.0 * (1 + notoriety * 0.25) : 1.0;
-        const bump=(e.delta/100)*price*downScale, ramp=1, halfLife=6;
+        // Bidirectional notoriety scale, replacing the old downside-only
+        // multiplier. Two problems it fixes:
+        // 1. A rating-based reward alone still doesn't capture "this was
+        //    EXPECTED of an expensive stock" — Mbappé (9.3, notoriety~1) and
+        //    Oyarzabal (9.1, notoriety~0.5) produced near-identical +7.7%
+        //    moves despite Mbappé's ratingBase premium already being higher,
+        //    because the convex rating-excess bonus swamps that gap once
+        //    both ratings are similarly exceptional. The upside itself now
+        //    gets muted with notoriety (1.15x for an unknown down to 0.60x
+        //    for a maxed-notoriety superstar) so a genuinely expected
+        //    superstar performance moves the price less than the same
+        //    performance from someone who wasn't supposed to do that.
+        // 2. Every stock was still compounding upward over time even after
+        //    the earlier downside bump — goals/assists are pure upside with
+        //    no symmetric "expected, so neutral" adjustment, and good games
+        //    are also more likely to partially stick (persistence roll
+        //    above) than bad ones. So downside now starts from a higher
+        //    floor too (1.4x-2.0x, was 1.0x-1.5x) — bad games hit harder
+        //    than good games help, for every stock, not just expensive ones.
+        const notorietyScale = e.delta < 0 ? (1.4 + notoriety*0.6) : (1.15 - notoriety*0.55);
+        const bump=(e.delta/100)*price*notorietyScale, ramp=1, halfLife=3;
+        // Seeded per event (id+date) so every viewer sees the same outcome
+        // and it stays stable day to day — this is "was this a real
+        // re-rating" being decided once, not a coin flip that flickers.
+        // aligned: does this event's direction match the player's current
+        // overall sentiment? alignMag: how strongly.
+        const aligned = (e.delta>=0) === (sentimentStrength>=0);
+        const alignMag = Math.abs(sentimentStrength);
+        const pHold = aligned ? clamp(0.15+alignMag*0.55, 0.15, 0.70) : clamp(0.05+(1-alignMag)*0.10, 0.05, 0.15);
+        const holdRoll = this.mulberry(this.hash(id+':hold:'+e.offset))();
+        const floor = holdRoll < pHold ? clamp(0.3+alignMag*0.5, 0.3, 0.8) : 0;
+        // The "what's driving the price" list must show what this match did
+        // to price AT THE TIME — its own peak, day-of contribution (eased=
+        // decay=1 on day 1, so this is just `bump` itself), capped the same
+        // way the price move itself is capped. That's a fixed historical
+        // fact matching the visible jump on the chart that date. Previously
+        // this showed the event's TODAY-decayed residual instead, which
+        // fades to near-zero within a couple weeks (halfLife=3) — every
+        // group-stage performance read as a trivial ~0% "reason" once the
+        // tournament moved on, even though the chart still shows the real
+        // jump that happened that day.
+        e._impactPct = clamp(bump,-BUMP_CAP*price,BUMP_CAP*price)/price*100;
         for(let j=idx;j<N;j++){ const daysIn=j-idx+1; // +1: the match day itself is already day 1, not day 0 — otherwise a same-day event (idx===N-1) eases in at 0 and never visibly moves today's price.
           const riseK=Math.min(1,daysIn/ramp); const eased=riseK*riseK*(3-2*riseK);
-          const decay=Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);
-          const contribution=bump*eased*decay;
-          hist[j]+=contribution;
-          // The "what's driving the price" list must show what this match
-          // actually did to the price *today*, not the raw rating-based
-          // formula score (e.delta) — those are two different numbers and
-          // showing the raw one reads as a broken promise ("should've gone
-          // up 5.66%") when the model only ever applies a damped fraction.
-          if(j===N-1) e._impactPct=(contribution/price)*100;
-        } }
+          // decay asymptotes to `floor` instead of 0 when the persistence
+          // roll succeeded — the rest of the bump still fades on the normal
+          // half-life, but `floor`'s worth becomes a permanent shift.
+          const decay=floor + (1-floor)*Math.pow(0.5,Math.max(0,daysIn-ramp)/halfLife);
+          bumpTotal[j]+=bump*eased*decay;
+        }
+      }
+      // Still needed below: the live-bump-uncertainty wobble boost reads
+      // how much of TODAY's price rides on a currently-decaying bump.
+      const cappedToday=clamp(bumpTotal[N-1],-BUMP_CAP*price,BUMP_CAP*price);
+      for(let j=0;j<N;j++){ hist[j]+=clamp(bumpTotal[j],-BUMP_CAP*price,BUMP_CAP*price); }
       // Getting knocked out is its own one-time shock to the chart — distinct
       // from the moodSig floor above (which lowers where the price *settles*
       // going forward), this is the visible "plummet" on the day it happens.
@@ -5185,8 +5349,18 @@ Mohammed Muntari|Al-Duhail|ST|32|6
       // close price is different each day even with no new match events.
       // Seeded by id + dayKey → changes midnight-to-midnight; WC players
       // get a bigger swing (±2%) than quiet bench players (±0.6%).
+      // Volatility boost while a bump is still live: a smooth, fully
+      // deterministic decay curve is a guaranteed trade — hatewatch right
+      // after any spike and the price WILL glide back down exactly on
+      // schedule, no real risk taken. Scaling the wobble up while a big
+      // chunk of price still rides on a decaying bump means the day-to-day
+      // path during that window can tick against the "expected" direction,
+      // so shorting (or buying) right at a peak is a good bet on average,
+      // not a certain one. Tapers back to the normal ±2%/±0.6% once the
+      // bump has faded, so calm players are unaffected.
       const wR = this.mulberry(this.hash(id + ':w:' + dayKey));
-      const wMag = atWC ? 0.02 : 0.006;
+      const liveBumpFrac = Math.min(1, Math.abs(cappedToday) / Math.max(1, price));
+      const wMag = (atWC ? 0.02 : 0.006) * (1 + liveBumpFrac * 2.5);
       const wobbledPrice = Math.max(2, hist[N-1] * (1 + (wR() - 0.5) * 2 * wMag));
 
       // REAL recorded history. The synthetic `hist` above is now only a
@@ -7264,19 +7438,57 @@ Mohammed Muntari|Al-Duhail|ST|32|6
         const formBarColor=(f)=>f>=60?GREEN:f>=48?'#e2a32b':RED;
         const hypeLabel=(h)=>{ if(h>=88)return'Phenomenon'; if(h>=74)return'Viral'; if(h>=60)return'Trending'; if(h>=46)return'Building Buzz'; if(h>=32)return'Under the Radar'; return'Ghost'; };
         const hypeBarColor=(h)=>h>=60?GREEN:h>=46?'#e2a32b':RED;
+        // Display-only calibration for the "Match rating" bar — separate from
+        // p.signals.fotmob (which stays untouched, since that still feeds the
+        // actual price formula's perfScore). This bar's job is just to LOOK
+        // right against real rating norms: a 7.3 is already a genuinely good
+        // match and should read green; an 8.5 average is close to the
+        // real-world ceiling (see the form-kicker calibration — Kane's 8.14
+        // was the best FULL-SEASON average in Europe's top 5 leagues last
+        // year) and should sit near the very end of the bar, not the middle.
+        // Piecewise-linear over real anchor points rather than one linear
+        // scale, since a single slope can't make both "6.0 = anchored mid-bar"
+        // and "8.5 = near-maxed" true at once.
+        const ratingBarPct=(avgR)=>{ if(!avgR) return 0;
+          const pts=[[4.5,0],[6.0,35],[7.3,68],[8.14,85],[8.5,93],[9.5,100]];
+          if(avgR<=pts[0][0]) return 0; if(avgR>=pts[pts.length-1][0]) return 100;
+          for(let i=0;i<pts.length-1;i++){ const [x0,y0]=pts[i],[x1,y1]=pts[i+1];
+            if(avgR>=x0 && avgR<=x1) return y0+(y1-y0)*(avgR-x0)/(x1-x0); }
+          return 100; };
+        // Grade-bar gradient: deep red at the bottom through amber to a dark,
+        // rich green at the top (not the flatter 3-bucket red/amber/green
+        // used elsewhere) — a continuous scale reads more like an actual
+        // grade. Keyed directly off avgR (not bar %): a single red->amber->
+        // green blend across the whole 0-100 range put 7.3 in an olive/
+        // mustard no-man's-land, since amber itself carries a lot of red —
+        // graded ZONES with a hard boundary at 7.3 guarantee "7.3+ is green"
+        // is always literally true. Our rating formula rarely produces truly
+        // bad (sub-5) games, so 6.0 (a do-nothing performance) should already
+        // read mildly red rather than neutral — 6.0 is anchored exactly at
+        // base RED (not blended toward amber) and 6.5 is the amber midline,
+        // so a merely-average game still reads as a little red, not amber.
+        const lerpHex=(a,b,t)=>{ const pa=[1,3,5].map(i=>parseInt(a.slice(i,i+2),16)), pb=[1,3,5].map(i=>parseInt(b.slice(i,i+2),16));
+          return '#'+pa.map((c,i)=>Math.round(c+(pb[i]-c)*t).toString(16).padStart(2,'0')).join(''); };
+        const gradeColor=(avgR)=>{ if(!avgR) return RED;
+          if(avgR<6.0) return lerpHex('#7f1d1d','#d23b2c',Math.max(0,(avgR-4.5)/(6.0-4.5)));
+          if(avgR<6.5) return lerpHex('#d23b2c','#e2a32b',(avgR-6.0)/(6.5-6.0));
+          if(avgR<7.3) return '#e2a32b';
+          return lerpHex('#3fa361','#0f6b3f',Math.min(1,(avgR-7.3)/(9.5-7.3))); };
         // Convert internal game anchor (inflated) to realistic €M display value.
         // Scale factor 0.38 maps game anchors to plausible TM range; perf ratio
         // capped at ±30% so a hot WC can lift the display value but can't make
         // a €100M player look like a €500M one; hard cap at €250M.
         const perfRatio=p.anchor?Math.min(1.3,Math.max(0.7,p.price/p.anchor)):1;
         const effTmVal=Math.max(5,Math.min(250,Math.round(p.tmVal*perfRatio*0.45/5)*5));
+        const ratingPct=ratingBarPct(p.avgR);
         const sigDefs=[
           ['Match rating · World Cup',p.signals.fotmob, p.avgR?p.avgR.toFixed(2)+' avg':'No WC matches'],
           ['World Cup form',p.signals.form, p.atWC?formLabel(p.signals.form):'Not at the World Cup'],
           ['Hype',p.signals.twitter, hypeLabel(p.signals.twitter)],
           ['Transfer market value',p.signals.transfermarkt, '€'+effTmVal+'M '+(p.tmTrendUp?'▲':'▼')]];
-        const signals=sigDefs.map(([label,val,display],i)=>({label,pct:Math.round(val)+'%',display,
-          barColor:i===1?formBarColor(val):i===2?hypeBarColor(val):(val>=66?GREEN:val>=42?'#e2a32b':RED), valColor:'#46504a'}));
+        const signals=sigDefs.map(([label,val,display],i)=>({label,
+          pct:(i===0?Math.round(ratingPct):Math.round(val))+'%',display,
+          barColor:i===0?gradeColor(p.avgR):i===1?formBarColor(val):i===2?hypeBarColor(val):(val>=66?GREEN:val>=42?'#e2a32b':RED), valColor:'#46504a'}));
 
         const evDisp=p.events.slice().sort((a,b)=>a.offset-b.offset).map(e=>{ const impact=e._impactPct||0; const up=impact>=0; const dt=new Date(today.getTime()-e.offset*86400000);
           const isBench = e.bench || e.min===0;
@@ -7285,9 +7497,10 @@ Mohammed Muntari|Al-Duhail|ST|32|6
             card: e.red?'🟥':(e.yellow?'🟨':''),
             isBench, notBench:!isBench, minsLabel: isBench?'':(e.min!=null?(e.min+"'"):''),
             ratingLabel: (e.rating!=null && e.rating>0) ? e.rating.toFixed(1) : '—',
-            // What this match actually did to the stock price (today's
-            // damped/decayed contribution to hist), not the raw per-match
-            // performance formula score — see the bump loop above.
+            // What this match actually did to the stock price at the time
+            // (its own peak, day-of bump — matches the chart's jump on that
+            // date), not the raw per-match performance formula score, and
+            // not today's since-decayed residual — see the bump loop above.
             delta:Math.abs(impact).toFixed(2)+'%', deltaArrow:up?'▲':'▼', deltaColor:up?GREEN:RED }; });
 
         const {volPct:dVolPct,hiAll:dHiAll,loAll:dLoAll}=riskStats(p);

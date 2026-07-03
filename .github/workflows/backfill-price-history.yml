@@ -1,0 +1,27 @@
+name: Backfill price history from real match events
+
+# Manual, re-runnable: rebuilds Supabase price_history's PAST days (today is
+# left alone for the live app) using real World Cup match events from the
+# live worker where available, falling back to the hand-typed STARS table
+# only for players the worker hasn't polled yet. Zero API-Football calls —
+# only reads the worker's already-polled /prices.json and writes to Supabase.
+# Safe to re-run as the worker's coverage improves (upsert, not append).
+# See scripts/backfill-price-history.mjs.
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (log row/coverage counts, write nothing)'
+        type: boolean
+        default: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Run backfill
+        run: node scripts/backfill-price-history.mjs ${{ inputs.dry_run && '--dry-run' || '' }}

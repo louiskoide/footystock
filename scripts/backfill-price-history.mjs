@@ -1,11 +1,27 @@
 /**
- * One-time script: backfill Supabase price_history with estimated past closes.
+ * Re-runnable script: backfill Supabase price_history with realistic past
+ * closes, driven by actual World Cup match performances rather than a smooth
+ * random walk. Supabase's price_history had accumulated almost nothing since
+ * an initial April seed (2 day-keys total across 90 days of tournament), so
+ * priceHistory() on the frontend was reading mostly-synthetic filler for the
+ * whole 7d/30d/90d window — that's why every stock read flat.
  *
- * Reads ROSTER, VAL, STARS, WC, NEWS data directly from FootyStock_dc.html so
- * ALL players are covered. Runs the same synthetic 90-day history as buildDB()
- * then upserts days 0..88 (past only — today is left for the live app).
+ * Prefers REAL match events from the live worker's /prices.json
+ * (players[id].events — goals/assists/cards/rating per fixture, the same
+ * data the "match by match" panel shows) over the hand-typed STARS/WC
+ * fallback in FootyStock_dc.html, for any player the worker has actually
+ * polled. Falls back to STARS for players the worker hasn't covered yet
+ * (matches the frontend's own precedence, see `starsEff` in buildDB()).
+ * Zero API-Football calls — only reads the worker's already-polled data.
+ *
+ * Runs the same event-driven bump/decay pricing math as buildDB() (see
+ * FootyStock_dc.html "history 90d ending at current price" section) so a
+ * match-day jump on the backfilled chart matches what the live app would
+ * have shown that day, then upserts days 0..88 (past only — today is left
+ * for the live app). Safe to re-run as the worker's coverage improves.
  *
  * Usage:  node scripts/backfill-price-history.mjs
+ *         LIVE_WORKER_URL=https://footystock.fly.dev node scripts/backfill-price-history.mjs
  */
 
 import { readFileSync } from 'fs';
@@ -50,6 +66,24 @@ const dataFn = new Function(`
 `);
 const { WC, STARS, NEWS, NATION } = dataFn();
 
+// ── live worker data (real match events — zero API-Football calls) ────────
+
+const WORKER_URL = process.env.LIVE_WORKER_URL || 'https://footystock.fly.dev';
+const live = await fetch(`${WORKER_URL}/prices.json`).then(r => r.json()).catch(e => {
+  console.error(`Could not reach live worker (${e.message}) — falling back to STARS-only for every player.`);
+  return null;
+});
+const liveEventsById = {};
+const liveNationById = {};
+if (live?.players) {
+  for (const [id, p] of Object.entries(live.players)) {
+    if ((p.events || []).length) liveEventsById[id] = p.events;
+    if (p.nation) liveNationById[id] = p.nation;
+  }
+}
+const liveTeams = live?.teams || {};
+console.log(live ? `Live worker: ${Object.keys(liveEventsById).length} players with real events.` : 'Live worker unreachable.');
+
 // ── helpers ────────────────────────────────────────────────────────────────
 
 function hash(str) {
@@ -93,25 +127,54 @@ function computeSyntheticHist(id, name, pos, age, tier) {
   const mv = VAL[name];
   const youth = age <= 21 ? 1 : 0;
   const anchor = (mv != null) ? mv : tierBase[tier] * (0.9 + 0.5 * r()) * (youth ? 1.15 : 1);
+  // Moved up from below (matches buildDB()) so the per-match delta loop can
+  // use it: 0=unknown, 1=superstar.
+  const notoriety = clamp((anchor - 20) / 180, 0, 1);
 
-  const starsEff = STARS[id] || null;
+  // Real polled events (from the live worker) take priority over the
+  // hand-typed STARS fallback for any player the worker has actually
+  // matched — same precedence buildDB() uses on the frontend.
+  const liveEvents = liveEventsById[id];
+  const starsEff = (liveEvents && liveEvents.length) ? liveEvents : (STARS[id] || null);
   const news = NEWS[id] || null;
-  const nation = NATION[name] || null;
-  const wc = (nation && WC[nation]) ? WC[nation] : null;
+  const nation = liveNationById[id] || NATION[name] || null;
+  const wc = (nation && (liveTeams[nation] || WC[nation])) || null;
   const eliminated = !!(wc && /^Eliminated/.test(wc.status));
   const atWC = !!starsEff;
 
+  // Kept in sync with buildDB() in FootyStock_dc.html — this is a separate,
+  // duplicated copy of the pricing math (not shared code), so every fix made
+  // there this session (asymmetric/notoriety-scaled ratingBase, bench
+  // penalty, decay/cap, form recalibration) has to be mirrored here by hand
+  // or the backfilled World Cup history silently drifts from what the live
+  // app actually shows. Only affects days that HAVE a real match event —
+  // pre-tournament days with no events are untouched by any of this.
   let events = [];
   if (starsEff) {
     for (const s of starsEff) {
-      if (s.rating == null) continue; // bench
+      if (s.rating == null) {
+        // Bench: a cheap/fringe player sitting out is a non-event (0 at
+        // notoriety=0). An expensive stock being left out is real
+        // information a market would react to — mild on purpose since it's
+        // often just rest/rotation, not bad news.
+        events.push({ offset: offOf(s.d), delta: parseFloat((-0.6 * notoriety).toFixed(2)) });
+        continue;
+      }
       const g = s.g || 0, a = s.a || 0;
       const goalPart = g * 1.0 + (g >= 2 ? Math.pow(g - 1, 1.6) * 0.9 : 0);
       const assistPart = a * 0.6 + (a >= 2 ? Math.pow(a - 1, 1.4) * 0.4 : 0);
       const ratingExcess = Math.max(0, s.rating - 8.0);
       const isDefPos = /^(CB|LB|RB|WB|GK|DEF|SW)$/i.test(pos);
-      const ratingBase = isDefPos ? 6.5 : 6.0;
-      const ratingPart = (s.rating - ratingBase) * 1.3 + Math.pow(ratingExcess, 1.8) * 1.5;
+      // Base stays exactly 6.0/6.5 at notoriety=0 (unknown player) — matches
+      // rating.mjs's own neutral "did nothing" point, avoiding the flat-shift
+      // regression ("the great depression" bug) a global change would cause.
+      // Expectations scale up with notoriety: a maxed-notoriety star needs up
+      // to 1.5 points more to be considered "living up to the price".
+      const ratingBase = (isDefPos ? 6.5 : 6.0) + notoriety * 1.5;
+      // Symmetric to ratingExcess: a genuinely bad game accelerates the same
+      // way an outlier great one does, not just linearly.
+      const ratingShortfall = Math.max(0, ratingBase - s.rating);
+      const ratingPart = (s.rating - ratingBase) * 1.3 + Math.pow(ratingExcess, 1.8) * 1.5 - Math.pow(ratingShortfall, 1.6) * 0.9;
       const delta = parseFloat((ratingPart + goalPart + assistPart).toFixed(2));
       events.push({ offset: offOf(s.d), delta });
     }
@@ -120,6 +183,10 @@ function computeSyntheticHist(id, name, pos, age, tier) {
   const sum = arr => arr.reduce((a, b) => a + b, 0);
   const newsDelta = news ? news.bias : 0;
   let change30d = parseFloat((sum(events.map(e => e.delta)) + newsDelta).toFixed(1));
+  // A player with no match data at all (not at the WC) can still have a
+  // real signal — a transfer, an award, a saga — via NEWS alone. Gate the
+  // historical trend/noise on that too, matching buildDB()'s hasSignal.
+  const hasSignal = atWC || !!news;
 
   const ratingVals = starsEff ? starsEff.map(s => s.rating).filter(x => x > 0) : [];
   const avgR = ratingVals.length ? sum(ratingVals) / ratingVals.length : 0;
@@ -132,14 +199,24 @@ function computeSyntheticHist(id, name, pos, age, tier) {
   for (const rt of ratingsByRecency.slice(0, 6)) { ewmaR += rt * wgt; ewmaW += wgt; wgt *= 0.75; }
   ewmaR = ewmaW ? ewmaR / ewmaW : 0;
   const formDelta = (ewmaW && avgR) ? (ewmaR - avgR) : 0;
-  const formSig = atWC ? Math.max(6, Math.min(99, 46 + formDelta * 22 + streakLen * 4)) : 8;
+  // Asymmetric like the price-side upMult/downMult below: a slump reads as
+  // more damning than a hot run reads as impressive.
+  const formDeltaMult = formDelta >= 0 ? 22 : 34;
+  // Elite kicker: rewards how far above the streak bar (7.4) the recency-
+  // weighted EWMA itself sits, so a genuinely legendary run (not just a bare
+  // streak of 7.4s) can reach the top band. Coefficient calibrated against a
+  // real reference point: Kane's 8.14 was the best FULL-SEASON average in
+  // Europe's top 5 leagues last year (FotMob) — matching that across 4
+  // straight matches lands just under the top threshold, not over it.
+  const eliteKicker = Math.max(0, ewmaR - 7.4) * 18;
+  const formSig = atWC ? Math.max(6, Math.min(99, 46 + formDelta * formDeltaMult + streakLen * 7 + eliteKicker)) : 8;
 
   const moodSig = Math.max(6, Math.min(99, (46 + (starsEff ? 14 : 0)) - (eliminated ? 30 : 0)));
   const transferSig = news ? (news.bias >= 0 ? Math.min(99, 72 + news.bias * 2) : Math.max(20, 52 + news.bias * 3)) : Math.max(8, Math.min(90, 46));
 
   const wPerf = 0.06, wForm = 0.10, wHype = 0.35;
   const hasMatchData = atWC && avgR > 0;
-  const notoriety = clamp((anchor - 20) / 180, 0, 1);
+  // notoriety is defined up near `anchor`, before the per-match delta loop.
   const rawPerf = hasMatchData ? clamp((fotmob - 46) / 18, -1, 1) : 0;
   const rawForm = hasMatchData ? clamp((formSig - 46) / 18, -1, 1) : 0;
   const upMult = 1.55 - 0.8 * notoriety;
@@ -157,33 +234,63 @@ function computeSyntheticHist(id, name, pos, age, tier) {
 
   const N = 90;
   const hist = [];
-  const trend = atWC ? clamp(change30d / 100, -0.4, 0.4) : (r() - 0.5) * 0.04;
+  const trend = hasSignal ? clamp(change30d / 100, -0.4, 0.4) : (r() - 0.5) * 0.04;
   const start = price / (1 + trend * 1.05);
   const steps = []; let acc = 0;
   for (let i = 0; i < N; i++) { acc += (r() - 0.5); steps.push(acc); }
   const s0 = steps[0], s1 = steps[N - 1];
   const bridge = steps.map((v, i) => v - (s0 + (s1 - s0) * i / (N - 1)));
   const bridgeMax = Math.max(...bridge.map(Math.abs)) || 1;
-  const noiseAmp = price * (atWC ? 0.012 : 0.006);
+  const noiseAmp = price * (hasSignal ? 0.012 : 0.006);
   for (let i = 0; i < N; i++) {
     const t = i / (N - 1);
     const baseV = start + (price - start) * Math.pow(t, 1.15);
     hist.push(Math.max(2, baseV + (bridge[i] / bridgeMax) * noiseAmp));
   }
 
-  for (const e of events) {
+  // Match-performance bumps, plus — unlike buildDB(), which only bumps off
+  // real match events since news also feeds the match-by-match UI panel
+  // there — a discrete bump for the transfer/news event itself. The backfill
+  // only ever writes past closes to Supabase (nothing here is rendered as a
+  // match card), so there's no UI reason to fold it into `events`; this is
+  // exactly the "price jump the performance gives you" shape requested for
+  // transfers, just sourced from NEWS instead of a match rating.
+  // halfLife 6->3 and BUMP_CAP: halfLife=6 was slower than the ~3-4 day gap
+  // between WC matches, so a bump barely faded before the next one stacked
+  // fully on top with no ceiling — a near-guaranteed staircase instead of
+  // genuine "spike then settle".
+  const BUMP_CAP = 0.25;
+  const bumpTotal = new Array(N).fill(0);
+  // Persistence: whether a bump fully reverts to 0 or partially sticks as a
+  // real re-rating is a seeded coin flip (stable per event, same for every
+  // viewer) weighted by current signals. No demandScore here (backfill has
+  // no live user-trading data for historical days), so this is
+  // (formScore+hypeScore)/2 rather than buildDB()'s 3-way average.
+  const sentimentStrength = clamp((formScore + hypeScore) / 2, -1, 1);
+  const bumpEvents = news ? [...events, { offset: offOf(news.d), delta: news.bias }] : events;
+  for (const e of bumpEvents) {
     const idx = N - 1 - e.offset;
     if (idx < 0 || idx >= N) continue;
-    const downScale = e.delta < 0 ? 1.0 * (1 + notoriety * 0.25) : 1.0;
-    const bump = (e.delta / 100) * price * downScale, ramp = 1, halfLife = 6;
+    // Bidirectional notoriety scale: positive deltas are muted with
+    // notoriety (an expected superstar performance moves price less),
+    // negative deltas are amplified further (bad games hit harder than
+    // good ones help, for every stock, escalating with notoriety).
+    const notorietyScale = e.delta < 0 ? (1.4 + notoriety * 0.6) : (1.15 - notoriety * 0.55);
+    const bump = (e.delta / 100) * price * notorietyScale, ramp = 1, halfLife = 3;
+    const aligned = (e.delta >= 0) === (sentimentStrength >= 0);
+    const alignMag = Math.abs(sentimentStrength);
+    const pHold = aligned ? clamp(0.15 + alignMag * 0.55, 0.15, 0.70) : clamp(0.05 + (1 - alignMag) * 0.10, 0.05, 0.15);
+    const holdRoll = mulberry(hash(id + ':hold:' + e.offset))();
+    const floor = holdRoll < pHold ? clamp(0.3 + alignMag * 0.5, 0.3, 0.8) : 0;
     for (let j = idx; j < N; j++) {
       const daysIn = j - idx + 1;
       const riseK = Math.min(1, daysIn / ramp);
       const eased = riseK * riseK * (3 - 2 * riseK);
-      const decay = Math.pow(0.5, Math.max(0, daysIn - ramp) / halfLife);
-      hist[j] += bump * eased * decay;
+      const decay = floor + (1 - floor) * Math.pow(0.5, Math.max(0, daysIn - ramp) / halfLife);
+      bumpTotal[j] += bump * eased * decay;
     }
   }
+  for (let j = 0; j < N; j++) hist[j] += clamp(bumpTotal[j], -BUMP_CAP * price, BUMP_CAP * price);
 
   if (eliminated && wc && wc.fixtures && wc.fixtures.length) {
     const lastFixture = wc.fixtures[wc.fixtures.length - 1];
@@ -212,7 +319,10 @@ function computeSyntheticHist(id, name, pos, age, tier) {
 
 // ── Supabase upsert ────────────────────────────────────────────────────────
 
+const DRY_RUN = process.argv.includes('--dry-run');
+
 async function upsertBatch(rows) {
+  if (DRY_RUN) return;
   const r = await fetch(`${SUPABASE_URL}/rest/v1/price_history`, {
     method: 'POST',
     headers: {
@@ -232,7 +342,7 @@ async function main() {
   const lines = rosterRaw.trim().split('\n');
   const seen = {};
   const allRows = [];
-  let playerCount = 0;
+  let playerCount = 0, liveDrivenCount = 0, starsDrivenCount = 0;
 
   for (const line of lines) {
     const parts = line.split('|');
@@ -245,6 +355,9 @@ async function main() {
     seen[id] = 1;
     playerCount++;
 
+    if (liveEventsById[id]?.length) liveDrivenCount++;
+    else if (STARS[id]) starsDrivenCount++;
+
     const hist = computeSyntheticHist(id, name, pos, age, tier);
     // Only upsert past days (indices 0..88), skip today (index 89)
     for (let i = 0; i < 89; i++) {
@@ -254,7 +367,8 @@ async function main() {
     }
   }
 
-  console.log(`Upserting ${allRows.length} rows for ${playerCount} players…`);
+  console.log(`Players driven by real worker events: ${liveDrivenCount}, by hand-typed STARS fallback: ${starsDrivenCount}, no signal (flat baseline): ${playerCount - liveDrivenCount - starsDrivenCount}.`);
+  console.log(`${DRY_RUN ? '[DRY RUN] Would upsert' : 'Upserting'} ${allRows.length} rows for ${playerCount} players…`);
 
   const CHUNK = 500;
   for (let i = 0; i < allRows.length; i += CHUNK) {
