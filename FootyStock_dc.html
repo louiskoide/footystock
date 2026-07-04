@@ -2623,16 +2623,17 @@ as $$
 $$;
 grant execute on function verify_password_by_token(text, text) to anon, authenticated;
 
--- Returns the caller's own name/email/ref_code given the token they already
--- hold locally (cookie/localStorage) — replaces syncFromCloud()'s old
--- `select=token,name,email,ref_code` now that email isn't in the public grant.
+-- Returns the caller's own name/email/ref_code/is_founder given the token
+-- they already hold locally (cookie/localStorage) — replaces
+-- syncFromCloud()'s old `select=token,name,email,ref_code` now that email
+-- isn't in the public grant.
 create or replace function get_my_account(p_token text)
-returns table(name text, email text, ref_code text)
+returns table(name text, email text, ref_code text, is_founder boolean)
 language sql
 security definer
 set search_path = public
 as $$
-  select l.name, l.email, l.ref_code
+  select l.name, l.email, l.ref_code, l.is_founder
   from leaderboard l
   where l.token = p_token
   limit 1;
@@ -2660,12 +2661,24 @@ as $$
 $$;
 grant execute on function lookup_reset_token(text, text) to anon, authenticated;
 
+-- Founder badge: was date-based (anyone joining before a cutoff), which made
+-- it meaningless — every launch-day signup got it. Now it's a stored flag,
+-- only ever set by redeeming this specific FOUNDR code.
+alter table leaderboard add column if not exists is_founder boolean not null default false;
+grant select (is_founder) on table leaderboard to anon, authenticated;
+
 -- Replaces _resolveRefCode()+_creditReferrer()+the two direct `referrals`
 -- POSTs: resolves the ref_code, checks the not-already-claimed rule, records
 -- the referral, and credits the referrer's pending_ref_rewards — all in one
 -- server-side call, so the referrer's token never reaches the redeemer's
 -- browser. Returns a status string so the UI can keep its existing distinct
 -- error messages ('ok' | 'already_claimed' | 'invalid_code' | 'self_referral').
+--
+-- FOUNDR is a special case, not a real referral: it's a fixed promo code
+-- (not tied to any user's generated ref_code) that grants the redeemer the
+-- founder badge only — no stock reward, no entry in `referrals`, so it
+-- doesn't consume the one-normal-referral-per-account dedup and ordinary
+-- referral codes are completely unaffected.
 create or replace function credit_referral(p_code text, p_referred_token text)
 returns text
 language plpgsql
@@ -2674,7 +2687,17 @@ set search_path = public
 as $$
 declare
   v_referrer_token text;
+  v_already_founder boolean;
 begin
+  if upper(p_code) = 'FOUNDR' then
+    select is_founder into v_already_founder from leaderboard where token = p_referred_token;
+    if coalesce(v_already_founder, false) then
+      return 'already_founder';
+    end if;
+    update leaderboard set is_founder = true where token = p_referred_token;
+    return 'founder';
+  end if;
+
   if exists (select 1 from referrals where referred_token = p_referred_token) then
     return 'already_claimed';
   end if;
@@ -2755,7 +2778,7 @@ class Component extends DCLogic {
       comments:[], commentSort:'top', commentInput:'', commentReplyTo:null, commentReplyInput:'', commentsLoading:false, commentsPlayerId:null,
       cash: 10000, holdings: {}, txns: [], watch: ['lamine-yamal-barcelona','desire-doue-paris-sg','mika-godts-ajax','florian-wirtz-liverpool'],
       streak: 0, lastClaim: null, shorts: {}, bonusCash: 0,
-      joinDate: today, allTimeHigh: 10000,
+      joinDate: today, allTimeHigh: 10000, isFounder: false,
       portfolioLoading: true, username: '',
       triggers: this.loadTriggers(),
       triggerOpen:false, triggerId:null,
@@ -2988,7 +3011,7 @@ class Component extends DCLogic {
       // Generate ref_code if missing (existing accounts pre-dating this feature)
       const rc=lbRow.ref_code||(token.replace(/-/g,'').slice(0,6).toUpperCase());
       if(!lbRow.ref_code) fetch(this._sbUrl+'?token=eq.'+encodeURIComponent(token),{method:'PATCH',headers:{...this._sbHdr,'Content-Type':'application/json'},body:JSON.stringify({ref_code:rc})}).catch(()=>{});
-      this.setState({loggedIn:true,username:lbRow.name||'',profileEmail:lbRow.email||'',profileRefClaimed:refClaimed,myRefCode:rc});
+      this.setState({loggedIn:true,username:lbRow.name||'',profileEmail:lbRow.email||'',profileRefClaimed:refClaimed,myRefCode:rc,isFounder:!!lbRow.is_founder});
       // Privacy flag fetched separately so a missing column can never break login
       try{ const hp=await Supa.get('leaderboard','token=eq.'+encodeURIComponent(token)+'&select=holdings_public'); if(hp&&hp.length) this.setState({holdingsPublic:hp[0].holdings_public!==false}); }catch(e){}
       // Now load portfolio
@@ -6534,6 +6557,11 @@ Afonso Moreira|Leverkusen|LW|21|4
       // so the referrer's token never reaches this browser (see the Supabase
       // SQL near SUPABASE_URL).
       const status=await Supa.post('rpc/credit_referral',{p_code:code,p_referred_token:token});
+      // FOUNDR is a promo code, not a real referral: grants the founder
+      // badge only, no stock reward, and doesn't touch the referrals table
+      // dedup (see credit_referral() in the Supabase SQL near SUPABASE_URL).
+      if(status==='founder'){ this.setState({isFounder:true,profileRefError:'',profileRefOk:'🏅 Founder badge unlocked!'}); return; }
+      if(status==='already_founder'){ this.setState({isFounder:true,profileRefError:'',profileRefOk:"You're already a Founder."}); return; }
       if(status==='already_claimed'){ this.setState({profileRefError:'You have already claimed a referral bonus.',profileRefOk:'',profileRefClaimed:true}); return; }
       if(status==='invalid_code'){ this.setState({profileRefError:'Code not found. Double-check and try again.',profileRefOk:''}); return; }
       if(status==='self_referral'){ this.setState({profileRefError:"You can't use your own referral code.",profileRefOk:''}); return; }
@@ -6629,7 +6657,8 @@ Afonso Moreira|Leverkusen|LW|21|4
     try{
       const status=await Supa.post('rpc/credit_referral',{p_code:pending,p_referred_token:myToken});
       this._delCookie("fs_pending_ref");
-      if(status==='ok') await this.awardMysteryStocks("ref_"+pending);
+      if(status==='founder'||status==='already_founder') this.setState({isFounder:true});
+      else if(status==='ok') await this.awardMysteryStocks("ref_"+pending);
     }catch(e){}
   }
   async awardMysteryStocks(seed){
@@ -6688,7 +6717,12 @@ Afonso Moreira|Leverkusen|LW|21|4
     }
   }
   // ============ FOUNDER ============
-  isFounder(){ return (this.state.joinDate||"9999") < "2026-07-10"; }
+  // Was date-based (joined before a cutoff) — that made every signup during
+  // the launch window a "founder", which defeated the point. Now it's a
+  // stored flag, set only by redeeming the FOUNDR referral code (see
+  // credit_referral() and doClaimRef()/checkPendingRef() below) — ordinary
+  // referral codes never set it.
+  isFounder(){ return !!this.state.isFounder; }
   // ============ PHONE ============
   async loadMyPhone(){
     this._myPhone=this.loadEmail();
