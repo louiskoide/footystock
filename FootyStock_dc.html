@@ -5540,11 +5540,28 @@ Afonso Moreira|Leverkusen|LW|21|4
       // fundamentals still anchor the price.
       const demandScore = (live && live.demand) ? (live.demand[id] || 0) : 0;
       let price = fairValue * Math.exp(0.15 * demandScore);
-      // Circuit breaker: cap single-day move at ±50% vs yesterday's worker-recorded
-      // close. Prevents a huge spike when the API comes back online after downtime
-      // (stale prices snap back to reality all at once).
-      { const _wh = this._wcLive?.priceHist?.[id];
-        const _prev = _wh && _wh.length >= 2 ? _wh[_wh.length - 2] : null;
+      // Circuit breaker: cap the single-day move at ±50% vs the SAME prior close
+      // the displayed 1D/7D% is measured against — p.hist, built from the
+      // Supabase-recorded series (this._sbHist) in priceHistory() below. The old
+      // version compared against this._wcLive.priceHist, a DIFFERENT series (the
+      // Fly worker's own recorded closes), so a price it judged "within 50% of
+      // worker-yesterday" could still print as a +66% move vs Supabase-yesterday,
+      // and it silently did nothing whenever that worker series had <2 entries
+      // (a fresh player, or right after a STATE_VERSION wipe) — exactly when a
+      // first-match signal snaps off zero and the move is biggest. Reading the
+      // prior close straight from this._sbHist — the value priceHistory() will
+      // surface as p.hist[hN-2] — makes the cap actually bind on the number users
+      // see. Mirror priceHistory()'s own dayKey handling so "prior close" matches
+      // exactly: if the latest stored entry is already today, yesterday is the
+      // one before it; otherwise the latest entry IS yesterday.
+      { const _sb = this._sbHist?.[id];
+        let _prev = null;
+        if (_sb && _sb.length) {
+          const _last = _sb[_sb.length - 1];
+          _prev = (_last.d === dayKey)
+            ? (_sb.length >= 2 ? _sb[_sb.length - 2].p : null)
+            : _last.p;
+        }
         if (_prev > 0) price = Math.max(_prev * 0.5, Math.min(_prev * 1.5, price)); }
 
       // history 90d ending at current price. A player with a real signal
